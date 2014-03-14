@@ -1,0 +1,19 @@
+{
+  "name": "ca-water-network",
+  "version": "0.0.1",
+  "description": "california water network app",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@bitbucket.org:ucd-cws/ca-water-network.git"
+  },
+  "author": "Justin Merz (jrmerz@ucdavis.edu)",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^3.4.8"
+  }
+}

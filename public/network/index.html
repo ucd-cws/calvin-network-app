@@ -1,0 +1,165 @@
+<html>
+<head>
+
+<!--<link rel="stylesheet" href="bower_components/vis/dist/vis.css" />-->
+<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css" />
+<link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css" />
+
+<link rel="stylesheet" href="css/bootstrap-yeti.min.css" />
+<link rel="stylesheet" href="css/leaflet.css" />
+
+<script type="text/javascript" src="bower_components/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript" src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/xml2json.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<script type="text/javascript" src="js/leaflet-src.js"></script>
+<script type="text/javascript" src="js/MyMarker.js"></script>
+<script type="text/javascript" src="js/maps.js"></script>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+
+
+<style>
+    .nav.nav-pills .pill {
+        cursor : pointer;
+    }
+    .overlay {
+      fill : none;
+      pointer-events: all;
+    }
+
+    #graph g.gnode {
+      cursor: pointer;
+    }
+
+    #graph .linked {
+      fill: #ddd;
+      fill-opacity: .8;
+      stroke: #fff;
+      stroke-width: 1.5px;
+    }
+
+    #graph line {
+      stroke: #999;
+    }
+
+    .svgchart {
+      height: 200px;
+    }
+
+    .chart-attr {
+      font-size: 12px;
+      margin-left: 15px;
+      color: #888;
+    }
+  </style>
+</style>
+
+<title>California Water Network</title>
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand"><i class="fa fa-code-fork"></i> California Water Network</a>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar-main"></div>
+  </div>
+</div>
+
+<div style="margin-top:65px">
+
+
+  <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="form-horizontal">
+
+        <div class="form-group">
+          <label for="filter-input" class="col-sm-2 control-label">Filter</label>
+          <div class="col-sm-10">
+            <input type="text" id="filter-input" class="form-control" />
+            <p class="help-block">By name or description.  Use '*' for wildcard match.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+            <label for="filter-input" class="col-sm-2 control-label"></label>
+            <div class="col-sm-10">
+              <label class="checkbox-inline">
+                <input type="checkbox" id="calibration-mode" checked /> Calibration Mode
+                <p class="help-block">Hide calibration links and nodes, mark nodes attached to calibartion links</p>
+              </label>
+            </div>
+            
+        </div>
+
+        <div class="form-group">
+            <label for="filter-types" class="col-sm-2 control-label">Types</label>
+            <div class="col-sm-10" id="filter-types"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="well" style="margin:5px 15px">
+    <ul class="nav nav-pills" style="margin-bottom:15px">
+      <li class="active"><a tab="map" class="pill"><i class="fa fa-globe"></i> Map</a></li>
+      <li><a tab="graph" class="pill"><i class="fa fa-sitemap"></i> Graph</a></li>
+      <li><a tab="table" class="pill"><i class="fa fa-table"></i> Table</a></li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane" style="overflow:scroll; max-height:900px" id="table">
+        Loading... 
+      </div>
+      <div class="tab-pane" id="graph">
+            <div>
+              <div id="mygraph" style="background-color:white;border: 1px solid #eee" ></div>
+            </div>
+
+            <div style="text-align:center;margin-top:10px">
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-default" onclick="app.d3.zoomIn()"><i class="fa fa-plus"></i></button>
+                <button type="button" class="btn btn-default" onclick="app.d3.zoomOut()"><i class="fa fa-minus"></i></button>
+            </div>
+            <div style="color:#888">
+              Click and Hold to Drag, Double Click to Inspect Node
+            </div>
+          </div>
+      </div>
+      <div class="tab-pane active" id="map">
+        <div id="map-canvas" style="height:600px" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="info-popup">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Node Information</h4>
+      </div>
+      <div class="modal-body" id="info-body">
+        <h3>Nodes</h3>
+        <div id="info-body-nodes"></div>
+        <h3>Links</h3>
+        <div id="info-body-links"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<script type="text/javascript" src="js/d3.js"></script>
+</body>
+</html>
