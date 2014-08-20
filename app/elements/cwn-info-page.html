@@ -1,11 +1,100 @@
-<polymer-element name="cwn-info-page" attributes="data">
+<polymer-element name="cwn-info-page" attributes="ds">
     <template>
         <cwn-icon icon="fa-arrow-left"></cwn-icon>
         <h2>Info</h2>
     </template>
     <script>
         Polymer('cwn-info-page', {
-            feature : {}
+            feature : {},
+
+            //observe {
+             //   feature : 'update'
+            //}
+/*
+            update : function() {
+                var isLink = this.feature.geometry.type == 'LineString' ? true : false;
+                var start = '';
+                var stop = '';
+                if( isLink ) {
+                    var pts = this.feature.properties.prmname.split('_');
+                    start = pts[0];
+                    end = pts[1];
+                }
+
+
+-----
+
+
+    var html = '';
+    var matched = [];
+    for( var i = 0; i < allData.length; i++) {
+      if( allData[i].id == id && allData[i].node_type == 'node' ) {
+        html += appendInfo(allData[i]);
+        matched.push(id);
+      }
+
+      if( isLink && (allData[i].id == start || allData[i].id == stop)) {
+        html += appendInfo(allData[i]);
+        //matched.push(allData[i].id);
+      }
+    }
+    if( html.length > 0 ) $('#info-body-nodes').html(html);
+
+    var html = '';
+    for( var i = 0; i < allData.length; i++) {
+      if( allData[i].node_type == 'link' && 
+          (matched.indexOf(allData[i].to) > -1 || matched.indexOf(allData[i].from) > -1) ) {
+        
+        var nested = '';
+        if( matched.indexOf(allData[i].to) == -1 && matched.indexOf(allData[i].from) != -1 ) {
+          nested = appendInfo(nodeData[allData[i].to]);
+        } else if ( matched.indexOf(allData[i].to) != -1 && matched.indexOf(allData[i].from) == -1 ){ 
+          nested = appendInfo(nodeData[allData[i].from]);
+        }
+        html += appendInfo(allData[i], nested);
+
+      }
+
+      if( allData[i].id == id && allData[i].node_type == 'link') {
+        html += appendInfo(allData[i], nested);
+      }
+    }
+    if( html.length > 0 ) $('#info-body-links').html(html);
+
+    $('#info-popup').modal('show');
+
+    // now add charts
+    setTimeout(function(){
+        for( var i = 0; i < allData.length; i++) {
+          if( allData[i].id == id ) {
+            getJsonInfo(allData[i]);
+          }
+        }
+
+        for( var i = 0; i < allData.length; i++) {
+          if( allData[i].node_type == 'link' && 
+              (matched.indexOf(allData[i].to) > -1 || matched.indexOf(allData[i].from) > -1) ) {
+              if( matched.indexOf(allData[i].to) == -1 && matched.indexOf(allData[i].from) != -1 ) {
+                getJsonInfo(nodeData[allData[i].to]);
+              } else if ( matched.indexOf(allData[i].to) != -1 && matched.indexOf(allData[i].from) == -1 ){ 
+                getJsonInfo(nodeData[allData[i].from]);
+              }
+              getJsonInfo(allData[i]);
+          }
+
+
+        }
+    }, 500);
+
+    // draw icons
+    var eles = $('.popup-icon');
+    for( var i = 0; i < eles.length; i++ ) {
+      var icon = getIcon($(eles[i]).attr('type'), 64, 64);
+      $(eles[i]).append($(icon));
+    }
+    
+  }
+            }*/
         });
     </script>
 </polymer-element>
