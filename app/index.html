@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<!--<html manifest="manifest.appcache">-->
+    <head>
+        <title>California Water Network</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+        <!-- build:js scripts/app.js -->
+        <script src="components/platform/platform.js"></script>
+        <script src="components/jquery/dist/jquery.js"></script> 
+        <!-- endbuild -->
+
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+        <link rel="stylesheet" href="styles/deep.css" shim-shadowdom>
+        <link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
+        <link rel="import" href="require.html">
+
+        <style shim-shadowdom>
+            html, body {
+                height: 100%;
+                overflow-x: hidden;
+            }
+
+            html /deep/ core-toolbar {
+                background-color: #f8f8f8;
+                border-color: #e7e7e7;
+                position: relative;
+
+                border: 1px solid transparent;
+                box-shadow: 0 0 5px #333;
+                color: #333;
+            }
+            html /deep/ paper-ripple#ink {
+                color: #5bc0de;
+            }
+            html /deep/ paper-tabs /deep/ #selectionBar {
+                background-color: #46b8da;
+            }
+            html /deep/ paper-tab.core-selected {
+                background-color: #eee;
+            }
+        </style>
+    </head>
+    <body>
+        <cwn-app></cwn-app>
+    </body>
+</html>

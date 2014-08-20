@@ -1,0 +1,83 @@
+<polymer-element name="cwn-app-icon" attributes="type width height fillStyle">
+    <template>
+        <style>
+            :host {
+                display: inline-block;
+            }
+        </style>
+        <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
+    </template>
+    <script>
+        Polymer('cwn-app-icon', {
+            fillStyle : '#fffff',
+
+            observe : {
+                height : 'redraw',
+                width : 'redraw'
+            },
+
+            ready : function() {
+                this.redraw();
+            },
+
+            redraw : function() {
+                var c2 = this.$.canvas.getContext('2d');
+                c2.clearRect(0, 0, this.width, this.height);
+
+                var width = this.width - 4;
+                var height = this.height - 4;
+
+                var x = width / 2;
+                var y = height / 2;
+                var r = x;
+                if( y < r ) r = y;
+                  
+                if( this.type == 'Junction Node' || this.type == 'Pump Plant Node' || this.type == 'Power Plant Node' ) {
+                    this._circle(c2, x+2, y+2, r);
+                } else if ( this.type == 'Water Treatment Node' ) {
+                    this._polygon(c2, x+2, y+2, r, 6, 0);    
+                } else if ( this.type == 'Surface Storage Node' || this.type == 'Groundwater Storage Node' ) {
+                    this._polygon(c2, x+2, y+2, r, 3, 90);
+                } else if ( this.type == 'Agricultural Demand Node' || this.type == 'Urban Demand Node' ) {
+                    this._polygon(c2, x+2, y+2, r, 5, 18);    
+                } else {
+                    this._polygon(c2, x+2, y+2, r, 4, 45);
+                }
+            },
+
+            _polygon : function(cxt, x, y, radius, sides, startAngle) {
+                if (sides < 3) return;
+                var a = (Math.PI * 2)/sides;
+                var r = startAngle * (Math.PI / 180);
+                cxt.beginPath();
+
+                for (var i = 0; i <= sides; i++ ) {
+                    if( i == 0 ) cxt.lineTo(x+radius*Math.cos(i*a-r), y + radius*Math.sin(i*a-r));
+                    else cxt.lineTo(x+radius*Math.cos(i*a-r), y+radius*Math.sin(i*a-r));
+                }
+                cxt.closePath();
+
+                cxt.fillStyle = this.fillStyle;
+                cxt.fill();
+
+                cxt.strokeStyle = "#333";
+                cxt.lineWidth = 1;
+                cxt.stroke();
+            },
+
+            _circle : function(cxt, x, y, r) {
+                cxt.beginPath();
+                cxt.arc(x,y,r-2,0,2*Math.PI);
+                cxt.closePath();
+
+                cxt.fillStyle = this.fillStyle;
+                cxt.fill();
+
+                cxt.strokeStyle = "#333";
+                cxt.lineWidth = 1;
+                cxt.stroke();
+            }
+
+        }); 
+    </script>
+</polymer-element>

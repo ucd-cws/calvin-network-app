@@ -1,0 +1,50 @@
+<polymer-element name="cwn-datastore">
+    <template></template>
+    <script>
+        Polymer('cwn-datastore', {
+            loading: true,
+            data : [],
+
+            ready : function() {
+                google.load("visualization", '1', {
+                    packages:['corechart', 'table'],
+                    callback : function() {
+                        this.init();
+                    }.bind(this)
+                });
+            },
+
+            init : function() {
+                /*var query = new google.visualization.Query('http://watershed.ice.ucdavis.edu/vizsource/rest?view=geojson&tq=SELECT%20*');
+                query.send(function(response){
+                    if( response.isError() ) return alert(response.getMessage());
+
+                    var dt = response.getDataTable();
+                    for( var i = 0; i < dt.getNumberOfRows(); i++ ) {
+                        this.data.push(JSON.parse(dt.getValue(i,2)));
+                    }
+
+                    console.log(this.data);
+                    this.loading = false;
+                }.bind(this));*/
+
+                $.ajax({
+                    type : 'POST',
+                    url : 'http://localhost:7474/db/data/cypher',
+                    data : {
+                        query : 'MATCH n RETURN n.geojson',
+                        params : {}
+                    },
+                    success : function(resp) {
+                        for( var i = 0; i < resp.data.length; i++ ) {
+                            this.data.push(JSON.parse(resp.data[i][0]));
+                        }
+                    }.bind(this),
+                    error : function(resp) {
+                        alert('Error retrieving json');
+                    }
+                });
+            }
+        })
+    </script>
+</polymer-element>

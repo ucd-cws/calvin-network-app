@@ -1,0 +1,212 @@
+<polymer-element name="cwn-map" attributes="data filters legend">
+    <template>
+        <style>
+            leaflet-map {
+                height: 100%
+            }
+        </style>
+        <leaflet-map id="leaflet" content longitude="-121.00" latitude="40.00" zoom="5"></leaflet-map>
+    </template>
+    <script>
+        Polymer('cwn-map', {
+            data : null,
+
+            dataMap : {},
+            edges : [],
+            knownEdges : [],
+
+            markerLayer : null,
+            edgeLayer : null,
+
+            observe : {
+                data : '_process',
+                '$.leaflet.map' : '_process'
+            },
+
+            _process : function() {
+                if( !this.data || !this.$.leaflet.map ) return;
+
+                this.dataMap = {};
+                for( var i = 0; i < this.data.length; i++ ) {
+                    this.dataMap[this.data[i].properties.prmname] = this.data[i];
+                }
+
+                this.edges = [];
+                this.knownEdges = [];
+                for( var i = 0; i < this.data.length; i++ ) {
+                    var d = this.data[i];
+
+                    for( var j = 0; j < d.properties.origins.length; j++ ) {
+                        this._addEdge(d.properties.origins[j]);
+                    }
+                    for( var j = 0; j < d.properties.terminals.length; j++ ) {
+                        this._addEdge(d.properties.terminals[j]);
+                    }
+                }
+
+                this.update();
+            },
+
+            // TODO: this data sucks... needs to be cleaned up!
+            _addEdge : function(edge, type) {
+                if( edge == null ) return;
+
+                var pts = edge.split('_');
+                if( pts.length <= 1 ) return;
+                if( !this.dataMap[pts[0]] || !this.dataMap[pts[1]] ) return;
+                if( !this.dataMap[pts[0]].geometry || !this.dataMap[pts[1]].geometry ) return;
+
+                // only add edge once
+                if( this.knownEdges.indexOf(edge) > -1 || this.knownEdges.indexOf(pts[1]+'_'+pts[0]) > -1 ) return;
+                this.knownEdges.push(edge);
+
+                this.edges.push({
+                    type : 'Feature',
+                    geometry : {
+                        type: 'LineString',
+                        coordinates : [
+                            this.dataMap[pts[0]].geometry.coordinates,
+                            this.dataMap[pts[1]].geometry.coordinates 
+                        ]
+                    },
+                    properties : {
+                        name : edge
+                        //edgeType : type
+                    }
+                });
+            },
+
+            update : function() {
+                var map = this.$.leaflet.map;
+
+                if( !L.MyMarker ) this.initMarker();
+
+                if( this.markerLayer ) map.removeLayer(this.markerLayer);
+                if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
+
+
+                this.markerLayer = L.geoJson(this.data, {
+                    pointToLayer: function(feature, ll) {
+                        return this._getMarker(feature, ll);
+                    }.bind(this)
+                }).addTo(map);
+                this.markerLayer.on('click', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
+                this.edgeLayer = L.geoJson(this.edges, {
+                    style: function(feature) {
+                        return {
+                            color: 'red',
+                            weight: 3,
+                            opacity: 0.4,
+                            smoothFactor: 1
+                        }
+                    }.bind(this)
+                }).addTo(map);
+                this.edgeLayer.on('click', function(e){
+                    this.fire('selected', e.layer.feature);
+                });
+
+                //  var cMode = $('#calibration-mode').is(':checked');
+            },
+
+            _getMarker : function(feature, ll) {
+                var render = feature.properties._render || {};
+                var type = feature.properties.type;
+
+                var options = {
+                    radius : 10,
+                    color : '#333',
+                    fillColor : this.legend[feature.properties.type].color,
+                    opacity: render.oneStep ? .4 : .9,
+                    fillOpacity : render.oneStep ? .2 : .7
+                };
+
+                /* TODO
+                if( cMode ) {
+                    options.strokeWidth = '3';
+                    if( data.cmode == 'both' ) options.color = 'red';
+                    else if( data.cmode == 'in' ) options.color = 'yellow';
+                    else if( data.cmode == 'out' ) options.color = 'blue';
+                }
+                */
+
+                if( type == 'Junction Node' || type == 'Pump Plant Node' || type == 'Power Plant Node' ) {
+
+                    return L.circleMarker(ll, options);
+
+                } else if ( type == 'Water Treatment Node' ) {
+
+                    options.sides = 6;
+                    return L.myMarker(ll, options);
+                
+                } else if ( type == 'Surface Storage Node' || type == 'Groundwater Storage Node' ) {
+
+                    options.sides = 3;
+                    options.rotate = 90;
+                    return L.myMarker(ll, options);
+
+                } else if ( type == 'Agricultural Demand Node' || type == 'Urban Demand Node' ) {
+
+                    options.sides = 5;
+                    options.rotate = 18;
+                    return L.myMarker(ll, options);
+
+                } else {
+
+                    options.sides = 4;
+                    options.rotate = 45;
+                    return L.myMarker(ll, options);
+
+                }
+            },
+
+            initMarker : function() {
+                // add custom marker
+                L.MyMarker = L.CircleMarker.extend({
+
+                    initialize: function (latlng, options) {
+                        L.Circle.prototype.initialize.call(this, latlng, null, options);
+                        this._radius = this.options.radius;
+                        this._sides = this.options.sides ? this.options.sides : 6;
+                        this._rotate = this.options.rotate ? this.options.rotate : 0;
+                    },
+
+
+                    getPathString: function () {
+                        var p = this._point;
+                        if (this._checkIfEmpty()) {
+                            return '';
+                        }
+
+                        if (L.Browser.svg) {
+                            return this.polygon(p.x, p.y, this._radius, this._sides, this._rotate);
+                        } else {
+                            console.error("MyMarker not using svg!!!");
+                        }
+                    },
+
+                    polygon : function(x, y, radius, sides, startAngle) {
+                      if (sides < 3) return;
+                      var a = ((Math.PI * 2)/sides);
+                      var r = startAngle * (Math.PI / 180);
+
+                      // think you need to adjust by x, y
+                      var p = "M";
+                      for (var i = 0; i < sides; i++) {
+                         p += (x+(radius*Math.cos(a*i-r)))+","+(y+(radius*Math.sin(a*i-r)))+" ";
+                      }
+                      p +=" z";
+                      return p;
+                    }
+
+                });
+
+                L.myMarker = function (latlng, options) {
+                    return new L.MyMarker(latlng, options);
+                };
+            }
+        });
+    </script>
+</polymer-element>

@@ -1,0 +1,82 @@
+<polymer-element name="cwn-app-layout">
+    <template>
+        <style>
+            .navbar-inverse {
+                background-color: #444;
+                margin: 0px !important;
+                border-radius: 0px !important;
+                box-shadow: 0 0 5px black;
+                z-index: 10000;
+            }
+            li {
+                cursor: pointer;
+            }
+            .full-height {
+                width: 100%;
+                height: 100%;
+                display: block;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+            }
+            ::content > a {
+                padding: 15px;
+                line-height: 20px;
+                position: relative;
+                display: inline-block;
+                color: #888 !important;
+                cursor: pointer;
+            };
+        </style>
+
+        <div class="full-height">
+            <div vertical layout style="height:100%">
+                <div style="height:50px">
+                    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                        <div class="container">
+                            <div class="navbar-header">
+                                <span class="navbar-brand">California Water Network</span>
+                            </div>
+
+                            <div id="leftNav" class="nav navbar-nav">
+                            </div>
+                            <div class="nav navbar-nav navbar-right">
+                                <content select="[right-nav]"></content>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+                <div flex style="position:relative">
+                    <div class="full-height">
+                        <content select="[content]"></content>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        
+    </template>
+    <script>
+        Polymer('cwn-app-layout', {
+            initd : false,
+            attached : function(){
+                /*if( this.initd ) return;
+                this.initd = true;
+
+                var children = this.children.array();
+
+                for( var i = 0; i < children.length; i++ ) {
+                    if( children[i].hasAttribute('left-nav') || children[i].hasAttribute('right-nav') ) {
+                        this.removeChild(children[i]);
+                        var li = document.createElement('li');
+                        li.appendChild(children[i]);
+
+                        if( children[i].hasAttribute('left-nav') ) this.$.leftNav.appendChild(li);
+                        else this.$.rightNav.appendChild(li);
+                    }
+                }*/
+            }
+        });
+    </script>
+</polymer-element>

@@ -1,0 +1,109 @@
+<polymer-element name="cwn-filters" attributes="legend">
+    <template>
+        <style>
+            :host {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                z-index: 5000;
+            }
+            :host(.open) {
+                overflow-y: auto;
+                overflow-x: hidden;
+                height: 100%;
+            }
+            #root {
+                padding: 10px;
+                background-color: rgba(255,255,255, .7);
+                box-shadow: 0 0 5px;
+                display: none;
+            }
+            #root.open {
+                display: block;
+            }
+            .cb-border {
+                display:inline-block;
+                padding:2px 2px 0 2px;
+                border-radius:4px;
+            }
+        </style>
+        <div id="root" class="animated fadeInDown">
+            <div style="text-align:right">
+                <a class="btn btn-default" on-tap="{{hide}}"><cwn-icon icon="fa-times"></cwn-icon></a>
+            </div>
+            <div class="row">
+                <div class="col-md-10 col-md-offset-1">
+                  <div class="form-horizontal">
+
+                    <div class="form-group">
+                      <label for="filter-input" class="col-sm-2 control-label">Filter</label>
+                      <div class="col-sm-10">
+                        <input type="text" id="filter-input" class="form-control" />
+                        <p class="help-block">By name or description.  Use '*' for wildcard match.</p>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="filter-input" class="col-sm-2 control-label"></label>
+                        <div class="col-sm-10">
+                          <label class="checkbox-inline">
+                            <input type="checkbox" id="calibration-mode" checked /> Calibration Mode
+                            <p class="help-block">Hide calibration links and nodes, mark nodes attached to calibartion links</p>
+                          </label>
+                        </div>
+                        
+                    </div>
+
+                    <div class="form-group">
+                        <label for="filter-types" class="col-sm-2 control-label">Types</label>
+                        <div class="col-sm-10" id="filter-types">
+                            <template repeat="{{item in legendArr}}">
+                                <label class="checkbox-inline">
+                                    <input type="checkbox" value="{{item.name}}" checked?="{{item.checked}}" />
+                                    <div class="cb-border" style="border: 2px solid {{item.color}}">
+                                        <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}" fillStyle="{{item.color}}"></cwn-app-icon>
+                                        <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">{{item.name}}</div>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+
+                  </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    <script>
+        Polymer('cwn-filters', {
+
+            legendArr : [],
+            iconSize : 22,
+
+            ready : function() {
+                for( var key in this.legend ) {
+                    this.legendArr.push({
+                        name : key,
+                        color : this.legend[key].color,
+                        checked : true
+                    });
+                }
+                console.log(this.legend);
+            },
+
+            show : function() {
+                this.$.root.classList.add('open');
+                this.classList.add('open');
+            },
+            hide : function() {
+                this.$.root.classList.remove('open');
+                this.classList.remove('open');
+            },
+            toggle : function() {
+                this.$.root.classList.toggle('open');
+                this.classList.toggle('open');
+            }
+        });
+    </script>
+</polymer-element>
