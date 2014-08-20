@@ -20,7 +20,9 @@
 
             observe : {
                 data : '_process',
-                '$.leaflet.map' : '_process'
+                '$.leaflet.map' : '_process',
+                'filters.calibrationMode' : 'update',
+                'filters.Junction_Node' : 'update'
             },
 
             _process : function() {
@@ -29,8 +31,10 @@
                 this.dataMap = {};
                 for( var i = 0; i < this.data.length; i++ ) {
                     this.dataMap[this.data[i].properties.prmname] = this.data[i];
+
+                    // add attributes for calibration nodes
+                    this._markCalibrationNode(this.data[i]);
                 }
-                console.log(this.dataMap);
 
                 this.edges = [];
                 this.knownEdges = [];
@@ -77,7 +81,38 @@
                 });
             },
 
+            _markCalibrationNode : function(node) {
+                if( !node.properties.prmname.match(/^CN.*/) ) return;
+
+                var hasIn = false;
+                var hasOut = false;
+
+                if( node.properties.terminals ) {
+                    for( var i = 0; i < node.properties.terminals.length; i++ ) {
+                        if( node.properties.terminals[i] != null ) {
+                            hasOut = true;
+                            break;
+                        }
+                    }
+                }
+                if( node.properties.origins ) {
+                    for( var i = 0; i < node.properties.origins.length; i++ ) {
+                        if( node.properties.origins[i] != null ) {
+                            hasIn = true;
+                            break;
+                        }
+                    }
+                } 
+                
+                if( !hasIn && !hasOut ) return;
+                if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
+                else if ( hasIn ) node.properties.calibrationMode = 'in';
+                else if ( hasOut ) node.properties.calibrationMode = 'out';
+            },
+
             update : function() {
+                if( !this.data || !this.$.leaflet.map ) return;
+
                 var map = this.$.leaflet.map;
 
                 if( !L.MyMarker ) this.initMarker();
@@ -85,10 +120,15 @@
                 if( this.markerLayer ) map.removeLayer(this.markerLayer);
                 if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
 
+                // update filtering
+                this._filter();
 
                 this.markerLayer = L.geoJson(this.data, {
                     pointToLayer: function(feature, ll) {
                         return this._getMarker(feature, ll);
+                    }.bind(this),
+                    filter: function(feature, layer) {
+                        return this.filters[feature.properties.type.replace(' ','_')];
                     }.bind(this)
                 }).addTo(map);
                 this.markerLayer.on('click', function(e){
@@ -103,13 +143,32 @@
                             opacity: 0.4,
                             smoothFactor: 1
                         }
-                    }.bind(this)
+                    }
                 }).addTo(map);
                 this.edgeLayer.on('click', function(e){
                     this.fire('selected', e.layer.feature);
                 });
 
-                //  var cMode = $('#calibration-mode').is(':checked');
+            },
+
+            // marker nodes that are linked to a visible node with the 'nodeStep' attribute
+            _filter : function() {
+                var i, d, id;
+                for( i = 0; i < this.data; i++ ) {
+                    d = this.data[i];
+                    
+                    if( !d.properties._render ) d.properties._render = {};
+                    d.properties._render.oneStep = false;
+
+                    id = properties.type.replace(' ','_');
+                    if( this.filters[id] ) return;
+
+                    for( var i = 0; i < d.properties.terminals.length; i++ ) {
+                        if( !d.properties.terminals ) continue;
+
+                        // TODO
+                    }
+                }
             },
 
             _getMarker : function(feature, ll) {
@@ -124,14 +183,14 @@
                     fillOpacity : render.oneStep ? .2 : .7
                 };
 
-                /* TODO
-                if( cMode ) {
+                if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
+                    options.radius = 20,
                     options.strokeWidth = '3';
-                    if( data.cmode == 'both' ) options.color = 'red';
-                    else if( data.cmode == 'in' ) options.color = 'yellow';
-                    else if( data.cmode == 'out' ) options.color = 'blue';
+                    if( feature.properties.calibrationMode == 'both' ) options.color = 'red';
+                    else if( feature.properties.calibrationMode == 'in' ) options.color = 'yellow';
+                    else if( feature.properties.calibrationMode == 'out' ) options.color = 'blue';
                 }
-                */
+                
 
                 if( type == 'Junction Node' || type == 'Pump Plant Node' || type == 'Power Plant Node' ) {
 

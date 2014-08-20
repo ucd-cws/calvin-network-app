@@ -12,7 +12,7 @@
             <cwn-filters id="filters" content legend="{{legend}}"></cwn-filters>
 
             <core-animated-pages id="pages" content transitions="slide-from-right">
-              <cwn-map legend="{{legend}}" data="{{$.ds.data}}" on-selected="{{onFeatureSelected}}"></cwn-map>
+              <cwn-map legend="{{legend}}" data="{{$.ds.data}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}"></cwn-map>
               <cwn-info-page id="info" data="{{$.ds}}" ></cwn-info-page>
         </cwn-app-layout>
 
