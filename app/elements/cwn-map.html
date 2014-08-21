@@ -1,4 +1,4 @@
-<polymer-element name="cwn-map" attributes="data filters legend">
+<polymer-element name="cwn-map" attributes="ds filters legend">
     <template>
         <style>
             leaflet-map {
@@ -9,9 +9,8 @@
     </template>
     <script>
         Polymer('cwn-map', {
-            data : null,
+            ds : null,
 
-            dataMap : {},
             edges : [],
             knownEdges : [],
 
@@ -19,27 +18,19 @@
             edgeLayer : null,
 
             observe : {
-                data : '_process',
+                'ds.loading' : '_process',
                 '$.leaflet.map' : '_process',
                 'filters.calibrationMode' : 'update',
                 'filters.Junction_Node' : 'update'
             },
 
             _process : function() {
-                if( !this.data || !this.$.leaflet.map ) return;
-
-                this.dataMap = {};
-                for( var i = 0; i < this.data.length; i++ ) {
-                    this.dataMap[this.data[i].properties.prmname] = this.data[i];
-
-                    // add attributes for calibration nodes
-                    this._markCalibrationNode(this.data[i]);
-                }
+                if( this.ds.loading || !this.$.leaflet.map ) return;
 
                 this.edges = [];
                 this.knownEdges = [];
-                for( var i = 0; i < this.data.length; i++ ) {
-                    var d = this.data[i];
+                for( var i = 0; i < this.ds.data.length; i++ ) {
+                    var d = this.ds.data[i];
 
                     for( var j = 0; j < d.properties.origins.length; j++ ) {
                         this._addEdge(d.properties.origins[j]);
@@ -58,8 +49,8 @@
 
                 var pts = edge.split('_');
                 if( pts.length <= 1 ) return;
-                if( !this.dataMap[pts[0]] || !this.dataMap[pts[1]] ) return;
-                if( !this.dataMap[pts[0]].geometry || !this.dataMap[pts[1]].geometry ) return;
+                if( !this.ds.dataMap[pts[0]] || !this.ds.dataMap[pts[1]] ) return;
+                if( !this.ds.dataMap[pts[0]].geometry || !this.ds.dataMap[pts[1]].geometry ) return;
 
                 // only add edge once
                 if( this.knownEdges.indexOf(edge) > -1 || this.knownEdges.indexOf(pts[1]+'_'+pts[0]) > -1 ) return;
@@ -70,8 +61,8 @@
                     geometry : {
                         type: 'LineString',
                         coordinates : [
-                            this.dataMap[pts[0]].geometry.coordinates,
-                            this.dataMap[pts[1]].geometry.coordinates 
+                            this.ds.dataMap[pts[0]].geometry.coordinates,
+                            this.ds.dataMap[pts[1]].geometry.coordinates 
                         ]
                     },
                     properties : {
@@ -81,37 +72,8 @@
                 });
             },
 
-            _markCalibrationNode : function(node) {
-                if( !node.properties.prmname.match(/^CN.*/) ) return;
-
-                var hasIn = false;
-                var hasOut = false;
-
-                if( node.properties.terminals ) {
-                    for( var i = 0; i < node.properties.terminals.length; i++ ) {
-                        if( node.properties.terminals[i] != null ) {
-                            hasOut = true;
-                            break;
-                        }
-                    }
-                }
-                if( node.properties.origins ) {
-                    for( var i = 0; i < node.properties.origins.length; i++ ) {
-                        if( node.properties.origins[i] != null ) {
-                            hasIn = true;
-                            break;
-                        }
-                    }
-                } 
-                
-                if( !hasIn && !hasOut ) return;
-                if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
-                else if ( hasIn ) node.properties.calibrationMode = 'in';
-                else if ( hasOut ) node.properties.calibrationMode = 'out';
-            },
-
             update : function() {
-                if( !this.data || !this.$.leaflet.map ) return;
+                if( this.ds.loading || !this.$.leaflet.map ) return;
 
                 var map = this.$.leaflet.map;
 
@@ -123,7 +85,7 @@
                 // update filtering
                 this._filter();
 
-                this.markerLayer = L.geoJson(this.data, {
+                this.markerLayer = L.geoJson(this.ds.data, {
                     pointToLayer: function(feature, ll) {
                         return this._getMarker(feature, ll);
                     }.bind(this),
@@ -154,8 +116,8 @@
             // marker nodes that are linked to a visible node with the 'nodeStep' attribute
             _filter : function() {
                 var i, d, id;
-                for( i = 0; i < this.data; i++ ) {
-                    d = this.data[i];
+                for( i = 0; i < this.ds.data; i++ ) {
+                    d = this.ds.data[i];
                     
                     if( !d.properties._render ) d.properties._render = {};
                     d.properties._render.oneStep = false;

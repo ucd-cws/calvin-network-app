@@ -7,7 +7,7 @@ var fs = require('fs');
 // fields to be moved into the climate blob
 var climateAttrs = ['inflows'];
 // fields to be moved into the climate blob
-var costAttrs = ['cost'];
+var costAttrs = ['costs'];
 // fields to become neo4js searchable
 var searchAttrs = ['prmname','type'];
 // geojson column - column in vizsource of geojson

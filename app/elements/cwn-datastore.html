@@ -4,6 +4,7 @@
         Polymer('cwn-datastore', {
             loading: true,
             data : [],
+            dataMap : {},
 
             ready : function() {
                 google.load("visualization", '1', {
@@ -15,19 +16,6 @@
             },
 
             init : function() {
-                /*var query = new google.visualization.Query('http://watershed.ice.ucdavis.edu/vizsource/rest?view=geojson&tq=SELECT%20*');
-                query.send(function(response){
-                    if( response.isError() ) return alert(response.getMessage());
-
-                    var dt = response.getDataTable();
-                    for( var i = 0; i < dt.getNumberOfRows(); i++ ) {
-                        this.data.push(JSON.parse(dt.getValue(i,2)));
-                    }
-
-                    console.log(this.data);
-                    this.loading = false;
-                }.bind(this));*/
-
                 $.ajax({
                     type : 'POST',
                     url : 'http://localhost:7474/db/data/cypher',
@@ -37,14 +25,50 @@
                     },
                     success : function(resp) {
                         for( var i = 0; i < resp.data.length; i++ ) {
-                            this.data.push(JSON.parse(resp.data[i][0]));
+                            var d = JSON.parse(resp.data[i][0]);
+                            this._markCalibrationNode(d);
+                            this.dataMap[d.properties.prmname] = d;
+                            this.data.push(d);
                         }
+
+                        this.fire('loaded');
+                        this.loading = false;
                     }.bind(this),
                     error : function(resp) {
+                        this.loading = false;
                         alert('Error retrieving json');
-                    }
+                    }.bind(this)
                 });
-            }
+            },
+
+             _markCalibrationNode : function(node) {
+                if( !node.properties.prmname.match(/^CN.*/) ) return;
+
+                var hasIn = false;
+                var hasOut = false;
+
+                if( node.properties.terminals ) {
+                    for( var i = 0; i < node.properties.terminals.length; i++ ) {
+                        if( node.properties.terminals[i] != null ) {
+                            hasOut = true;
+                            break;
+                        }
+                    }
+                }
+                if( node.properties.origins ) {
+                    for( var i = 0; i < node.properties.origins.length; i++ ) {
+                        if( node.properties.origins[i] != null ) {
+                            hasIn = true;
+                            break;
+                        }
+                    }
+                } 
+                
+                if( !hasIn && !hasOut ) return;
+                if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
+                else if ( hasIn ) node.properties.calibrationMode = 'in';
+                else if ( hasOut ) node.properties.calibrationMode = 'out';
+            },
         })
     </script>
 </polymer-element>

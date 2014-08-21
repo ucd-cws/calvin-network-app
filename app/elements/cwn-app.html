@@ -4,16 +4,37 @@
             leaflet-map, core-animated-pages {
                 height: 100%
             }
+            .splash-screen {
+              position: fixed;
+              top: 100px;
+              width: 100%;
+              text-align: center;
+               z-index: 20000;
+            }
+            .splash-screen-text {
+              display: inline-block;
+              background-color: rgba(0,0,0,.7);
+              border-radius: 6px;
+              box-shadow: 0 0 5px black;
+              padding: 25px;
+              font-size: 50px;
+              color: white;
+            }
         </style>
 
-        <cwn-datastore id="ds" loading="{{loading}}"></cwn-datastore>
+        <div class="splash-screen" hidden?="{{!$.ds.loading}}">
+          <div class="splash-screen-text">Loading Network...</div>
+        </div>
+
+        <cwn-datastore id="ds" loading="{{loading}}" on-loaded="{{onDataLoad}}"></cwn-datastore>
+
         <cwn-app-layout loading="{{loading}}">
             <a right-nav on-tap="{{showFilters}}">Filters</a>
             <cwn-filters id="filters" content legend="{{legend}}"></cwn-filters>
 
             <core-animated-pages id="pages" content transitions="slide-from-right">
-              <cwn-map legend="{{legend}}" data="{{$.ds.data}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}"></cwn-map>
-              <cwn-info-page id="info" data="{{$.ds}}" ></cwn-info-page>
+              <cwn-map legend="{{legend}}" ds="{{$.ds}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}"></cwn-map>
+              <cwn-info-page id="info" ds="{{$.ds}}" ></cwn-info-page>
         </cwn-app-layout>
 
         
@@ -68,14 +89,55 @@
               }
             },
 
+            dataLoaded : false,
+            dataLoadHandlers : [],
+
+            ready : function() {
+              $(window).on('hashchange', function(){
+                this.setLocation();
+              }.bind(this));
+              this.setLocation();
+            },
+
+            setLocation : function() {
+              var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
+              if( loc == '') loc = 'map';
+
+              if( loc == 'map' ) {
+                this.$.pages.selected = this.PAGES.MAP;
+                this.async(function(){
+                  this.shadowRoot.querySelector('cwn-map').$.leaflet.map.invalidateSize();
+                });
+              } else if ( loc == 'info' ) {
+                this.$.pages.selected = this.PAGES.INFO;
+                if( this.dataLoaded ) {
+                  this.setInfoFeature();
+                } else {
+                  this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
+                }
+              }
+            },
+
+            setInfoFeature : function() {
+              var name = window.location.hash.replace('#','').split('/')[1];
+              name = decodeURIComponent(name);
+              this.$.info.feature = this.$.ds.dataMap[name];
+            },
            
+            onDataLoad : function() {
+              this.dataLoaded = true;
+              for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
+                this.dataLoadHandlers[i]();
+              }
+            },
+
             showFilters : function() {
                 this.$.filters.toggle();
             },
 
             onFeatureSelected : function(e) {
               this.$.pages.selected = this.PAGES.INFO;
-              this.$.info.selected = e.detail;
+              window.location.hash = 'info/'+e.detail.properties.prmname;
             }
         });
     </script>

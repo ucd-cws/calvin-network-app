@@ -1,100 +1,88 @@
 <polymer-element name="cwn-info-page" attributes="ds">
     <template>
-        <cwn-icon icon="fa-arrow-left"></cwn-icon>
-        <h2>Info</h2>
+        <style>
+          .card {
+            margin: 10px;
+            box-shadow: 0 0 5px #888;
+            padding: 15px;
+          }
+        </style>
+        <cwn-icon icon="fa-arrow-left" on-tap="{{back}}" style="font-size: 50px"></cwn-icon>
+        
+        <div class="row">
+          <div class="col-md-6">
+
+            <div class="card">
+              <div layout horizontal>
+                <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillFromType="true" style="margin:15px"></cwn-app-icon>
+                <div flex>
+                  <h2>{{feature.properties.prmname}}</h2>
+                  <div><b>{{feature.properties.type}}</b></div>
+                </div>
+              </div>
+              <div style="padding: 10px; color: #888">
+                {{feature.properties.description}}
+              </div>
+            </div>
+
+          </div>
+          <div class="col-md-6">
+            <h4>Origins</h4>
+            <div>
+              <template repeat="{{origin in feature.properties.origins}}">
+                <span>{{origin}}&nbsp;</span>
+              </template>
+            </div>
+
+            <h4>Terminals</h4>
+            <div>
+              <template repeat="{{terminal in feature.properties.terminals}}">
+                <span>{{terminal}}&nbsp;</span>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <h2>Climate</h2>
+
+            <div class="alert alert-info" hidden?="{{feature.properties.hasClimate}}">
+              This node has no climate data associated with it.
+            </div>
+
+          </div>
+          <div class="col-md-6">
+            <h2>Costs</h2>
+
+            <div class="alert alert-info" hidden?="{{feature.properties.hasCost}}">
+              This node has no cost data associated with it.
+            </div>
+
+          </div>
+        </div>
+      
     </template>
     <script>
         Polymer('cwn-info-page', {
             feature : {},
 
-            //observe {
-             //   feature : 'update'
-            //}
-/*
+            tableProperties : ['prmname'],
+
+            observe : {
+                feature : 'update'
+            },
+
             update : function() {
-                var isLink = this.feature.geometry.type == 'LineString' ? true : false;
-                var start = '';
-                var stop = '';
-                if( isLink ) {
-                    var pts = this.feature.properties.prmname.split('_');
-                    start = pts[0];
-                    end = pts[1];
-                }
+              if( this.feature == null ) return alert('Feature not found');
+              console.log(this.feature);
+              this.geojson = JSON.stringify(this.feature);
+            },
 
+            back : function() {
+              window.location.hash = 'map'
+            }
 
------
-
-
-    var html = '';
-    var matched = [];
-    for( var i = 0; i < allData.length; i++) {
-      if( allData[i].id == id && allData[i].node_type == 'node' ) {
-        html += appendInfo(allData[i]);
-        matched.push(id);
-      }
-
-      if( isLink && (allData[i].id == start || allData[i].id == stop)) {
-        html += appendInfo(allData[i]);
-        //matched.push(allData[i].id);
-      }
-    }
-    if( html.length > 0 ) $('#info-body-nodes').html(html);
-
-    var html = '';
-    for( var i = 0; i < allData.length; i++) {
-      if( allData[i].node_type == 'link' && 
-          (matched.indexOf(allData[i].to) > -1 || matched.indexOf(allData[i].from) > -1) ) {
-        
-        var nested = '';
-        if( matched.indexOf(allData[i].to) == -1 && matched.indexOf(allData[i].from) != -1 ) {
-          nested = appendInfo(nodeData[allData[i].to]);
-        } else if ( matched.indexOf(allData[i].to) != -1 && matched.indexOf(allData[i].from) == -1 ){ 
-          nested = appendInfo(nodeData[allData[i].from]);
-        }
-        html += appendInfo(allData[i], nested);
-
-      }
-
-      if( allData[i].id == id && allData[i].node_type == 'link') {
-        html += appendInfo(allData[i], nested);
-      }
-    }
-    if( html.length > 0 ) $('#info-body-links').html(html);
-
-    $('#info-popup').modal('show');
-
-    // now add charts
-    setTimeout(function(){
-        for( var i = 0; i < allData.length; i++) {
-          if( allData[i].id == id ) {
-            getJsonInfo(allData[i]);
-          }
-        }
-
-        for( var i = 0; i < allData.length; i++) {
-          if( allData[i].node_type == 'link' && 
-              (matched.indexOf(allData[i].to) > -1 || matched.indexOf(allData[i].from) > -1) ) {
-              if( matched.indexOf(allData[i].to) == -1 && matched.indexOf(allData[i].from) != -1 ) {
-                getJsonInfo(nodeData[allData[i].to]);
-              } else if ( matched.indexOf(allData[i].to) != -1 && matched.indexOf(allData[i].from) == -1 ){ 
-                getJsonInfo(nodeData[allData[i].from]);
-              }
-              getJsonInfo(allData[i]);
-          }
-
-
-        }
-    }, 500);
-
-    // draw icons
-    var eles = $('.popup-icon');
-    for( var i = 0; i < eles.length; i++ ) {
-      var icon = getIcon($(eles[i]).attr('type'), 64, 64);
-      $(eles[i]).append($(icon));
-    }
-    
-  }
-            }*/
         });
     </script>
 </polymer-element>
