@@ -4,7 +4,14 @@ var db = new neo4j.GraphDatabase('http://localhost:7474');
 var async = require('async');
 var fs = require('fs');
 
-console.log(1);
+// fields to be moved into the climate blob
+var climateAttrs = ['inflows'];
+// fields to be moved into the climate blob
+var costAttrs = ['cost'];
+// fields to become neo4js searchable
+var searchAttrs = ['prmname','type'];
+// geojson column - column in vizsource of geojson
+var geojsonCol = 3;
 
 if( fs.existsSync('./query.js') ) {
     var body = fs.readFileSync('./query.js',{encoding: 'utf8'});
@@ -19,9 +26,8 @@ if( fs.existsSync('./query.js') ) {
             tq : 'SELECT *'
         }},
         function (error, response, body) {
-            console.log(2);
+            console.log('Query received from server');
             if (!error && response.statusCode == 200) {
-                console.log(3);
                 dropAllNodes(function(){
                     body = body.replace(/google\.visualization\.Query\.setResponse\(/g,'').replace(/\);$/,'');
                     fs.writeFileSync('./query.js',body);
@@ -54,12 +60,40 @@ function dtToArray(dt) {
 
   for( var i = 0; i < dt.table.rows.length; i++ ) {
     var node = {};
-    var item = JSON.parse(dt.table.rows[i].c[2].v);
-    for( var key in item.properties ) {
-        if( typeof item.properties[key] == 'object' && !Array.isArray(item.properties[key]) ) continue;
-        if( Array.isArray(item.properties[key]) && typeof item.properties[key][0] != 'string') continue;
-        node[key] = item.properties[key];
+
+    var item = JSON.parse(dt.table.rows[i].c[geojsonCol].v);
+
+    // split up item
+    // first set first class citizen attributes
+    for( var j = 0; j < searchAttrs.length; j++ ) {
+        if( item.properties[searchAttrs[j]] ) {
+            node[searchAttrs[j]] = item.properties[searchAttrs[j]];
+        }
     }
+
+    // now create climate blob, removing info from geojson
+    var climate = {};
+    for( var j = 0; j < climateAttrs.length; j++ ) {
+        if( item.properties[climateAttrs[j]] ) {
+            climate[searchAttrs[j]] = item.properties[searchAttrs[j]];
+            delete item.properties[climateAttrs[j]];
+            item.properties.hasClimate = true;
+        }
+    }
+    node.climate = JSON.stringify(climate);
+
+    // now create cost blob, removing info from geojson
+    var costs = {};
+    for( var j = 0; j < costAttrs.length; j++ ) {
+        if( item.properties[costAttrs[j]] ) {
+            costs[costAttrs[j]] = item.properties[costAttrs[j]];
+            delete item.properties[costAttrs[j]];
+            item.properties.hasCosts = true;
+        }
+    }
+    node.costs = JSON.stringify(costs);
+
+    // set cleaned up geojson
     node.geojson = JSON.stringify(item);
     arr.push(node);
   }
@@ -69,6 +103,8 @@ function dtToArray(dt) {
 
 var nodeMap = {};
 function insert(arr) {
+    console.log('Inserting....');
+
     async.eachSeries(arr,
         function(json, next) {
             var node = db.createNode(json);     // instantaneous, but...
@@ -143,6 +179,7 @@ function relateFrom(name, node, origins, callback) {
 
     async.eachSeries(origins,
         function(origin, next) {
+            if( !origin ) return next();
             var originName = origin.replace(name+'_','');
 
             if( !nodeMap[originName] ) {
@@ -167,7 +204,7 @@ function relateTo(name, node, terminals, callback) {
 
     async.eachSeries(terminals,
         function(terminal, next) {
-
+            if( !terminal ) return next();
             var terminalName = terminal.replace('_'+name,'');
 
             if( !nodeMap[terminalName] ) {
