@@ -5,6 +5,8 @@
             loading: true,
             data : [],
             dataMap : {},
+            //url : 'http://localhost:7474/db/data',
+            url : 'http://watershed.ice.ucdavis.edu/neo4jdb/data',
 
             ready : function() {
                 google.load("visualization", '1', {
@@ -18,7 +20,7 @@
             init : function() {
                 $.ajax({
                     type : 'POST',
-                    url : 'http://localhost:7474/db/data/cypher',
+                    url : this.url+'/cypher',
                     data : {
                         query : 'MATCH n RETURN n.geojson',
                         params : {}
