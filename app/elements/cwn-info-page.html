@@ -1,15 +1,30 @@
-<polymer-element name="cwn-info-page" attributes="ds">
+<polymer-element name="cwn-info-page" attributes="ds settings">
     <template>
         <style>
           .card {
-            margin: 10px;
+            margin: 10px 10px 10px 40px;
             box-shadow: 0 0 5px #888;
             padding: 15px;
           }
+          .back-btn {
+            display: inline-block;
+            position: absolute;
+            color: #333 !important;
+            background-color: #ccc;
+            border-radius: 50px;
+            font-size: 40px;
+            padding: 0px 12px;
+            margin: 10px;
+            z-index: 100;
+            cursor: pointer;
+          }
         </style>
-        <cwn-icon icon="fa-arrow-left" on-tap="{{back}}" style="font-size: 50px"></cwn-icon>
+
+        <a class="back-btn" on-tap="{{back}}">
+          <cwn-icon icon="fa-arrow-left" ></cwn-icon>
+        </a>
         
-        <div class="row">
+        <div class="row" hidden?="{{ds.loading}}" style="margin-top: 30px">
           <div class="col-md-6">
 
             <div class="card">
@@ -43,22 +58,75 @@
           </div>
         </div>
 
-        <div class="row">
-          <div class="col-md-6">
-            <h2>Climate</h2>
+        <div style="padding: 0 10px">
+          <div class="row" hidden?="{{ds.loading}}">
+            <div class="col-md-6">
+              <h2>Climate</h2>
 
-            <div class="alert alert-info" hidden?="{{feature.properties.hasClimate}}">
-              This node has no climate data associated with it.
+              <div class="alert alert-info" hidden?="{{feature.properties.hasClimate}}">
+                This node has no climate data associated with it.
+              </div>
+              <div class="alert alert-error" hidden?="{{!climateLoadError}}">
+                Error loading climate data.
+              </div>
+              <div hidden?="{{!climateLoading}}" style="color:#888">
+                Loading climate data...
+              </div>
+
+              <div hidden?="{{!feature.properties.hasClimate || climateLoadError || climateLoading}}">
+                <div class="panel panel-default">
+                  <div class="panel-body">
+
+                    <table style="width:100%">
+                      <tr>
+                        <td>
+                          <input type="checkbox" id="useStartFilter" on-change="{{updateStartFilter}}" />
+                          Start
+                        </td>
+                        <td>
+                          <input type="date" id="startFilterInput" class="form-control" style="display:inline-block" disabled on-change="{{updateStartFilter}}" />
+                        </td>
+                      </tr><tr>
+                        <td>
+                          <input type="checkbox" id="useEndFilter" on-change="{{updateEndFilter}}" />
+                          End
+                        </td>
+                        <td>
+                          <input type="date" id="endFilterInput" class="form-control" style="display:inline-block;margin-top:10px" disabled on-change="{{updateEndFilter}}"  />
+                        </td>
+                      </tr>
+                    </table>
+
+                  </div>
+                </div>
+
+
+                <div hidden?="{{inflows.length == 0}}">
+                  <h4>Inflows</h4>
+                </div>
+                <template repeat="{{inflow in inflows}}">
+                  <cwn-date-linechart label="{{inflow.label}}" ylabel="Flow (kaf)" data="{{inflow.data}}" start="{{filters.start}}" stop="{{filters.stop}}"></cwn-date-linechart>
+                </template>
+                
+              </div>
+
             </div>
 
-          </div>
-          <div class="col-md-6">
-            <h2>Costs</h2>
+            <div class="col-md-6">
+              <h2>Costs</h2>
 
-            <div class="alert alert-info" hidden?="{{feature.properties.hasCost}}">
-              This node has no cost data associated with it.
+              <div class="alert alert-info" hidden?="{{feature.properties.hasCosts}}">
+                This node has no cost data associated with it.
+              </div>
+              <div class="alert alert-error" hidden?="{{!costLoadError}}">
+                Error loading cost data.
+              </div>
+
+              <div hidden?="{{!feature.properties.hasCosts || costLoadError || costLoading}}">
+                {{costJSON}}
+              </div>
+
             </div>
-
           </div>
         </div>
       
@@ -69,14 +137,136 @@
 
             tableProperties : ['prmname'],
 
+            // loading flags
+            climateLoadError : false,
+            costLoadError : false,
+            climateLoading : false,
+            costLoading : false,
+
+            // render data.  Data in a format ready to draw above
+            inflows : [],
+            costJSON : '',
+
+            // date filtering
+            filters : {
+              start : null,
+              stop : null
+            },
+
             observe : {
-                feature : 'update'
+                feature : 'update',
+                'ds.loading' : 'onLoad'
+            },
+
+            onLoad : function() {
+              if( this.ds.loading ) return;
+
+              var loc = window.location.hash.replace('#','').split('/');
+              if( loc[0] == 'info' && loc.length > 1) this.feature = this.ds.dataMap[loc[1]];
             },
 
             update : function() {
               if( this.feature == null ) return alert('Feature not found');
-              console.log(this.feature);
-              this.geojson = JSON.stringify(this.feature);
+              
+              // reset flags
+              this.climateLoadError = false;
+              this.costLoadError = false;
+              this.climateLoading = false;
+              this.costLoading = false;
+
+              this.loadClimateData();
+              this.loadCostData();
+            },
+
+            loadClimateData : function() {
+              if( !this.feature.properties.hasClimate ) return;
+              this.climateLoading = true;
+              this.inflows = [];
+
+              $.ajax({
+                    type : 'POST',
+                    url : this.settings.neo4jUrl+'/cypher',
+                    data : {
+                        query : 'MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.climate',
+                        params : {}
+                    },
+                    success : function(resp) {
+                      this.climateLoading = false;
+                      if( resp.data.length == 0 ) return this.climateLoadError = true;
+
+                      this.renderClimateData(JSON.parse(resp.data[0][0]));
+                    }.bind(this),
+                    error : function(resp) {
+                      this.climateLoadError = true;
+                    }.bind(this)
+                });
+            },
+
+            renderClimateData : function(data) {
+
+              if( data.inflows ) {
+                for( var i = 0; i < data.inflows.length; i++ ) {
+                  var inflow = {
+                    label : data.inflows[i].name,
+                    data : []
+                  };
+                  for( var j = 0; j < data.inflows[i].date.length; j++ ) {
+                    inflow.data.push([data.inflows[i].date[j], data.inflows[i].inflow[j]]);
+                  }
+                  this.inflows.push(inflow);
+                }
+              }
+
+            },
+
+            loadCostData : function() {
+              if( !this.feature.properties.hasCosts ) return;
+              this.costLoading = true;
+              this.costJSON = '';
+
+              $.ajax({
+                    type : 'POST',
+                    url : this.settings.neo4jUrl+'/cypher',
+                    data : {
+                        query : 'MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.costs',
+                        params : {}
+                    },
+                    success : function(resp) {
+                      this.costLoading = false;
+                      if( resp.data.length == 0 ) return this.costLoadError = true;
+
+                      this.costJSON = resp.data[0][0];
+                    }.bind(this),
+                    error : function(resp) {
+                      this.costLoadError = true;
+                    }.bind(this)
+                });
+            },
+
+            updateStartFilter : function() {
+              if( $(this.$.useStartFilter).is(':checked') ) {
+                this.$.startFilterInput.removeAttribute('disabled');
+
+                var d = this.$.startFilterInput.value;
+                if( !d || d == '' ) return;
+                this.filters.start = new Date(d);
+              } else {
+                this.$.startFilterInput.setAttribute('disabled','disabled');
+                this.filters.start = null;
+              }
+            },
+
+            updateEndFilter : function() {
+              if( $(this.$.useEndFilter).is(':checked') ) {
+                this.$.endFilterInput.removeAttribute('disabled');
+
+                var d = this.$.endFilterInput.value;
+                if( !d || d == '' ) return;
+                this.filters.stop = new Date(d);
+              } else {
+                this.$.endFilterInput.setAttribute('disabled','disabled');
+                this.filters.stop = null;
+              }
             },
 
             back : function() {

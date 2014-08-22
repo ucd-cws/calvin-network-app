@@ -6,7 +6,7 @@
                 margin: 0px !important;
                 border-radius: 0px !important;
                 box-shadow: 0 0 5px black;
-                z-index: 10000;
+                z-index: 10000 !important;
             }
             li {
                 cursor: pointer;
@@ -20,30 +20,50 @@
                 left: 0px;
             }
             ::content > a {
-                padding: 15px;
+                margin: 8px 5px;
+                padding: 7px 10px;
                 line-height: 20px;
                 position: relative;
                 display: inline-block;
                 color: #888 !important;
                 cursor: pointer;
-            };
+
+                background-color: rgba(255,255,255,.1);
+                border-radius: 3px;
+            }
+
+            .logo {
+                font-size: 16px;
+                padding: 15px 10px;
+                color: #888 !important;
+                display: inline-block;
+            }
+            .nav-left {
+                padding: 15px 10px;
+                color: #888 !important;
+                display: inline-block;
+            }
+            .nav-right {
+                color: #888 !important;
+                display: inline-block;
+                float: right;
+            }
         </style>
 
         <div class="full-height">
             <div vertical layout style="height:100%">
                 <div style="height:50px">
                     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-                        <div class="container">
-                            <div class="navbar-header">
-                                <span class="navbar-brand">California Water Network</span>
-                            </div>
-
-                            <div id="leftNav" class="nav navbar-nav">
-                            </div>
-                            <div class="nav navbar-nav navbar-right">
-                                <content select="[right-nav]"></content>
-                            </div>
+                        <div class="logo">
+                            <span class="hidden-xs"><cwn-icon icon="fa-code-fork"></cwn-icon> California Water Network</span>
+                            <span class="visible-xs"><cwn-icon icon="fa-code-fork"></cwn-icon> CWN</span>
                         </div>
+
+                        <div id="leftNav" class="nav-left"></div>
+                        <div class="nav-right">
+                            <content select="[right-nav]"></content>
+                        </div>
+                        
                     </nav>
                 </div>
                 <div flex style="position:relative">

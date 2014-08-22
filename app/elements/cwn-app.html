@@ -23,18 +23,30 @@
         </style>
 
         <div class="splash-screen" hidden?="{{!$.ds.loading}}">
-          <div class="splash-screen-text">Loading Network...</div>
+          <div class="splash-screen-text">
+            Loading Network...<br />
+            <span style="font-size:14px">{{$.settings.settings.neo4jUrl}}</span>
+          </div>
         </div>
 
-        <cwn-datastore id="ds" loading="{{loading}}" on-loaded="{{onDataLoad}}"></cwn-datastore>
+        <cwn-datastore id="ds" loading="{{loading}}" settings="{{$.settings.settings}}" on-loaded="{{onDataLoad}}"></cwn-datastore>
 
         <cwn-app-layout loading="{{loading}}">
-            <a right-nav on-tap="{{showFilters}}">Filters</a>
+            <a right-nav on-tap="{{showSettings}}">
+              <span class="hidden-xs"><cwn-icon icon="fa-cogs"></cwn-icon> Settings</span>
+              <span class="visible-xs"><cwn-icon icon="fa-cogs"></cwn-icon></span>
+            </a>
+            <a right-nav on-tap="{{showFilters}}">
+              <span class="hidden-xs"><cwn-icon icon="fa-filter"></cwn-icon> Filters</span>
+              <span class="visible-xs"><cwn-icon icon="fa-filter"></cwn-icon></span>
+            </a>
+
             <cwn-filters id="filters" content legend="{{legend}}"></cwn-filters>
+            <cwn-settings id="settings" ds="{{$.ds}}" content></cwn-settings>
 
             <core-animated-pages id="pages" content transitions="slide-from-right">
               <cwn-map legend="{{legend}}" ds="{{$.ds}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}"></cwn-map>
-              <cwn-info-page id="info" ds="{{$.ds}}" ></cwn-info-page>
+              <cwn-info-page id="info" ds="{{$.ds}}" settings="{{$.settings.settings}}"></cwn-info-page>
         </cwn-app-layout>
 
         
@@ -132,7 +144,13 @@
             },
 
             showFilters : function() {
+                this.$.settings.hide();
                 this.$.filters.toggle();
+            },
+
+            showSettings : function() {
+                this.$.filters.hide();
+                this.$.settings.toggle();
             },
 
             onFeatureSelected : function(e) {

@@ -75,7 +75,7 @@ function dtToArray(dt) {
     var climate = {};
     for( var j = 0; j < climateAttrs.length; j++ ) {
         if( item.properties[climateAttrs[j]] ) {
-            climate[searchAttrs[j]] = item.properties[searchAttrs[j]];
+            climate[climateAttrs[j]] = item.properties[climateAttrs[j]];
             delete item.properties[climateAttrs[j]];
             item.properties.hasClimate = true;
         }

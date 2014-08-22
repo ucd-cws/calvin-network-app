@@ -1,33 +1,59 @@
-<polymer-element name="cwn-datastore">
+<polymer-element name="cwn-datastore" attributes="settings">
     <template></template>
     <script>
         Polymer('cwn-datastore', {
             loading: true,
             data : [],
             dataMap : {},
-            //url : 'http://localhost:7474/db/data',
-            url : 'http://watershed.ice.ucdavis.edu/neo4jdb/data',
+
+            loadingCharts : true,
+            chartLoadHandlers : [],
 
             ready : function() {
+                // elements that need charts can push to this array callbacks for when charts are loaded
+                window.chartLoadHandlers = this.chartLoadHandlers;
+
                 google.load("visualization", '1', {
                     packages:['corechart', 'table'],
                     callback : function() {
-                        this.init();
+                        this.loadingCharts = false;
+                        for( var i = 0; i < this.chartLoadHandlers.length; i++ ) {
+                            this.chartLoadHandlers[i]();
+                        }
                     }.bind(this)
                 });
             },
 
-            init : function() {
+            reload : function(callback) {
+                this.loading = true;
+                this.dataMap = {};
+                this.data = [];
+
+                this.init(callback);
+            },
+
+            init : function(callback) {
                 $.ajax({
                     type : 'POST',
-                    url : this.url+'/cypher',
+                    url : this.settings.neo4jUrl+'/cypher',
                     data : {
                         query : 'MATCH n RETURN n.geojson',
                         params : {}
                     },
                     success : function(resp) {
+                        var d;
                         for( var i = 0; i < resp.data.length; i++ ) {
-                            var d = JSON.parse(resp.data[i][0]);
+                            
+                            // crappy sanity checking
+                            try {
+                                d = JSON.parse(resp.data[i][0]);
+                            } catch (e) {
+                                continue;
+                            }
+                            if( !d ) continue;
+                            if( !d.properties ) continue;
+                            if( !d.properties.prmname ) continue;
+
                             this._markCalibrationNode(d);
                             this.dataMap[d.properties.prmname] = d;
                             this.data.push(d);
@@ -35,10 +61,13 @@
 
                         this.fire('loaded');
                         this.loading = false;
+
+                        if( callback ) callback();
                     }.bind(this),
                     error : function(resp) {
                         this.loading = false;
-                        alert('Error retrieving json');
+                        if( callback ) callback(true);
+                        alert('Error retrieving data from: '+this.settings.neo4jUrl+'/cypher');
                     }.bind(this)
                 });
             },
