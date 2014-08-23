@@ -77,6 +77,8 @@
                 <div class="panel panel-default">
                   <div class="panel-body">
 
+                    <jq-rangeslider start="1920-01-01" on-values-changed="{{updateDateFilters}}"></jq-rangeslider>
+
                     <table style="width:100%">
                       <tr>
                         <td>
@@ -242,6 +244,11 @@
                     }.bind(this)
                 });
             },
+
+            updateDateFilters : function(e) {
+              this.filters.start = e.detail.start;
+              this.filters.stop = e.detail.end;
+            },  
 
             updateStartFilter : function() {
               if( $(this.$.useStartFilter).is(':checked') ) {

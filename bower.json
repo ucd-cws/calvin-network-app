@@ -24,6 +24,8 @@
     "d3": "~3.4.11",
     "leaflet-map": "~0.3.0",
     "core-elements": "Polymer/core-elements#~0.3.5",
-    "polymer": "Polymer/polymer#~0.3.5"
+    "polymer": "Polymer/polymer#~0.3.5",
+    "jqrangeslider": "~5.7.0",
+    "jquery-ui": "~1.11.1"
   }
 }

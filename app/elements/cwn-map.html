@@ -5,7 +5,7 @@
                 height: 100%
             }
         </style>
-        <leaflet-map id="leaflet" content longitude="-121.00" latitude="40.00" zoom="5"></leaflet-map>
+        <leaflet-map id="leaflet" content tab="true" longitude="-121.00" latitude="40.00" zoom="5"></leaflet-map>
     </template>
     <script>
         Polymer('cwn-map', {
@@ -97,6 +97,10 @@
                     this.fire('selected', e.layer.feature);
                 }.bind(this));
 
+                this.markerLayer.on('touch', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
                 this.edgeLayer = L.geoJson(this.edges, {
                     style: function(feature) {
                         return {
@@ -138,7 +142,7 @@
                 var type = feature.properties.type;
 
                 var options = {
-                    radius : 10,
+                    radius : 20,
                     color : '#333',
                     fillColor : this.legend[feature.properties.type].color,
                     opacity: render.oneStep ? .4 : .9,
