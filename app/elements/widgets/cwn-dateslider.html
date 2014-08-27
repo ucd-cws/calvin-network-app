@@ -1,12 +1,12 @@
-<polymer-element name="jq-rangeslider" attributes="start stop">
+<polymer-element name="cwn-dateslider" attributes="start stop">
     <template>
-        <link rel="stylesheet" href="../../components/jqrangeslider/css/iThing.css" />
         <style>
             :host {
                 display: block;
             }
             .tabs {
-                height: 70px;
+                margin-right: 100px;
+                height: 80px;
                 position: relative;
             }
             .tab {
@@ -30,13 +30,14 @@
                 user-select: none;   
             }
             .line {
-                border-left: 1px solid #428bca;
+                border-left: 1px dashed #428bca;
                 width: 1px;
                 z-index: 5;
                 position: absolute;
             }
             .progress {
                 position: relative !important;
+                margin-right: 100px;
             }
             .progress-bar {
                 position: absolute !important;
@@ -48,9 +49,9 @@
         <div>
             <div class="tabs">
                 <div id="startTab" class="tab btn btn-default" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
-                <div id="startLine" class="line" style="height:87px; top: 0px"></div>
-                <div id="endTab" style="top:35px" class="tab btn btn-default" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
-                <div id="endLine" class="line" style="height:51px; top: 35px"></div>
+                <div id="startLine" class="line" style="height:45px; top: 35px; border-left-color: #ccc"></div>
+                <div id="endTab" style="top:40px" class="tab btn btn-primary" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
+                <div id="endLine" class="line" style="height:5px; top: 75px"></div>
             </div>
             <div class="progress">
               <div class="progress-bar" id="slider" style="left:0;right:0" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
@@ -59,7 +60,7 @@
         </div>
     </template>
     <script>
-        Polymer('jq-rangeslider', {
+        Polymer('cwn-dateslider', {
             numDays : 0,
 
             startDate : new Date(),

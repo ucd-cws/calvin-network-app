@@ -1,0 +1,105 @@
+
+<!--
+    data should be format [[date,value],[date,value]...]
+-->
+<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+        </style>
+        <div id="root" style="height:{{height}}px"></div>
+    </template>
+    <script>
+        Polymer('cwn-linechart',{
+            dt : null,
+            chart : null,
+            height : 400,
+            animate : false,
+
+            updateTimer : -1,
+
+            observe : {
+                label : 'redraw',
+                xlabel : 'redraw',
+                ylabel : 'redraw',
+                height : 'redraw',
+                data  : 'update',
+                start : 'update',
+                stop  : 'update'
+            },
+
+            onLoadHandlerSet : false,
+
+            ready : function() {
+                $(window).on('resize', function(){
+                    this.redraw();
+                }.bind(this));
+            },
+
+            setOnloadHandler : function() {
+                if( this.onLoadHandlerSet ) return;
+
+                console.log('callback set');
+
+                // put in global scope by cwn-datastore
+                chartLoadHandlers.push(function(){
+                    this.update();
+                }.bind(this));
+            },
+            
+
+            update : function() {
+                if( !window.google.visualization ) return this.setOnloadHandler();
+                if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
+
+                if( !this.chart ) {
+                    this.chart = new google.visualization.LineChart(this.$.root);
+                }
+
+                if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
+                this.updateTimer = setTimeout(function() {
+                    this.updateTimer = -1;
+                    this._update();
+                }.bind(this), 500);
+            },
+
+            _update : function() {
+                this.dt = google.visualization.arrayToDataTable(this.data);
+                this.redraw();
+            },
+
+            redraw : function() {
+                if( !this.chart || !this.dt ) return;
+
+                var options = {
+                    legend : {
+                        position : 'none'
+                    },
+                    vAxis : {},
+                    hAxis : {}
+                };
+
+                if( this.label && this.label != '' ) {
+                    options.title = this.label;
+                }
+                if( this.xlabel && this.xlabel != '' ) {
+                    options.hAxis.title = this.xlabel;
+                }
+                if( this.ylabel && this.ylabel != '' ) {
+                    options.vAxis.title = this.ylabel;
+                }
+
+                if( this.animate ) {
+                    options.animation = {
+                        duration : 750,
+                        easing : 'out'
+                    }
+                }
+
+                this.chart.draw(this.dt, options);
+            }
+        });
+    </script>
+</polymer-element>

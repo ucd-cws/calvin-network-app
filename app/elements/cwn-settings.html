@@ -114,6 +114,7 @@
             show : function() {
                 this.$.root.classList.add('open');
                 this.classList.add('open');
+                $('html, body').animate({ scrollTop: '0px' });
             },
             hide : function() {
                 this.$.root.classList.remove('open');
@@ -122,6 +123,9 @@
             toggle : function() {
                 this.$.root.classList.toggle('open');
                 this.classList.toggle('open');
+                if( this.classList.contains('open') ) {
+                    $('html, body').animate({ scrollTop: '0px' });
+                }
             }
         });
     </script>
