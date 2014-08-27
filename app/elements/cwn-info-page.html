@@ -76,7 +76,7 @@
               <div hidden?="{{!feature.properties.hasClimate || climateLoadError || climateLoading}}">
                 <h4>Date Range</h4>
 
-                <cwn-dateslider start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
+                <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
 
                 <div hidden?="{{inflows.length == 0}}">
                   <h4>Inflows</h4>
@@ -98,15 +98,28 @@
               <div class="alert alert-error" hidden?="{{!costLoadError}}">
                 Error loading cost data.
               </div>
+              <div hidden?="{{!costLoading}}" style="color:#888">
+                Loading cost data...
+              </div>
 
               <template bind if="{{feature.properties.hasCosts && !costLoadError && !costLoading}}">
-                <div class="btn-group">
-                  <template repeat="{{month,i in costs.months}}">
-                    <a class="btn btn-primary" index="{{i}}" disabled?="{{costs.selected == i}}" on-tap="{{_setCostMonth}}">{{month}}</a>
-                  </template>
-                </div>
+                <template bind if="{{costs.label == 'Monthly Variable'}}">
+                  <div class="btn-group">
+                    <template repeat="{{month,i in costs.months}}">
+                      <a class="btn btn-primary" index="{{i}}" disabled?="{{costs.selected == i}}" on-tap="{{_setCostMonth}}">{{month}}</a>
+                    </template>
+                  </div>
 
-                <cwn-linechart label="{{costs.label}} - {{costs.months[costs.selected]}}" xlabel="Capacity (kAF)" Ylabel="Cost ($/kAF)" data="{{costs.data[costs.months[costs.selected]]}}" animate></cwn-linechart>
+                  <cwn-linechart label="{{costs.label}} - {{costs.months[costs.selected]}}" xlabel="Capacity (kAF)" ylabel="Cost ($/kAF)" data="{{costs.data[costs.months[costs.selected]]}}" animate></cwn-linechart>
+                </template>
+
+                <template bind if="{{costs.label == 'Constant'}}">
+                  <h5>Constant: ${{costs.cost}}</h5>
+                </template>
+
+                <template bind if="{{costs.label != 'Constant' && costs.label != 'Monthly Variable'}}">
+                  <div><b>{{costs.label}}</b>: Not implemented yet</div>
+                </template>
               </template>
 
             </div>
@@ -131,6 +144,7 @@
             costs : {
               label : '',
               data : {},
+              cost : 0, // for constant costs
               months : [],
               selected : 0
             },
@@ -164,6 +178,7 @@
 
               this.loadClimateData();
               this.loadCostData();
+
             },
 
             loadClimateData : function() {
@@ -183,6 +198,9 @@
                     if( resp.data.length == 0 ) return this.climateLoadError = true;
 
                     this.renderClimateData(JSON.parse(resp.data[0][0]));
+                    this.async(function(){
+                      this.$.dateslider.resize();
+                    });
                   }.bind(this),
                   error : function(resp) {
                     this.climateLoadError = true;
@@ -237,13 +255,15 @@
               this.costs.months = [];
               this.costs.selected = 0;
 
+              this.costs.cost = d.costs.cost;
+
               if( !d.costs.costs ) return;
               if( d.costs.costs.length == 0 ) return;
 
               for( var i = 0; i < d.costs.costs.length; i++ ) {
                 var m = d.costs.costs[i];
 
-                this.costs.data[m.label] = [['Capacity','Cost']];
+                this.costs.data[m.label] = [];
                 this.costs.months.push(m.label);
 
                 for( var j = 0; j < m.costs.length; j++ ) {
@@ -252,6 +272,14 @@
                     m.costs[j].cost
                   ]);
                 }
+
+                this.costs.data[m.label].sort(function(a, b){
+                  if( a[0] > b[0] ) return 1;
+                  if( a[0] < b[0] ) return -1;
+                  return 0;
+                });
+                this.costs.data[m.label].splice(0,0, ['Capacity','Cost']);
+
               }
 
             },
