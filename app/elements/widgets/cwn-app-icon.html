@@ -13,16 +13,16 @@
             fillFromType : false,
 
             styles : {
-              'Power Plant Node' : '#3366cc',
-              'Agricultural Demand Node' : '#ff9900',
-              'Junction Node' : '#109618',
-              'Pump Plant Node' : '#990099',
-              'Water Treatment Node' : '#0099c6',
-              'Surface Storage Node' : '#dd4477',
-              'Urban Demand Node' : '#66aa00',
-              'Sink Node' : '#b82e2e',
-              'Groundwater Storage Node' : '#316395',
-              'Non-Standard Demand Node' : '#22aa99'
+              'Power Plant' : '#3366cc',
+              'Agricultural Demand' : '#ff9900',
+              'Junction' : '#109618',
+              'Pump Plant' : '#990099',
+              'Water Treatment' : '#0099c6',
+              'Surface Storage' : '#dd4477',
+              'Urban Demand' : '#66aa00',
+              'Sink' : '#b82e2e',
+              'Groundwater Storage' : '#316395',
+              'Non-Standard Demand' : '#22aa99'
             },
 
             observe : {
@@ -47,13 +47,13 @@
                 var r = x;
                 if( y < r ) r = y;
                   
-                if( this.type == 'Junction Node' || this.type == 'Pump Plant Node' || this.type == 'Power Plant Node' ) {
+                if( this.type == 'Junction' || this.type == 'Pump Plant' || this.type == 'Power Plant' ) {
                     this._circle(c2, x+2, y+2, r);
-                } else if ( this.type == 'Water Treatment Node' ) {
+                } else if ( this.type == 'Water Treatment' ) {
                     this._polygon(c2, x+2, y+2, r, 6, 0);    
-                } else if ( this.type == 'Surface Storage Node' || this.type == 'Groundwater Storage Node' ) {
+                } else if ( this.type == 'Surface Storage' || this.type == 'Groundwater Storage' ) {
                     this._polygon(c2, x+2, y+2, r, 3, 90);
-                } else if ( this.type == 'Agricultural Demand Node' || this.type == 'Urban Demand Node' ) {
+                } else if ( this.type == 'Agricultural Demand' || this.type == 'Urban Demand' ) {
                     this._polygon(c2, x+2, y+2, r, 5, 18);    
                 } else {
                     this._polygon(c2, x+2, y+2, r, 4, 45);

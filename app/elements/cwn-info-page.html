@@ -164,7 +164,7 @@
               if( this.ds.loading ) return;
 
               var loc = window.location.hash.replace('#','').split('/');
-              if( loc[0] == 'info' && loc.length > 1) this.feature = this.ds.dataMap[loc[1]];
+              if( loc[0] == 'info' && loc.length > 1) this.feature = this.ds.nodeMap[loc[1]];
             },
 
             update : function() {

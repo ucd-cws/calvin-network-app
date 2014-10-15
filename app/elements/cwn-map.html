@@ -11,15 +11,12 @@
         Polymer('cwn-map', {
             ds : null,
 
-            edges : [],
-            knownEdges : [],
-
             markerLayer : null,
             edgeLayer : null,
 
             observe : {
-                'ds.loading' : '_process',
-                '$.leaflet.map' : '_process',
+                'ds.loading' : 'update',
+                '$.leaflet.map' : 'update',
                 'filters.calibrationMode' : 'update',
                 'filters.Junction_Node' : 'update'
             },
@@ -32,11 +29,10 @@
                 for( var i = 0; i < this.ds.data.length; i++ ) {
                     var d = this.ds.data[i];
 
-                    for( var j = 0; j < d.properties.origins.length; j++ ) {
-                        this._addEdge(d.properties.origins[j]);
-                    }
-                    for( var j = 0; j < d.properties.terminals.length; j++ ) {
-                        this._addEdge(d.properties.terminals[j]);
+                    if( d.properties.type == 'Diversion' ) {
+                        this.links.push(d);
+                    } else {
+                        this.nodes.push(d);
                     }
                 }
 
@@ -85,23 +81,7 @@
                 // update filtering
                 this._filter();
 
-                this.markerLayer = L.geoJson(this.ds.data, {
-                    pointToLayer: function(feature, ll) {
-                        return this._getMarker(feature, ll);
-                    }.bind(this),
-                    filter: function(feature, layer) {
-                        return this.filters[feature.properties.type.replace(' ','_')];
-                    }.bind(this)
-                }).addTo(map);
-                this.markerLayer.on('click', function(e){
-                    this.fire('selected', e.layer.feature);
-                }.bind(this));
-
-                this.markerLayer.on('touch', function(e){
-                    this.fire('selected', e.layer.feature);
-                }.bind(this));
-
-                this.edgeLayer = L.geoJson(this.edges, {
+                this.edgeLayer = L.geoJson(this.ds.data.links, {
                     style: function(feature) {
                         return {
                             color: 'red',
@@ -114,6 +94,25 @@
                 this.edgeLayer.on('click', function(e){
                     this.fire('selected', e.layer.feature);
                 });
+                
+
+                this.markerLayer = L.geoJson(this.ds.data.nodes, {
+                    pointToLayer: function(feature, ll) {
+                        return this._getMarker(feature, ll);
+                    }.bind(this)
+                    /*,filter: function(feature, layer) {
+                        return this.filters[feature.properties.type.replace(' ','_')];
+                    }.bind(this)*/
+                }).addTo(map);
+                this.markerLayer.on('click', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
+                this.markerLayer.on('touch', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
+                
 
             },
 
@@ -144,7 +143,8 @@
                 var options = {
                     radius : 20,
                     color : '#333',
-                    fillColor : this.legend[feature.properties.type].color,
+                    fillColor : this.legend[feature.properties.type] ? 
+                                    this.legend[feature.properties.type].color : '#000000',
                     opacity: render.oneStep ? .4 : .9,
                     fillOpacity : render.oneStep ? .2 : .7
                 };
@@ -158,22 +158,22 @@
                 }
                 
 
-                if( type == 'Junction Node' || type == 'Pump Plant Node' || type == 'Power Plant Node' ) {
+                if( type == 'Junction' || type == 'Pump Plant' || type == 'Power Plant' ) {
 
                     return L.circleMarker(ll, options);
 
-                } else if ( type == 'Water Treatment Node' ) {
+                } else if ( type == 'Water Treatment' ) {
 
                     options.sides = 6;
                     return L.myMarker(ll, options);
                 
-                } else if ( type == 'Surface Storage Node' || type == 'Groundwater Storage Node' ) {
+                } else if ( type == 'Surface Storage' || type == 'Groundwater Storage' ) {
 
                     options.sides = 3;
                     options.rotate = 90;
                     return L.myMarker(ll, options);
 
-                } else if ( type == 'Agricultural Demand Node' || type == 'Urban Demand Node' ) {
+                } else if ( type == 'Agricultural Demand' || type == 'Urban Demand' ) {
 
                     options.sides = 5;
                     options.rotate = 18;

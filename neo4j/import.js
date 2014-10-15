@@ -9,7 +9,7 @@ var climateAttrs = ['inflows'];
 // fields to be moved into the climate blob
 var costAttrs = ['costs'];
 // fields to become neo4js searchable
-var searchAttrs = ['prmname','type'];
+var searchAttrs = ['prmname','type','origin','terminus'];
 // geojson column - column in vizsource of geojson
 var geojsonCol = 3;
 
@@ -56,7 +56,8 @@ function dropAllNodes(callback) {
 }
 
 function dtToArray(dt) {
-  var arr = [];
+  var nodes = [];
+  var links = [];
 
   for( var i = 0; i < dt.table.rows.length; i++ ) {
     var node = {};
@@ -95,17 +96,23 @@ function dtToArray(dt) {
 
     // set cleaned up geojson
     node.geojson = JSON.stringify(item);
-    arr.push(node);
+    
+    if( node.type == 'Diversion' ) {
+        links.push(node);
+    } else {
+        nodes.push(node);
+    }
   }
 
-  insert(arr);
+  insertNodes(nodes, links);
 }
 
-var nodeMap = {};
-function insert(arr) {
-    console.log('Inserting....');
 
-    async.eachSeries(arr,
+function insertNodes(nodes, links) {
+    var nodeMap = {};
+    console.log('Inserting Nodes....');
+
+    async.eachSeries(nodes,
         function(json, next) {
             var node = db.createNode(json);     // instantaneous, but...
 
@@ -114,115 +121,53 @@ function insert(arr) {
                 node : node
             };
 
+            //console.log('Creating node from '+json.prmname);
+
             node.save(function (err, node) {    // ...this is what actually persists.
                 if (err) {
-
                     console.error('Error saving new node to database:', err);
                     console.log(json);
-                } else {
-                    console.log('Node saved to database with id:', node.id);
                 }
-                 next();
+                next();
             });
             
         },
         function(err) {
-            relate(arr);
+            insertLinks(nodes, links, nodeMap);
         }
    );
 }
 
-var called = false;
-function relate(arr) {
-    if( called ) return;
-    called = true;
+function insertLinks(nodes, links, map) {
+    console.log('Inserting Links....');
 
-    console.log('Relating nodes to ('+arr.length+')...');
+    var unknowns = [];
 
-    async.eachSeries(arr,
-        function(json, next) {
-            if( !nodeMap[json.prmname] ) return next();
+    async.eachSeries(links,
+        function(link, next) {
+            if( map[link.origin] && map[link.terminus] ) {
+                //console.log('Creating link from '+link.origin+' -> '+link.terminus);
 
-            var node = nodeMap[json.prmname].node;
-            relateFrom(json.prmname, node, json.origins, function(){
+                var node = map[link.origin].node;
+
+                node.createRelationshipTo(map[link.terminus].node, link.type, link, function(err, rel) {
+                    if( err ) console.log('Error creating terminal '+link.origin+' -> '+link.terminus);
+                    next();
+                });
+
+            } else {
+                if( !map[link.origin] ) unknowns.push(link.prmname+' origin:'+link.origin);
+                if( !map[link.terminus] ) unknowns.push(link.prmname+' terminus:'+link.terminus);
                 next();
-            });
-        },
-        function(err) {
-            relateMore(arr);
-        }
-    );
-}
-
-function relateMore(arr) {
-    console.log('Relating nodes from ('+arr.length+')...');
-
-    async.eachSeries(arr,
-        function(json, next) {
-            if( !nodeMap[json.prmname] ) return next();
-
-            var node = nodeMap[json.prmname].node;
-            relateTo(json.prmname, node, json.terminals, function(){
-                next();
-            });
-        },
-        function(err) {
-            console.log('done');
-        }
-    );
-}
-
-
-
-function relateFrom(name, node, origins, callback) {
-    if( !origins ) return callback();
-
-    async.eachSeries(origins,
-        function(origin, next) {
-            if( !origin ) return next();
-            var originName = origin.replace(name+'_','');
-
-            if( !nodeMap[originName] ) {
-                console.log('  Node '+originName+' not found to relate too...');
-                return next();
             }
-
-            node.createRelationshipFrom(nodeMap[originName].node, 'origin', function(err, rel) {
-                if( err ) console.log('Error creating origin '+originName+' -> '+name);
-                console.log('Created origin '+originName+' -> '+name);
-                next();
-            });
         },
         function(err) {
-            callback();
+            if( err ) console.log(err);
+            console.log('Done.');
+
+            console.log('Unknowns: '+unknowns.length);
+            console.log(unknowns);
         }
-    );
+   );
 }
-
-function relateTo(name, node, terminals, callback) {
-    if( !terminals ) return callback();
-
-    async.eachSeries(terminals,
-        function(terminal, next) {
-            if( !terminal ) return next();
-            var terminalName = terminal.replace('_'+name,'');
-
-            if( !nodeMap[terminalName] ) {
-                console.log('  Node '+terminalName+' not found to relate too...');
-                return next();
-            }
-
-            node.createRelationshipTo(nodeMap[terminalName].node, 'terminal', function(err, rel) {
-                if( err ) console.log('Error creating terminal '+name+' -> '+terminalName);
-                console.log('Created terminal '+name+' -> '+terminalName);
-                next();
-            });
-        },
-        function(err) {
-            callback();
-        }
-    );
-}
-
-
 
