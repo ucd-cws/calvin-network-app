@@ -2,13 +2,14 @@
     <template>
         <style>
           .card {
-            margin: 10px 10px 10px 40px;
+            margin: 10px 10px 10px 10px;
             box-shadow: 0 0 5px #888;
             padding: 15px;
           }
+
           .back-btn {
             display: inline-block;
-            position: absolute;
+
             color: #333 !important;
             background-color: #ccc;
             border-radius: 50px;
@@ -24,7 +25,7 @@
           <cwn-icon icon="fa-arrow-left" ></cwn-icon>
         </a>
         
-        <div class="row" hidden?="{{ds.loading}}" style="margin-top: 30px">
+        <div class="row" hidden?="{{ds.loading}}" >
           <div class="col-md-6">
 
             <div class="card">
@@ -42,95 +43,99 @@
 
           </div>
           <div class="col-md-6">
-            <h4>Origins</h4>
-            <div>
-              <template bind if="{{feature.properties.origin != null}}">
-                <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
-              </template>
-              <template repeat="{{origin in feature.properties.origins}}">
-                <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;
-              </template>
-            </div>
+            <div class="card">
+              <h4>Origins</h4>
+              <div>
+                <template bind if="{{feature.properties.origin != null}}">
+                  <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
+                </template>
+                <template repeat="{{origin in feature.properties.origins}}">
+                  <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;
+                </template>
+              </div>
 
-            <h4>Terminals</h4>
-            <div>
-              <template bind if="{{feature.properties.terminus != null}}">
-                <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
-              </template>
-              <template repeat="{{terminal in feature.properties.terminals}}">
-                <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;
-              </template>
+              <h4>Terminals</h4>
+              <div>
+                <template bind if="{{feature.properties.terminus != null}}">
+                  <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+                </template>
+                <template repeat="{{terminal in feature.properties.terminals}}">
+                  <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;
+                </template>
+              </div>
             </div>
           </div>
         </div>
 
-        <div style="padding: 0 10px">
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">
-              <h2 class="page-header">Climate</h2>
+              <div class="card">
+                <h2 class="page-header">Climate</h2>
 
-              <div class="alert alert-info" hidden?="{{feature.properties.hasClimate}}">
-                This node has no climate data associated with it.
-              </div>
-              <div class="alert alert-error" hidden?="{{!climateLoadError}}">
-                Error loading climate data.
-              </div>
-              <div hidden?="{{!climateLoading}}" style="color:#888">
-                Loading climate data...
-              </div>
-
-              <div hidden?="{{!feature.properties.hasClimate || climateLoadError || climateLoading}}">
-                <h4>Date Range</h4>
-
-                <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
-
-                <div hidden?="{{inflows.length == 0}}">
-                  <h4>Inflows</h4>
+                <div class="alert alert-info" hidden?="{{feature.properties.hasClimate}}">
+                  This node has no climate data associated with it.
                 </div>
-                <template repeat="{{inflow in inflows}}">
-                  <cwn-date-linechart label="{{inflow.label}}" ylabel="Flow (kaf)" data="{{inflow.data}}" start="{{filters.start}}" stop="{{filters.stop}}"></cwn-date-linechart>
-                </template>
-                
+                <div class="alert alert-error" hidden?="{{!climateLoadError}}">
+                  Error loading climate data.
+                </div>
+                <div hidden?="{{!climateLoading}}" style="color:#888">
+                  Loading climate data...
+                </div>
+
+                <div hidden?="{{!feature.properties.hasClimate || climateLoadError || climateLoading}}">
+                  <h4>Date Range</h4>
+
+                  <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
+
+                  <div hidden?="{{inflows.length == 0}}">
+                    <h4>Inflows</h4>
+                  </div>
+                  <template repeat="{{inflow in inflows}}">
+                    <cwn-date-linechart label="{{inflow.label}}" ylabel="Flow (kaf)" data="{{inflow.data}}" start="{{filters.start}}" stop="{{filters.stop}}"></cwn-date-linechart>
+                  </template>
+                  
+                </div>
               </div>
 
             </div>
 
             <div class="col-md-6">
-              <h2 class="page-header">Costs</h2>
+              <div class="card">
+                <h2 class="page-header">Costs</h2>
 
-              <div class="alert alert-info" hidden?="{{feature.properties.hasCosts}}">
-                This node has no cost data associated with it.
-              </div>
-              <div class="alert alert-error" hidden?="{{!costLoadError}}">
-                Error loading cost data.
-              </div>
-              <div hidden?="{{!costLoading}}" style="color:#888">
-                Loading cost data...
-              </div>
+                <div class="alert alert-info" hidden?="{{feature.properties.hasCosts}}">
+                  This node has no cost data associated with it.
+                </div>
+                <div class="alert alert-error" hidden?="{{!costLoadError}}">
+                  Error loading cost data.
+                </div>
+                <div hidden?="{{!costLoading}}" style="color:#888">
+                  Loading cost data...
+                </div>
 
-              <template bind if="{{feature.properties.hasCosts && !costLoadError && !costLoading}}">
-                <template bind if="{{costs.label == 'Monthly Variable'}}">
-                  <div class="btn-group">
-                    <template repeat="{{month,i in costs.months}}">
-                      <a class="btn btn-primary" index="{{i}}" disabled?="{{costs.selected == i}}" on-tap="{{_setCostMonth}}">{{month}}</a>
-                    </template>
-                  </div>
+                <template bind if="{{feature.properties.hasCosts && !costLoadError && !costLoading}}">
+                  <template bind if="{{costs.label == 'Monthly Variable'}}">
+                    <div class="btn-group">
+                      <template repeat="{{month,i in costs.months}}">
+                        <a class="btn btn-primary" index="{{i}}" disabled?="{{costs.selected == i}}" on-tap="{{_setCostMonth}}">{{month}}</a>
+                      </template>
+                    </div>
 
-                  <cwn-linechart label="{{costs.label}} - {{costs.months[costs.selected]}}" xlabel="Capacity (kAF)" ylabel="Cost ($/kAF)" data="{{costs.data[costs.months[costs.selected]]}}" animate></cwn-linechart>
+                    <cwn-linechart label="{{costs.label}} - {{costs.months[costs.selected]}}" xlabel="Capacity (kAF)" ylabel="Cost ($/kAF)" data="{{costs.data[costs.months[costs.selected]]}}" animate></cwn-linechart>
+                  </template>
+
+                  <template bind if="{{costs.label == 'Constant'}}">
+                    <h5>Constant: ${{costs.cost}}</h5>
+                  </template>
+
+                  <template bind if="{{costs.label != 'Constant' && costs.label != 'Monthly Variable'}}">
+                    <div><b>{{costs.label}}</b>: Not implemented yet</div>
+                  </template>
                 </template>
-
-                <template bind if="{{costs.label == 'Constant'}}">
-                  <h5>Constant: ${{costs.cost}}</h5>
-                </template>
-
-                <template bind if="{{costs.label != 'Constant' && costs.label != 'Monthly Variable'}}">
-                  <div><b>{{costs.label}}</b>: Not implemented yet</div>
-                </template>
-              </template>
-
+              </div>
             </div>
           </div>
-        </div>
+ 
       
     </template>
     <script>

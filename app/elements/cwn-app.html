@@ -44,9 +44,21 @@
             <cwn-filters id="filters" content legend="{{legend}}"></cwn-filters>
             <cwn-settings id="settings" ds="{{$.ds}}" content></cwn-settings>
 
-            <core-animated-pages id="pages" content transitions="slide-from-right">
-              <cwn-map legend="{{legend}}" ds="{{$.ds}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}"></cwn-map>
-              <cwn-info-page id="info" ds="{{$.ds}}" settings="{{$.settings.settings}}"></cwn-info-page>
+            <!--<core-animated-pages id="pages" content transitions="slide-from-right">-->
+              <cwn-map content
+                legend="{{legend}}" 
+                ds="{{$.ds}}" 
+                filters="{{$.filters.filters}}" 
+                on-selected="{{onFeatureSelected}}"
+                hidden?="{{selectedPage != PAGES.MAP}}">
+              </cwn-map>
+              <cwn-info-page content 
+                id="info" 
+                ds="{{$.ds}}" 
+                settings="{{$.settings.settings}}"
+                hidden?="{{selectedPage != PAGES.INFO}}">
+              </cwn-info-page>
+            <!--</core-animated-pages>-->
         </cwn-app-layout>
 
         
@@ -57,6 +69,7 @@
               MAP : 0,
               INFO : 1
             },
+            selectedPage : 0,
 
             legend : {
               'Power Plant'         : {
@@ -116,12 +129,15 @@
               if( loc == '') loc = 'map';
 
               if( loc == 'map' ) {
-                this.$.pages.selected = this.PAGES.MAP;
+                //this.$.pages.selected = this.PAGES.MAP;
+                this.selectedPage = this.PAGES.MAP;
                 this.async(function(){
-                  this.shadowRoot.querySelector('cwn-map').$.leaflet.map.invalidateSize();
+                  var map = this.shadowRoot.querySelector('cwn-map').map;
+                  if( map ) map.invalidateSize();
                 });
               } else if ( loc == 'info' ) {
-                this.$.pages.selected = this.PAGES.INFO;
+                //this.$.pages.selected = this.PAGES.INFO;
+                this.selectedPage = this.PAGES.INFO;
                 if( this.dataLoaded ) {
                   this.setInfoFeature();
                 } else {
@@ -154,7 +170,8 @@
             },
 
             onFeatureSelected : function(e) {
-              this.$.pages.selected = this.PAGES.INFO;
+              //this.$.pages.selected = this.PAGES.INFO;
+              this.selectedPage = this.PAGES.INFO;
               window.location.hash = 'info/'+e.detail.properties.prmname;
             }
         });
