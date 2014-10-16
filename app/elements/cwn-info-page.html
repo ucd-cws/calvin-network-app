@@ -44,15 +44,21 @@
           <div class="col-md-6">
             <h4>Origins</h4>
             <div>
+              <template bind if="{{feature.properties.origin != null}}">
+                <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
+              </template>
               <template repeat="{{origin in feature.properties.origins}}">
-                <span>{{origin}}&nbsp;</span>
+                <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;
               </template>
             </div>
 
             <h4>Terminals</h4>
             <div>
+              <template bind if="{{feature.properties.terminus != null}}">
+                <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+              </template>
               <template repeat="{{terminal in feature.properties.terminals}}">
-                <span>{{terminal}}&nbsp;</span>
+                <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;
               </template>
             </div>
           </div>
@@ -164,12 +170,14 @@
               if( this.ds.loading ) return;
 
               var loc = window.location.hash.replace('#','').split('/');
-              if( loc[0] == 'info' && loc.length > 1) this.feature = this.ds.nodeMap[loc[1]];
+              if( loc[0] == 'info' && loc.length > 1) {
+                this.feature = this.ds.lookupMap[loc[1]];
+              }
             },
 
             update : function() {
               if( this.feature == null ) return alert('Feature not found');
-              
+
               // reset flags
               this.climateLoadError = false;
               this.costLoadError = false;
@@ -230,11 +238,18 @@
               this.costLoading = true;
               this.costLoadError = false;
 
+              var query;
+              if( this.feature.properties.type == 'Diversion' ) {
+                query = 'MATCH (n)-[r { prmname: "'+this.feature.properties.prmname+'" }]->() RETURN r.costs';
+              } else {
+                query ='MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.costs';
+              }
+
               $.ajax({
                   type : 'POST',
                   url : this.settings.neo4jUrl+'/cypher',
                   data : {
-                      query : 'MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.costs',
+                      query : query,
                       params : {}
                   },
                   success : function(resp) {

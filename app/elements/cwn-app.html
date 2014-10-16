@@ -133,7 +133,7 @@
             setInfoFeature : function() {
               var name = window.location.hash.replace('#','').split('/')[1];
               name = decodeURIComponent(name);
-              this.$.info.feature = this.$.ds.nodeMap[name];
+              this.$.info.feature = this.$.ds.lookupMap[name];
             },
            
             onDataLoad : function() {

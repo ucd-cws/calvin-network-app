@@ -36,8 +36,8 @@
                     <div class="form-group">
                       <label for="filter-input" class="col-sm-2 control-label">Filter</label>
                       <div class="col-sm-10">
-                        <input type="text" id="filter-input" class="form-control" />
-                        <p class="help-block">By name or description.  Use '*' for wildcard match.</p>
+                        <input type="text" id="filter-input" class="form-control" value="{{filterText}}" />
+                        <p class="help-block">By name or description.  Regex is allowed.</p>
                       </div>
                     </div>
 
@@ -46,7 +46,7 @@
                         <div class="col-sm-10">
                           <label class="checkbox-inline">
                             <input type="checkbox" id="calibration-mode" checked="{{filters.calibrationMode}}"  /> Calibration Mode
-                            <p class="help-block">Hide calibration links and nodes, mark nodes attached to calibartion links</p>
+                            <p class="help-block">Show calibration links and nodes, mark nodes attached to calibartion links</p>
                           </label>
                         </div>
                         
@@ -79,16 +79,24 @@
     <script>
         Polymer('cwn-filters', {
 
+            filterText : '',
+            textTimer : -1,
+
             legendArr : [],
             iconSize : 22,
 
             filters : {
-                calibrationMode : true
+                calibrationMode : true,
+                text : '',
+            },
+
+            observe : {
+                filterText : 'setTextTimer'
             },
 
             ready : function() {
                 for( var key in this.legend ) {
-                    this.filters[key.replace(' ','_')] = true;
+                    this.filters[key.replace(' ','_').replace('-','_')] = true;
                     this.legendArr.push({
                         name : key,
                         color : this.legend[key].color,
@@ -100,7 +108,7 @@
             _updateCheckbox : function(e) {
                 var name = e.currentTarget.getAttribute('name');
                 var value = $(e.currentTarget).is(':checked');
-                this.filters[name.replace(' ','_')] = value;
+                this.filters[name.replace(' ','_').replace('-','_')] = value;
             },
 
             show : function() {
@@ -118,6 +126,15 @@
                 if( this.classList.contains('open') ) {
                     $('html, body').animate({ scrollTop: '0px' });
                 }
+            },
+
+            setTextTimer : function() {
+                if( this.textTimer != -1 ) clearTimeout(this.textTimer);
+
+                this.textTimer = setTimeout(function(){
+                    this.textTimer = -1;
+                    this.filters.text = this.filterText;
+                }.bind(this), 1000);
             }
         });
     </script>

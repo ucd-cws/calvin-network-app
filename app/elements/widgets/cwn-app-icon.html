@@ -5,7 +5,8 @@
                 display: inline-block;
             }
         </style>
-        <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
+        <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == 'Diversion'}}"></canvas>
+        <cwn-icon icon="fa-code-fork" style="font-size:{{width-15}}px" hidden?="{{type != 'Diversion'}}"></cwn-icon>
     </template>
     <script>
         Polymer('cwn-app-icon', {

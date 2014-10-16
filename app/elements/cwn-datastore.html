@@ -10,7 +10,7 @@
                 links : [],
                 nodes : []
             },
-            nodeMap : {},
+            lookupMap : {},
 
             loadingCharts : true,
             chartLoadHandlers : [],
@@ -18,6 +18,7 @@
             ready : function() {
                 // elements that need charts can push to this array callbacks for when charts are loaded
                 window.chartLoadHandlers = this.chartLoadHandlers;
+                window.ds = this;
 
                 google.load("visualization", '1', {
                     packages:['corechart', 'table'],
@@ -39,7 +40,7 @@
                     links : [],
                     nodes : []
                 };
-                this.nodeMap = {};
+                this.lookupMap = {};
 
                 this.init(callback);
             },
@@ -73,7 +74,7 @@
                             if( !d.properties.prmname ) continue;
 
                             this._markCalibrationNode(d);
-                            this.nodeMap[d.properties.prmname] = d;
+                            this.lookupMap[d.properties.prmname] = d;
                             this.data.nodes.push(d);
                         }
                         this.data.nodesLoaded = true;
@@ -106,7 +107,9 @@
                                 continue;
                             }
 
+                            this._markCalibrationNode(d);
                             this.data.links.push(d);
+                            this.lookupMap[d.properties.prmname] = d;
                         }
 
                         this.data.linksLoaded = true;
@@ -127,7 +130,16 @@
             },
 
              _markCalibrationNode : function(node) {
-                if( !node.properties.prmname.match(/^CN.*/) ) return;
+                if( node.properties.prmname.indexOf('_') > -1 ) {
+                    var parts = node.properties.prmname.split('_');
+                    if( !(parts[0].match(/^CN.*/) || parts[1].match(/^CN.*/)) ) {
+                        return;
+                    }
+                } else if( !node.properties.prmname.match(/^CN.*/) ) {
+                    return;
+                }
+
+                
 
                 var hasIn = false;
                 var hasOut = false;
@@ -148,8 +160,10 @@
                         }
                     }
                 } 
-                
+
+                node.properties.calibrationNode = true;
                 if( !hasIn && !hasOut ) return;
+                
                 if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
                 else if ( hasIn ) node.properties.calibrationMode = 'in';
                 else if ( hasOut ) node.properties.calibrationMode = 'out';

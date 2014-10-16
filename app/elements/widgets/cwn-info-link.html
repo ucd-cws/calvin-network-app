@@ -1,0 +1,12 @@
+<polymer-element name="cwn-info-link" attributes="name ds">
+    <template>
+        <template bind if="{{ds.lookupMap[name] != null}}"><a href="{{hack}}#info/{{name}}">{{name}}</a></template>
+        <template bind if="{{ds.lookupMap[name] == null}}"><span>{{name}}</span></template>
+    </template>
+    <script>
+        Polymer('cwn-info-link', {
+            // leave blank for stupid hack polymer team won't fix
+            hack : '',
+        });
+    </script>
+</polymer-element>

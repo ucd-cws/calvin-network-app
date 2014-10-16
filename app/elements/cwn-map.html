@@ -4,8 +4,28 @@
             leaflet-map {
                 height: 100%
             }
+            .updating {
+                position: absolute;
+                height: 100%;
+                width: 100%;
+                top: 0;
+                left: 0;
+                z-index: 2;
+                background-color: rgba(255,255,255,.6);
+            }
+            .updating div {
+                position: absolute;
+                left: 20px;
+                bottom: 20px;
+                font-size: 36px;
+                color: #888;
+                text-shadow: 2px 2px white;
+            }
         </style>
         <leaflet-map id="leaflet" content tab="true" longitude="-121.00" latitude="40.00" zoom="5"></leaflet-map>
+        <div hidden?="{{!updating}}" class="updating">
+            <div>Filtering...</div>
+        </div>
     </template>
     <script>
         Polymer('cwn-map', {
@@ -18,8 +38,20 @@
                 'ds.loading' : 'update',
                 '$.leaflet.map' : 'update',
                 'filters.calibrationMode' : 'update',
-                'filters.Junction_Node' : 'update'
+                'filters.Junction' : 'update',
+                'filters.Power_Plant'  : 'update',
+                'filters.Agricultural_Demand'  : 'update',
+                'filters.Pump_Plant' : 'update',
+                'filters.Water_Treatment' : 'update',
+                'filters.Surface_Storage' : 'update',
+                'filters.Urban_Demand' : 'update',
+                'filters.Sink'  : 'update',
+                'filters.Groundwater_Storage' : 'update',
+                'filters.Non_Standard_Demand' : 'update',
+                'filters.text' : 'update'
             },
+
+            updating: false,
 
             _process : function() {
                 if( this.ds.loading || !this.$.leaflet.map ) return;
@@ -70,70 +102,148 @@
 
             update : function() {
                 if( this.ds.loading || !this.$.leaflet.map ) return;
+                this.updating = true;
 
-                var map = this.$.leaflet.map;
+                setTimeout(function(){
+                    var map = this.$.leaflet.map;
 
-                if( !L.MyMarker ) this.initMarker();
+                    if( !L.MyMarker ) this.initMarker();
 
-                if( this.markerLayer ) map.removeLayer(this.markerLayer);
-                if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
+                    if( this.markerLayer ) map.removeLayer(this.markerLayer);
+                    if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
 
-                // update filtering
-                this._filter();
+                    // update filtering
+                    this._filter();
 
-                this.edgeLayer = L.geoJson(this.ds.data.links, {
-                    style: function(feature) {
-                        return {
-                            color: 'red',
-                            weight: 3,
-                            opacity: 0.4,
-                            smoothFactor: 1
+                    var calibrationMode = this.filters.calibrationMode;
+                    this.edgeLayer = L.geoJson(this.ds.data.links, {
+                        style: function(feature) {
+                            var line = {
+                                color: 'red',
+                                weight: 3,
+                                opacity: 0.4,
+                                smoothFactor: 1
+                            }
+
+                            if( feature.properties.calibrationNode && calibrationMode ) {
+                                line.color = 'blue';
+                            }
+                            return line;
+                        },
+                        filter: function(feature, layer) {
+                            return feature.properties._render.show;
                         }
-                    }
-                }).addTo(map);
-                this.edgeLayer.on('click', function(e){
-                    this.fire('selected', e.layer.feature);
-                });
+                    }).addTo(map);
+                    this.edgeLayer.on('click', function(e){
+                        this.fire('selected', e.layer.feature);
+                    }.bind(this));
+                    this.edgeLayer.on('touch', function(e){
+                        this.fire('selected', e.layer.feature);
+                    }.bind(this));
+
+
+                    this.markerLayer = L.geoJson(this.ds.data.nodes, {
+                        pointToLayer: function(feature, ll) {
+                            return this._getMarker(feature, ll);
+                        }.bind(this),
+                        filter: function(feature, layer) {
+                            return feature.properties._render.show || feature.properties._render.oneStep;
+                        }
+                    }).addTo(map);
+                    this.markerLayer.on('click', function(e){
+                        this.fire('selected', e.layer.feature);
+                    }.bind(this));
+
+                    this.markerLayer.on('touch', function(e){
+                        this.fire('selected', e.layer.feature);
+                    }.bind(this));
+
+                    this.updating = false;
+                }.bind(this), 200);
                 
-
-                this.markerLayer = L.geoJson(this.ds.data.nodes, {
-                    pointToLayer: function(feature, ll) {
-                        return this._getMarker(feature, ll);
-                    }.bind(this)
-                    /*,filter: function(feature, layer) {
-                        return this.filters[feature.properties.type.replace(' ','_')];
-                    }.bind(this)*/
-                }).addTo(map);
-                this.markerLayer.on('click', function(e){
-                    this.fire('selected', e.layer.feature);
-                }.bind(this));
-
-                this.markerLayer.on('touch', function(e){
-                    this.fire('selected', e.layer.feature);
-                }.bind(this));
-
-                
-
             },
 
             // marker nodes that are linked to a visible node with the 'nodeStep' attribute
             _filter : function() {
-                var i, d, id;
-                for( i = 0; i < this.ds.data; i++ ) {
-                    d = this.ds.data[i];
+                var re, i, d, d2, d3, id;
+
+                // three loops, first mark nodes that match, then mark one step nodes
+                // finally mark links to hide and show
+
+
+                try {
+                    re = new RegExp('.*'+this.filters.text.toLowerCase()+'.*');
+                } catch (e) {}
+
+                for( i = 0; i < this.ds.data.nodes.length; i++ ) {
+                    d = this.ds.data.nodes[i];
                     
-                    if( !d.properties._render ) d.properties._render = {};
+                    if( !d.properties._render ) {
+                        d.properties._render = {
+                            filter_id : d.properties.type.replace(' ','_').replace('-','_')
+                        };
+                    }
                     d.properties._render.oneStep = false;
 
-                    id = properties.type.replace(' ','_');
-                    if( this.filters[id] ) return;
-
-                    for( var i = 0; i < d.properties.terminals.length; i++ ) {
-                        if( !d.properties.terminals ) continue;
-
-                        // TODO
+                    
+                    if( this.filters[d.properties._render.filter_id] && this._isTextMatch(re, d.properties) ) {
+                        d.properties._render.show = true;
+                    } else {
+                        d.properties._render.show = false;
                     }
                 }
+
+                // now mark one step nodes
+                for( i = 0; i < this.ds.data.nodes.length; i++ ) {
+                    d = this.ds.data.nodes[i];
+                    if( d.properties._render.show ) continue;
+
+                    if( d.properties.terminals ) {
+                        for( var j = 0; j < d.properties.terminals.length; j++ ) {
+                            d2 = this.ds.lookupMap[d.properties.terminals[j]];
+                            if( d2 && d2.properties._render.show ) {
+                                d.properties._render.oneStep = true;
+                                break;
+                            }
+                        }
+                    }
+                    if( d.properties.origins && !d.properties._render.oneStep) {
+                        for( var j = 0; j < d.properties.origins.length; j++ ) {
+                            d2 = this.ds.lookupMap[d.properties.origins[j]];
+                            if( d2 && d2.properties._render.show ) {
+                                d.properties._render.oneStep = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // now mark links that should be show
+                for( var i = 0; i < this.ds.data.links.length; i++ ) {
+                    d = this.ds.data.links[i];
+                    if( !d.properties._render ) {
+                        d.properties._render = {};
+                    }
+
+                    d2 = this.ds.lookupMap[d.properties.origin];
+                    d3 = this.ds.lookupMap[d.properties.terminus];
+                    if( d2 && d3 && 
+                        (d2.properties._render.show || d2.properties._render.oneStep ) && 
+                        (d3.properties._render.show || d3.properties._render.oneStep ) ) {
+                        d.properties._render.show = true;
+                    } else {
+                        d.properties._render.show = false;
+                    }
+                }
+
+            },
+
+            _isTextMatch : function(re, props) {
+                if( this.filters.text == '' || !re ) return true;
+
+                if( re.test(props.prmname.toLowerCase()) ) return true;
+                if( props.description && re.test(props.description.toLowerCase()) ) return true;
+                return false;
             },
 
             _getMarker : function(feature, ll) {
@@ -145,13 +255,13 @@
                     color : '#333',
                     fillColor : this.legend[feature.properties.type] ? 
                                     this.legend[feature.properties.type].color : '#000000',
-                    opacity: render.oneStep ? .4 : .9,
-                    fillOpacity : render.oneStep ? .2 : .7
+                    opacity: render.oneStep ? .3 : .9,
+                    fillOpacity : render.oneStep ? .1 : .7
                 };
 
                 if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
-                    options.radius = 20,
-                    options.strokeWidth = '3';
+                    options.radius = 30,
+                    options.weight = 7;
                     if( feature.properties.calibrationMode == 'both' ) options.color = 'red';
                     else if( feature.properties.calibrationMode == 'in' ) options.color = 'yellow';
                     else if( feature.properties.calibrationMode == 'out' ) options.color = 'blue';
