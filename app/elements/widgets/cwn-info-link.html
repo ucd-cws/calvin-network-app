@@ -1,5 +1,11 @@
 <polymer-element name="cwn-info-link" attributes="name ds">
     <template>
+        <style>
+            span {
+                color: #888;
+                font-style: italic;
+            }
+        </style>
         <template bind if="{{ds.lookupMap[name] != null}}"><a href="{{hack}}#info/{{name}}">{{name}}</a></template>
         <template bind if="{{ds.lookupMap[name] == null}}"><span>{{name}}</span></template>
     </template>
