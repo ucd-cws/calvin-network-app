@@ -51,7 +51,17 @@
               <h4>Origins</h4>
               <div>
                 <template bind if="{{feature.properties.origin != null}}">
-                  <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
+                  <table class="table">
+                    <tr>
+                      <td>
+                        <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
+                      </td><td class="desciption">
+                        <template bind if="{{ds.lookupMap[feature.properties.origin] != null}}">
+                          {{ds.lookupMap[feature.properties.origin].properties.description}}
+                        </template>
+                      </td>
+                    </tr>
+                  </table>
                 </template>
 
                 <template bind if="{{feature.properties.origins.length > 0}}">
@@ -73,7 +83,17 @@
               <h4>Terminals</h4>
               <div>
                 <template bind if="{{feature.properties.terminus != null}}">
-                  <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+                  <table class="table">
+                    <tr>
+                      <td>
+                        <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+                      </td><td class="desciption">
+                        <template bind if="{{ds.lookupMap[feature.properties.terminus] != null}}">
+                          {{ds.lookupMap[feature.properties.terminus].properties.description}}
+                        </template>
+                      </td>
+                    </tr>
+                  </table>
                 </template>
 
                 <template bind if="{{feature.properties.terminals.length > 0}}">
