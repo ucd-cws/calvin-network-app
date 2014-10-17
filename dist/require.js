@@ -1257,14 +1257,6 @@ Polymer('cwn-icon');;
                 
             },
 
-            _hackTouchEvent : function(marker) {
-                $(marker._container).on('touchend', function(e){
-                    setTimeout(function(){
-                        if( !this.mapMoving ) this.fire('selected', marker.feature);
-                    }.bind(this), 50);
-                }.bind(this));
-            },
-
             // marker nodes that are linked to a visible node with the 'nodeStep' attribute
             _filter : function() {
                 var re, i, d, d2, d3, id;
@@ -1402,13 +1394,29 @@ Polymer('cwn-icon');;
             },
 
             // hack so we know if the map is moving for touch events
+            lastMove : -1,
             mapMoving : false,
             initMoveEvents : function() {
                 this.map.on('movestart', function(){
                     this.mapMoving = true;
                 }.bind(this));
                 this.map.on('moveend', function(){
+                    this.lastMove = new Date().getTime();
                     this.mapMoving = false;
+                }.bind(this));
+            },
+
+            _hackTouchEvent : function(marker) {
+                $(marker._container).on('touchend', function(e){
+                    setTimeout(function(){
+                        var timeFromLastMove = new Date().getTime() - this.lastMove;
+                        // make sure the map is not moving and has actually been settled for 300ms
+                        if( !this.mapMoving && timeFromLastMove > 300 ) {
+                            this.fire('selected', marker.feature);
+                        }
+
+                    // wait 50ms seconds to check to make sure map.movestart has had a chance to fire
+                    }.bind(this), 50);
                 }.bind(this));
             },
 
