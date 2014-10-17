@@ -342,6 +342,9 @@ triggered only when value is a different instance.
             a {
                 vertical-align: top;
             }
+            :host {
+                white-space: nowrap;
+            }
         </style>
         <template bind="" if="{{ds.lookupMap[name] != null}}"><cwn-app-icon type="{{ds.lookupMap[name].properties.type}}" width="22" height="22" fillfromtype="true"></cwn-app-icon> <a href="{{hack}}#info/{{name}}">{{name}}</a></template>
         <template bind="" if="{{ds.lookupMap[name] == null}}"><span>{{name}}</span></template>
