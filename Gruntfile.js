@@ -73,7 +73,7 @@ module.exports = function (grunt) {
                 dest: '<%= yeoman.dist %>',
                 verbose : true
             },
-            html: '<%= yeoman.app %>/{,*/}*.html'
+            html: '<%= yeoman.app %>/index.html'
         },
 
         // Performs rewrites based on rev and the useminPrepare configuration
@@ -81,8 +81,8 @@ module.exports = function (grunt) {
             options: {
                 assetsDirs: ['<%= yeoman.dist %>']
             },
-            html: ['<%= yeoman.dist %>/{,*/}*.html'],
-            css: ['<%= yeoman.dist %>/styles/{,*/}*.css']
+            html: ['<%= yeoman.dist %>/index.html']
+            //,css: ['<%= yeoman.dist %>/styles/{,*/}*.css']
         },
 
         // The following *-min tasks produce minified files in the dist folder
@@ -157,6 +157,18 @@ module.exports = function (grunt) {
             }
         },
 
+        vulcanize: {
+            default : {
+                options: {
+                    csp : true,
+                    inline : true
+                },
+                files : {
+                    '<%= yeoman.dist %>/require.html': ['<%= yeoman.dist %>/require.html']
+                }
+            }
+        },
+
 
         // Run some tasks in parallel to speed up build process
         concurrent: {
@@ -174,45 +186,6 @@ module.exports = function (grunt) {
                 'svgmin'
             ]
         },
-        
-        vulcanize: {
-            default : {
-                options: {},
-                files : {
-                    '<%= yeoman.dist %>/index.html': ['<%= yeoman.dist %>/index.html'],
-                }
-            },
-            
-        },
-
-        manifest: {
-            generate: {
-              options: {
-                basePath: 'dist/',
-                cache: [
-                    'bower_components/polymer/polymer.js', 
-                    'fonts/fontawesome-webfont.svg?v=4.0.3',
-                    'fonts/fontawesome-webfont.ttf?v=4.0.3',
-                    'fonts/fontawesome-webfont.woff?v=4.0.3'
-                ],
-                network: ['/', '*', 'http://*', 'https://*'],
-                preferOnline: true,
-                verbose: true,
-                timestamp: true,
-                hash: true,
-                master: ['record.html']
-              },
-              src: [
-                'index.html',
-                'record.html',
-                'scripts/*',
-                'styles/*.css',
-                'font/*'
-              ],
-              dest: 'dist/manifest.appcache'
-            }
-        },
-
 
         shell: {
             // this should be done prior to running normal dev server, generates the webcomponets base.css file
@@ -244,41 +217,30 @@ module.exports = function (grunt) {
             },
             // the vulconizer imports all the custom elements everything we need
             // usemin compresses the css and js, makeing the components lib
-            // unnecessary except the polymer script
+            // unnecessary except the polymer script, only need to move over the font-awesome fontes
             'clear-bower-components' : {
                 options: {
                     stdout: true,
                     stderr: true
                 },
-                command: 'rm -rf <%= yeoman.dist %>/components/* && '+
-                         'rm -rf <%= yeoman.dist %>/elements && '+
-                         'mkdir <%= yeoman.dist %>/components/polymer && '+
-                         'mkdir -p <%= yeoman.dist %>/components/jquery/dist && '+
-                         'cp <%= yeoman.app %>/components/polymer/polymer.js <%= yeoman.dist %>/components/polymer && '+
-                         'cp <%= yeoman.app %>/components/polymer/polymer.js.map <%= yeoman.dist %>/components/polymer && '+
-                         'cp <%= yeoman.app %>/components/jquery/dist/jquery.js <%= yeoman.dist %>/components/jquery/dist'
-            },
-            // datanucleusenhance run 'ant compile' as well
-            'appengine-compile' : {
-                options: {
-                    stdout: true,
-                    stderr: true
-                },
-                command: 'cd appengine/appengine-dev && ant datanucleusenhance'
+                command: 'mv <%= yeoman.dist %>/components/font-awesome/fonts <%= yeoman.dist %>/ && '+
+                         'rm -rf <%= yeoman.dist %>/components && '+
+                         'rm -rf <%= yeoman.dist %>/elements'
+
             },
             'server' : {
                 options: {
                     stdout: true,
                     stderr: true
                 },
-                command: 'node server'
+                command: 'node server --dev'
             },
             'build-server' : {
                 options: {
                     stdout: true,
                     stderr: true
                 },
-                command: 'node server.js --build'
+                command: 'node server.js'
             }
         }
 
@@ -290,22 +252,20 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('build-server', [
+        'build',
         'shell:build-server'
     ]);
 
     grunt.registerTask('build', [
         'clean:dist',
-        'useminPrepare',
-        'concurrent:dist',
-        //'autoprefixer',
-        'concat',
-        'uglify',
         'copy:dist',
-        'rev',
+        'useminPrepare',
+        'concat:generated',
+        'cssmin:generated',
+        'uglify:generated',
         'usemin',
-        'vulcanize:default',
-        'shell:clear-bower-components',
-        'manifest'
+        'vulcanize',
+        'shell:clear-bower-components'
     ]);
 
 };

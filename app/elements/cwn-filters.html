@@ -34,14 +34,6 @@
                   <div class="form-horizontal">
 
                     <div class="form-group">
-                      <label for="filter-input" class="col-sm-2 control-label">Filter</label>
-                      <div class="col-sm-10">
-                        <input type="text" id="filter-input" class="form-control" value="{{filterText}}" />
-                        <p class="help-block">By name or description.</p>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
                         <label for="filter-input" class="col-sm-2 control-label"></label>
                         <div class="col-sm-10">
                           <label class="checkbox-inline">
@@ -49,7 +41,24 @@
                             <p class="help-block">Show calibration links and nodes, mark nodes attached to calibartion links</p>
                           </label>
                         </div>
-                        
+                    </div>
+
+                    <div class="form-group">
+                        <label for="filter-input" class="col-sm-2 control-label"></label>
+                        <div class="col-sm-10">
+                          <label class="checkbox-inline">
+                            <input type="checkbox" id="oneStep-mode" checked="{{filters.oneStepMode}}"  /> One Step Mode
+                            <p class="help-block">Partially show nodes that have been filtered out but are connected to a visible node</p>
+                          </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="filter-input" class="col-sm-2 control-label">Filter</label>
+                      <div class="col-sm-10">
+                        <input type="text" id="filter-input" class="form-control" value="{{filterText}}" />
+                        <p class="help-block">By name or description.</p>
+                      </div>
                     </div>
 
                     <div class="form-group">
@@ -72,7 +81,7 @@
             </div>
 
             <div style="text-align:center">
-                <a class="btn btn-link" on-tap="{{hide}}">Close</a>
+                <a class="btn btn-link" on-click="{{hide}}">Close</a>
             </div>
         </div>
     </template>
@@ -87,6 +96,7 @@
 
             filters : {
                 calibrationMode : true,
+                oneStepMode : true,
                 text : '',
             },
 

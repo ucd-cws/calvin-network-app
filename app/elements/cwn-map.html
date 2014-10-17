@@ -46,6 +46,7 @@
                 'ds.loading' : 'update',
                 '$.leaflet.map' : 'update',
                 'filters.calibrationMode' : 'update',
+                'filters.oneStepMode' : 'update',
                 'filters.Junction' : 'update',
                 'filters.Power_Plant'  : 'update',
                 'filters.Agricultural_Demand'  : 'update',
@@ -125,6 +126,7 @@
 
                 setTimeout(function(){
                     var map = this.map;
+                    var oneStepMode = this.filters.oneStepMode;
 
                     if( !L.MyMarker ) {
                         this.initMoveEvents();
@@ -169,7 +171,8 @@
                             return this._getMarker(feature, ll);
                         }.bind(this),
                         filter: function(feature, layer) {
-                            return feature.properties._render.show || feature.properties._render.oneStep;
+                            return feature.properties._render.show || 
+                                    (feature.properties._render.oneStep && oneStepMode);
                         }
                     }).addTo(map);
                     this.markerLayer.on('click', function(e){
@@ -258,8 +261,9 @@
                     d2 = this.ds.lookupMap[d.properties.origin];
                     d3 = this.ds.lookupMap[d.properties.terminus];
                     if( d2 && d3 && 
-                        (d2.properties._render.show || d2.properties._render.oneStep ) && 
-                        (d3.properties._render.show || d3.properties._render.oneStep ) ) {
+                        (d2.properties._render.show || (this.filters.oneStepMode && d2.properties._render.oneStep) ) && 
+                        (d3.properties._render.show || (this.filters.oneStepMode && d3.properties._render.oneStep) ) &&
+                       !(d2.properties._render.oneStep && d3.properties._render.oneStep ) ) {
                         d.properties._render.show = true;
                     } else {
                         d.properties._render.show = false;
