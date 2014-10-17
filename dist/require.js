@@ -194,13 +194,14 @@ return c[b]},styleCacheForScope:function(a){if(d){var b=a.host?a.host.localName:
 
                 this.dragging = e.currentTarget;
                 this.dragStartLeft = parseInt(e.currentTarget.style.left || 0);
-                this.dragStartX = e.x;
+                this.dragStartX = this.getX(e);
 
                 if( this.dragging.id == 'startTab' ) {
                     this.otherStartLeft = parseInt(this.$.endTab.style.left || 0 );
                 } else if( this.dragging.id == 'endTab' ) {
                     this.otherStartLeft = parseInt(this.$.startTab.style.left || 0 );
                 }
+                console.log('Drag start: '+this.dragging.id);
             },
 
             onDrag : function(e) {
@@ -251,6 +252,7 @@ return c[b]},styleCacheForScope:function(a){if(d){var b=a.host?a.host.localName:
 
             endDrag : function(e) {
                 if( this.dragging == null ) return;
+                console.log('Drag end: '+this.dragging.id);
 
                 var pos = this.getPosition(e);
                 var cDay = Math.floor(this.numDays * (pos / this.cWidth));
@@ -285,7 +287,7 @@ return c[b]},styleCacheForScope:function(a){if(d){var b=a.host?a.host.localName:
             },
 
             getPosition : function(e) {
-                var pos = this.dragStartLeft + (e.x - this.dragStartX);
+                var pos = this.dragStartLeft + (this.getX(e) - this.dragStartX);
 
                 if( pos < 0 ) pos = 0;
                 if( pos > this.cWidth ) pos = this.cWidth;
@@ -297,6 +299,22 @@ return c[b]},styleCacheForScope:function(a){if(d){var b=a.host?a.host.localName:
                 } 
 
                 return pos;
+            },
+
+            // keep track of last touch for trouch end
+            lastTouchX : 0,
+            getX : function(e) {
+                if( e.x !== undefined ) return e.x;
+                if( e.touches !== undefined ) {
+                    if( e.touches.length > 0 ) {
+                        this.lastTouchX = e.touches[0].screenX;
+                        return e.touches[0].screenX;
+                    } else {
+                        // touchend... I hope
+                        return this.lastTouchX;
+                    }
+                }                
+                return 0; // bad
             }
         });
     ;
