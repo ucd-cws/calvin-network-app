@@ -347,7 +347,7 @@ triggered only when value is a different instance.
             }
         </style>
         <template bind="" if="{{ds.lookupMap[name] != null}}"><cwn-app-icon type="{{ds.lookupMap[name].properties.type}}" width="22" height="22" fillfromtype="true"></cwn-app-icon> <a href="{{hack}}#info/{{name}}">{{name}}</a></template>
-        <template bind="" if="{{ds.lookupMap[name] == null}}"><span>{{name}}</span></template>
+        <template bind="" if="{{ds.lookupMap[name] == null}}"><span style="vertical-align:super">{{name}}</span></template>
     </template>
     
 </polymer-element></div>
@@ -432,7 +432,7 @@ triggered only when value is a different instance.
             }
         </style>
         <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == &apos;Diversion&apos;}}"></canvas>
-        <cwn-icon icon="fa-code-fork" style="font-size:{{width-15}}px" hidden?="{{type != &apos;Diversion&apos;}}"></cwn-icon>
+        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != &apos;Diversion&apos;}}"></cwn-icon>
     </template>
     
 </polymer-element></div>
@@ -714,11 +714,19 @@ triggered only when value is a different instance.
                 <template bind="" if="{{feature.properties.origins.length &gt; 0}}">
                   <table class="table">
                     <tr template="" repeat="{{origin in feature.properties.origins}}">
-                      <td>
+                      <td style="white-space:nowrap">
                         <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>
+                        <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
+                        <cwn-info-link name="{{origin+&apos;_&apos;+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
                       </td><td class="desciption">
                         <template bind="" if="{{ds.lookupMap[origin] != null}}">
                           {{ds.lookupMap[origin].properties.description}}
+                        </template>
+                        <template bind="" if="{{ds.lookupMap[origin+&apos;_&apos;+feature.properties.prmname] != null &amp;&amp; ds.lookupMap[origin] != null}}">
+                            <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
+                        </template>
+                        <template bind="" if="{{ds.lookupMap[origin+&apos;_&apos;+feature.properties.prmname] != null}}">
+                          {{ds.lookupMap[origin+&apos;_&apos;+feature.properties.prmname].properties.description}}
                         </template>
                       </td>
                     </tr>
@@ -746,9 +754,17 @@ triggered only when value is a different instance.
                 <template bind="" if="{{feature.properties.terminals.length &gt; 0}}">
                   <table class="table">
                     <tr template="" repeat="{{terminal in feature.properties.terminals}}">
-                      <td>
+                      <td style="white-space:nowrap">
+                        <cwn-info-link name="{{terminal+&apos;_&apos;+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
+                        <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>
                       </td><td class="desciption">
+                        <template bind="" if="{{ds.lookupMap[terminal+&apos;_&apos;+feature.properties.prmname] != null}}">
+                          {{ds.lookupMap[terminal+&apos;_&apos;+feature.properties.prmname].properties.description}}
+                        </template>
+                        <template bind="" if="{{ds.lookupMap[terminal+&apos;_&apos;+feature.properties.prmname] != null &amp;&amp; ds.lookupMap[terminal] != null}}">
+                            <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
+                        </template>
                         <template bind="" if="{{ds.lookupMap[terminal] != null}}">
                           {{ds.lookupMap[terminal].properties.description}}
                         </template>

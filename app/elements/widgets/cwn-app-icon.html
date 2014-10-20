@@ -6,12 +6,13 @@
             }
         </style>
         <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == 'Diversion'}}"></canvas>
-        <cwn-icon icon="fa-code-fork" style="font-size:{{width-15}}px" hidden?="{{type != 'Diversion'}}"></cwn-icon>
+        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != 'Diversion'}}"></cwn-icon>
     </template>
     <script>
         Polymer('cwn-app-icon', {
             fillStyle : '#fffff',
             fillFromType : false,
+            fontSize : 14,
 
             styles : {
               'Power Plant' : '#3366cc',
@@ -37,6 +38,9 @@
             },
 
             redraw : function() {
+                this.fontSize = this.width-15;
+                if( this.fontSize < 14 ) this.fontSize = 14;
+
                 var c2 = this.$.canvas.getContext('2d');
                 c2.clearRect(0, 0, this.width, this.height);
 

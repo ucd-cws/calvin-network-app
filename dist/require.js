@@ -323,6 +323,7 @@ Polymer('cwn-icon');;
         Polymer('cwn-app-icon', {
             fillStyle : '#fffff',
             fillFromType : false,
+            fontSize : 14,
 
             styles : {
               'Power Plant' : '#3366cc',
@@ -348,6 +349,9 @@ Polymer('cwn-icon');;
             },
 
             redraw : function() {
+                this.fontSize = this.width-15;
+                if( this.fontSize < 14 ) this.fontSize = 14;
+
                 var c2 = this.$.canvas.getContext('2d');
                 c2.clearRect(0, 0, this.width, this.height);
 
@@ -1299,7 +1303,11 @@ Polymer('cwn-icon');;
 
                     
                     if( this.filters[d.properties._render.filter_id] && this._isTextMatch(re, d.properties) ) {
-                        d.properties._render.show = true;
+                        if( !this.filters.calibrationMode && d.properties.calibrationNode ) {
+                            d.properties._render.show = false;
+                        } else {
+                            d.properties._render.show = true;
+                        }
                     } else {
                         d.properties._render.show = false;
                     }
@@ -1309,6 +1317,7 @@ Polymer('cwn-icon');;
                 for( i = 0; i < this.ds.data.nodes.length; i++ ) {
                     d = this.ds.data.nodes[i];
                     if( d.properties._render.show ) continue;
+                    if( !this.filters.calibrationMode && d.properties.calibrationNode ) continue;
 
                     if( d.properties.terminals ) {
                         for( var j = 0; j < d.properties.terminals.length; j++ ) {

@@ -212,7 +212,11 @@
 
                     
                     if( this.filters[d.properties._render.filter_id] && this._isTextMatch(re, d.properties) ) {
-                        d.properties._render.show = true;
+                        if( !this.filters.calibrationMode && d.properties.calibrationNode ) {
+                            d.properties._render.show = false;
+                        } else {
+                            d.properties._render.show = true;
+                        }
                     } else {
                         d.properties._render.show = false;
                     }
@@ -222,6 +226,7 @@
                 for( i = 0; i < this.ds.data.nodes.length; i++ ) {
                     d = this.ds.data.nodes[i];
                     if( d.properties._render.show ) continue;
+                    if( !this.filters.calibrationMode && d.properties.calibrationNode ) continue;
 
                     if( d.properties.terminals ) {
                         for( var j = 0; j < d.properties.terminals.length; j++ ) {

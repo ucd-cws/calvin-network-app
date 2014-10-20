@@ -71,11 +71,19 @@
                 <template bind if="{{feature.properties.origins.length > 0}}">
                   <table class="table">
                     <tr template repeat="{{origin in feature.properties.origins}}">
-                      <td>
+                      <td style="white-space:nowrap">
                         <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>
+                        <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
+                        <cwn-info-link name="{{origin+'_'+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
                       </td><td class="desciption">
                         <template bind if="{{ds.lookupMap[origin] != null}}">
                           {{ds.lookupMap[origin].properties.description}}
+                        </template>
+                        <template bind if="{{ds.lookupMap[origin+'_'+feature.properties.prmname] != null && ds.lookupMap[origin] != null}}">
+                            <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
+                        </template>
+                        <template bind if="{{ds.lookupMap[origin+'_'+feature.properties.prmname] != null}}">
+                          {{ds.lookupMap[origin+'_'+feature.properties.prmname].properties.description}}
                         </template>
                       </td>
                     </tr>
@@ -103,9 +111,17 @@
                 <template bind if="{{feature.properties.terminals.length > 0}}">
                   <table class="table">
                     <tr template repeat="{{terminal in feature.properties.terminals}}">
-                      <td>
+                      <td style="white-space:nowrap">
+                        <cwn-info-link name="{{terminal+'_'+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
+                        <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>
                       </td><td class="desciption">
+                        <template bind if="{{ds.lookupMap[terminal+'_'+feature.properties.prmname] != null}}">
+                          {{ds.lookupMap[terminal+'_'+feature.properties.prmname].properties.description}}
+                        </template>
+                        <template bind if="{{ds.lookupMap[terminal+'_'+feature.properties.prmname] != null && ds.lookupMap[terminal] != null}}">
+                            <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
+                        </template>
                         <template bind if="{{ds.lookupMap[terminal] != null}}">
                           {{ds.lookupMap[terminal].properties.description}}
                         </template>
