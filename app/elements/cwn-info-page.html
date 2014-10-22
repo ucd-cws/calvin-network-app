@@ -23,16 +23,125 @@
             z-index: 100;
             cursor: pointer;
           }
-          .desciption {
+          .description {
             font-size: 12px;
             color: #888;
+          }
+          .border {
+            padding: 5px;
+            display: inline-block;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            margin-top: 25px;
           }
         </style>
 
         <a class="back-btn" on-click="{{back}}">
           <cwn-icon icon="fa-arrow-left" ></cwn-icon>
         </a>
+
+        <div class="card" hidden?="{{ds.loading}}">
+        <div class="row" >
+          <div class="col-md-4 no-float">
+
+            <h4 class="page-header" style="text-align:right">Origins</h4>
+            <div>
+
+              <template bind if="{{feature.properties.origin != null}}">
+                <div style="text-align:right">
+                  <div>
+                    <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
+                  </div>
+                  <template bind if="{{ds.lookupMap[feature.properties.origin] != null}}">
+                    <div class="description">{{ds.lookupMap[feature.properties.origin].properties.description}}</div>
+                  </template>
+                </div>
+              </template>
+
+              <template bind if="{{origins.length > 0}}">
+                <template repeat="{{origin in origins}}">
+                  <div style="text-align:right;margin-bottom:20px">
+                    <div>
+                      <cwn-info-link name="{{origin.name}}" ds="{{ds}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
+
+                      <template bind if="{{origin.link != ''}}">
+                        <a href="{{hack}}#info/{{origin.link}}"><cwn-icon icon="fa-long-arrow-right" style="font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon></a>
+                      </template>
+                      <template bind if="{{origin.link == ''}}">
+                        <cwn-icon icon="fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon>
+                      </template>
+
+                    </div>
+                    <template bind if="{{origin.description != ''}}">
+                      <div class="description" style="margin: -10px 55px 0 0">{{origin.description}}</div>
+                    </template>
+                  </div>
+                </template>
+              </template>
+
+            </div>
+
+          </div>
+          <div class="col-md-4" style="text-align:center" id="middleCol">
+          
+            
+              <div class="border">
+                <table>
+                  <tr>
+                    <td>
+                      <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillFromType="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
+                    </td><td>
+                      <h2>{{feature.properties.prmname}}</h2>
+                      <div><b>{{feature.properties.type}}</b></div>
+                    </td>
+                  </tr>
+                </table>
+                <div style="padding: 10px; color: #888">
+                  {{feature.properties.description}}
+                </div>
+              </div>
+            
+
+          </div>
+          <div class="col-md-4">
+
+            <h4 class="page-header">Terminals</h4>
+
+            <template bind if="{{feature.properties.terminus != null}}">
+              <div>
+                <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+              </div>
+              <template bind if="{{ds.lookupMap[feature.properties.terminus] != null}}">
+                <div class="description">{{ds.lookupMap[feature.properties.terminus].properties.description}}</div>
+              </template>
+            </template>
+
+            <template bind if="{{terminals.length > 0}}">
+              <template repeat="{{terminal in terminals}}">
+                <div style="margin-bottom:20px">
+                  <div>
+                    <template bind if="{{terminal.link != ''}}">
+                      <a href="{{hack}}#info/{{terminal.link}}"><cwn-icon icon="fa-long-arrow-right" style="font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon></a>
+                    </template>
+                    <template bind if="{{terminal.link == ''}}">
+                      <cwn-icon icon="fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon>
+                    </template>
+
+                    &nbsp;&nbsp;&nbsp;<cwn-info-link name="{{terminal.name}}" ds="{{ds}}"></cwn-info-link>
+
+                  </div>
+                  <template bind if="{{terminal.description != ''}}">
+                    <div class="description" style="margin: -10px 0 0 55px">{{terminal.description}}</div>
+                  </template>
+                </div>
+              </template>
+            </template>
+
+          </div>
+        </div>
+      </div>
         
+        <!--
         <div class="row" hidden?="{{ds.loading}}" >
           <div class="col-md-6">
 
@@ -59,7 +168,7 @@
                     <tr>
                       <td>
                         <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
+                      </td><td class="description">
                         <template bind if="{{ds.lookupMap[feature.properties.origin] != null}}">
                           {{ds.lookupMap[feature.properties.origin].properties.description}}
                         </template>
@@ -75,7 +184,7 @@
                         <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>
                         <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         <cwn-info-link name="{{origin+'_'+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
+                      </td><td class="description">
                         <template bind if="{{ds.lookupMap[origin] != null}}">
                           {{ds.lookupMap[origin].properties.description}}
                         </template>
@@ -99,7 +208,7 @@
                     <tr>
                       <td>
                         <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
+                      </td><td class="description">
                         <template bind if="{{ds.lookupMap[feature.properties.terminus] != null}}">
                           {{ds.lookupMap[feature.properties.terminus].properties.description}}
                         </template>
@@ -112,14 +221,14 @@
                   <table class="table">
                     <tr template repeat="{{terminal in feature.properties.terminals}}">
                       <td style="white-space:nowrap">
-                        <cwn-info-link name="{{terminal+'_'+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
+                        <cwn-info-link name="{{feature.properties.prmname+'_'+terminal}}" ds="{{ds}}"></cwn-info-link>
                         <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
-                        <template bind if="{{ds.lookupMap[terminal+'_'+feature.properties.prmname] != null}}">
-                          {{ds.lookupMap[terminal+'_'+feature.properties.prmname].properties.description}}
+                      </td><td class="description">
+                        <template bind if="{{ds.lookupMap[feature.properties.prmname+'_'+terminal] != null}}">
+                          {{ds.lookupMap[feature.properties.prmname+'_'+terminal].properties.description}}
                         </template>
-                        <template bind if="{{ds.lookupMap[terminal+'_'+feature.properties.prmname] != null && ds.lookupMap[terminal] != null}}">
+                        <template bind if="{{ds.lookupMap[feature.properties.prmname+'_'+terminal] != null && ds.lookupMap[terminal] != null}}">
                             <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         </template>
                         <template bind if="{{ds.lookupMap[terminal] != null}}">
@@ -134,6 +243,7 @@
             </div>
           </div>
         </div>
+      -->
 
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">
@@ -210,6 +320,8 @@
         Polymer('cwn-info-page', {
             feature : {},
 
+            hack : '',
+
             tableProperties : ['prmname'],
 
             // loading flags
@@ -217,6 +329,10 @@
             costLoadError : false,
             climateLoading : false,
             costLoading : false,
+
+            // have to do long lookup right now, is there are better way?
+            origins : [],
+            terminals : [],
 
             // render data.  Data in a format ready to draw above
             inflows : [],
@@ -239,6 +355,10 @@
                 'ds.loading' : 'onLoad'
             },
 
+            ready : function() {
+              $(window).on('resize', this._updateSize.bind(this));
+            },
+
             onLoad : function() {
               if( this.ds.loading ) return;
 
@@ -246,10 +366,66 @@
               if( loc[0] == 'info' && loc.length > 1) {
                 this.feature = this.ds.lookupMap[loc[1]];
               }
+
+            },
+
+            _updateSize : function() {
+              var w = $(window).width();
+
+              if( w < 992 ) {
+                this.$.middleCol.style.marginTop = '';
+              } else {
+                var ele = $(this.$.middleCol);
+                this.$.middleCol.style.marginTop = Math.floor(((ele.parent().height()-ele.height()) / 2)) + 'px';
+              }
+            },
+
+            _lookupLink : function(origin, terminal) {
+              for( var i = 0; i < this.ds.data.links.length; i++ ) {
+                if( this.ds.data.links[i].properties.origin == origin && this.ds.data.links[i].properties.terminus == terminal ) {
+                  return this.ds.data.links[i];
+                }
+              }
+              return null;
             },
 
             update : function() {
               if( this.feature == null ) return alert('Feature not found');
+
+
+              this.origins = [];
+              this.terminals = [];
+
+              var link;
+              if( this.feature && this.feature.properties.origins ) {
+                for( var i = 0; i < this.feature.properties.origins.length; i++ ) {
+                  link = this._lookupLink(this.feature.properties.origins[i], this.feature.properties.prmname);
+                  if( link ) {
+                    this.origins.push({
+                      name: this.feature.properties.origins[i], 
+                      link: link.properties.prmname,
+                      description: link.properties.description
+                    });
+                  } else {
+                    this.origins.push({name: this.feature.properties.origins[i], link: '', description: ''});
+                  }
+                }
+              }
+
+              if( this.feature && this.feature.properties.terminals ) {
+                for( var i = 0; i < this.feature.properties.terminals.length; i++ ) {
+                  link = this._lookupLink(this.feature.properties.prmname, this.feature.properties.terminals[i]);
+                  if( link ) {
+                    this.terminals.push({
+                      name: this.feature.properties.terminals[i], 
+                      link: link.properties.prmname,
+                      description: link.properties.description
+                    });
+                  } else {
+                    this.terminals.push({name: this.feature.properties.terminals[i], link: '', description: ''});
+                  }
+                }
+              }
 
               // reset flags
               this.climateLoadError = false;
@@ -260,6 +436,7 @@
               this.loadClimateData();
               this.loadCostData();
 
+              this.async(this._updateSize);
             },
 
             loadClimateData : function() {

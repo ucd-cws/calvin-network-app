@@ -666,23 +666,132 @@ triggered only when value is a different instance.
             z-index: 100;
             cursor: pointer;
           }
-          .desciption {
+          .description {
             font-size: 12px;
             color: #888;
+          }
+          .border {
+            padding: 5px;
+            display: inline-block;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            margin-top: 25px;
           }
         </style>
 
         <a class="back-btn" on-click="{{back}}">
           <cwn-icon icon="fa-arrow-left"></cwn-icon>
         </a>
+
+        <div class="card" hidden?="{{ds.loading}}">
+        <div class="row">
+          <div class="col-md-4 no-float">
+
+            <h4 class="page-header" style="text-align:right">Origins</h4>
+            <div>
+
+              <template bind="" if="{{feature.properties.origin != null}}">
+                <div style="text-align:right">
+                  <div>
+                    <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
+                  </div>
+                  <template bind="" if="{{ds.lookupMap[feature.properties.origin] != null}}">
+                    <div class="description">{{ds.lookupMap[feature.properties.origin].properties.description}}</div>
+                  </template>
+                </div>
+              </template>
+
+              <template bind="" if="{{origins.length &gt; 0}}">
+                <template repeat="{{origin in origins}}">
+                  <div style="text-align:right;margin-bottom:20px">
+                    <div>
+                      <cwn-info-link name="{{origin.name}}" ds="{{ds}}"></cwn-info-link>&#xA0;&#xA0;&#xA0;
+
+                      <template bind="" if="{{origin.link != &apos;&apos;}}">
+                        <a href="{{hack}}#info/{{origin.link}}"><cwn-icon icon="fa-long-arrow-right" style="font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon></a>
+                      </template>
+                      <template bind="" if="{{origin.link == &apos;&apos;}}">
+                        <cwn-icon icon="fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon>
+                      </template>
+
+                    </div>
+                    <template bind="" if="{{origin.description != &apos;&apos;}}">
+                      <div class="description" style="margin: -10px 55px 0 0">{{origin.description}}</div>
+                    </template>
+                  </div>
+                </template>
+              </template>
+
+            </div>
+
+          </div>
+          <div class="col-md-4" style="text-align:center" id="middleCol">
+          
+            
+              <div class="border">
+                <table>
+                  <tr>
+                    <td>
+                      <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillfromtype="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
+                    </td><td>
+                      <h2>{{feature.properties.prmname}}</h2>
+                      <div><b>{{feature.properties.type}}</b></div>
+                    </td>
+                  </tr>
+                </table>
+                <div style="padding: 10px; color: #888">
+                  {{feature.properties.description}}
+                </div>
+              </div>
+            
+
+          </div>
+          <div class="col-md-4">
+
+            <h4 class="page-header">Terminals</h4>
+
+            <template bind="" if="{{feature.properties.terminus != null}}">
+              <div>
+                <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+              </div>
+              <template bind="" if="{{ds.lookupMap[feature.properties.terminus] != null}}">
+                <div class="description">{{ds.lookupMap[feature.properties.terminus].properties.description}}</div>
+              </template>
+            </template>
+
+            <template bind="" if="{{terminals.length &gt; 0}}">
+              <template repeat="{{terminal in terminals}}">
+                <div style="margin-bottom:20px">
+                  <div>
+                    <template bind="" if="{{terminal.link != &apos;&apos;}}">
+                      <a href="{{hack}}#info/{{terminal.link}}"><cwn-icon icon="fa-long-arrow-right" style="font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon></a>
+                    </template>
+                    <template bind="" if="{{terminal.link == &apos;&apos;}}">
+                      <cwn-icon icon="fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;margin-top:-15px"></cwn-icon>
+                    </template>
+
+                    &#xA0;&#xA0;&#xA0;<cwn-info-link name="{{terminal.name}}" ds="{{ds}}"></cwn-info-link>
+
+                  </div>
+                  <template bind="" if="{{terminal.description != &apos;&apos;}}">
+                    <div class="description" style="margin: -10px 0 0 55px">{{terminal.description}}</div>
+                  </template>
+                </div>
+              </template>
+            </template>
+
+          </div>
+        </div>
+      </div>
         
-        <div class="row" hidden?="{{ds.loading}}">
+        <!--
+        <div class="row" hidden?="{{ds.loading}}" >
           <div class="col-md-6">
 
             <div class="card">
-              <div layout="" horizontal="">
-                <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillfromtype="true" style="margin:15px"></cwn-app-icon>
-                <div flex="">
+              <div layout horizontal>
+                <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillFromType="true" style="margin:15px"></cwn-app-icon>
+                <div flex>
                   <h2>{{feature.properties.prmname}}</h2>
                   <div><b>{{feature.properties.type}}</b></div>
                 </div>
@@ -697,13 +806,13 @@ triggered only when value is a different instance.
             <div class="card">
               <h4>Origins</h4>
               <div>
-                <template bind="" if="{{feature.properties.origin != null}}">
+                <template bind if="{{feature.properties.origin != null}}">
                   <table class="table">
                     <tr>
                       <td>
                         <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
-                        <template bind="" if="{{ds.lookupMap[feature.properties.origin] != null}}">
+                      </td><td class="description">
+                        <template bind if="{{ds.lookupMap[feature.properties.origin] != null}}">
                           {{ds.lookupMap[feature.properties.origin].properties.description}}
                         </template>
                       </td>
@@ -711,22 +820,22 @@ triggered only when value is a different instance.
                   </table>
                 </template>
 
-                <template bind="" if="{{feature.properties.origins.length &gt; 0}}">
+                <template bind if="{{feature.properties.origins.length > 0}}">
                   <table class="table">
-                    <tr template="" repeat="{{origin in feature.properties.origins}}">
+                    <tr template repeat="{{origin in feature.properties.origins}}">
                       <td style="white-space:nowrap">
                         <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>
                         <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
-                        <cwn-info-link name="{{origin+&apos;_&apos;+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
-                        <template bind="" if="{{ds.lookupMap[origin] != null}}">
+                        <cwn-info-link name="{{origin+'_'+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
+                      </td><td class="description">
+                        <template bind if="{{ds.lookupMap[origin] != null}}">
                           {{ds.lookupMap[origin].properties.description}}
                         </template>
-                        <template bind="" if="{{ds.lookupMap[origin+&apos;_&apos;+feature.properties.prmname] != null &amp;&amp; ds.lookupMap[origin] != null}}">
+                        <template bind if="{{ds.lookupMap[origin+'_'+feature.properties.prmname] != null && ds.lookupMap[origin] != null}}">
                             <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         </template>
-                        <template bind="" if="{{ds.lookupMap[origin+&apos;_&apos;+feature.properties.prmname] != null}}">
-                          {{ds.lookupMap[origin+&apos;_&apos;+feature.properties.prmname].properties.description}}
+                        <template bind if="{{ds.lookupMap[origin+'_'+feature.properties.prmname] != null}}">
+                          {{ds.lookupMap[origin+'_'+feature.properties.prmname].properties.description}}
                         </template>
                       </td>
                     </tr>
@@ -737,13 +846,13 @@ triggered only when value is a different instance.
 
               <h4>Terminals</h4>
               <div>
-                <template bind="" if="{{feature.properties.terminus != null}}">
+                <template bind if="{{feature.properties.terminus != null}}">
                   <table class="table">
                     <tr>
                       <td>
                         <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
-                        <template bind="" if="{{ds.lookupMap[feature.properties.terminus] != null}}">
+                      </td><td class="description">
+                        <template bind if="{{ds.lookupMap[feature.properties.terminus] != null}}">
                           {{ds.lookupMap[feature.properties.terminus].properties.description}}
                         </template>
                       </td>
@@ -751,21 +860,21 @@ triggered only when value is a different instance.
                   </table>
                 </template>
 
-                <template bind="" if="{{feature.properties.terminals.length &gt; 0}}">
+                <template bind if="{{feature.properties.terminals.length > 0}}">
                   <table class="table">
-                    <tr template="" repeat="{{terminal in feature.properties.terminals}}">
+                    <tr template repeat="{{terminal in feature.properties.terminals}}">
                       <td style="white-space:nowrap">
-                        <cwn-info-link name="{{terminal+&apos;_&apos;+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
+                        <cwn-info-link name="{{feature.properties.prmname+'_'+terminal}}" ds="{{ds}}"></cwn-info-link>
                         <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="desciption">
-                        <template bind="" if="{{ds.lookupMap[terminal+&apos;_&apos;+feature.properties.prmname] != null}}">
-                          {{ds.lookupMap[terminal+&apos;_&apos;+feature.properties.prmname].properties.description}}
+                      </td><td class="description">
+                        <template bind if="{{ds.lookupMap[feature.properties.prmname+'_'+terminal] != null}}">
+                          {{ds.lookupMap[feature.properties.prmname+'_'+terminal].properties.description}}
                         </template>
-                        <template bind="" if="{{ds.lookupMap[terminal+&apos;_&apos;+feature.properties.prmname] != null &amp;&amp; ds.lookupMap[terminal] != null}}">
+                        <template bind if="{{ds.lookupMap[feature.properties.prmname+'_'+terminal] != null && ds.lookupMap[terminal] != null}}">
                             <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
                         </template>
-                        <template bind="" if="{{ds.lookupMap[terminal] != null}}">
+                        <template bind if="{{ds.lookupMap[terminal] != null}}">
                           {{ds.lookupMap[terminal].properties.description}}
                         </template>
                       </td>
@@ -777,6 +886,7 @@ triggered only when value is a different instance.
             </div>
           </div>
         </div>
+      -->
 
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">

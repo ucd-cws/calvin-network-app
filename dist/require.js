@@ -883,6 +883,8 @@ Polymer('cwn-icon');;
         Polymer('cwn-info-page', {
             feature : {},
 
+            hack : '',
+
             tableProperties : ['prmname'],
 
             // loading flags
@@ -890,6 +892,10 @@ Polymer('cwn-icon');;
             costLoadError : false,
             climateLoading : false,
             costLoading : false,
+
+            // have to do long lookup right now, is there are better way?
+            origins : [],
+            terminals : [],
 
             // render data.  Data in a format ready to draw above
             inflows : [],
@@ -912,6 +918,10 @@ Polymer('cwn-icon');;
                 'ds.loading' : 'onLoad'
             },
 
+            ready : function() {
+              $(window).on('resize', this._updateSize.bind(this));
+            },
+
             onLoad : function() {
               if( this.ds.loading ) return;
 
@@ -919,10 +929,66 @@ Polymer('cwn-icon');;
               if( loc[0] == 'info' && loc.length > 1) {
                 this.feature = this.ds.lookupMap[loc[1]];
               }
+
+            },
+
+            _updateSize : function() {
+              var w = $(window).width();
+
+              if( w < 992 ) {
+                this.$.middleCol.style.marginTop = '';
+              } else {
+                var ele = $(this.$.middleCol);
+                this.$.middleCol.style.marginTop = Math.floor(((ele.parent().height()-ele.height()) / 2)) + 'px';
+              }
+            },
+
+            _lookupLink : function(origin, terminal) {
+              for( var i = 0; i < this.ds.data.links.length; i++ ) {
+                if( this.ds.data.links[i].properties.origin == origin && this.ds.data.links[i].properties.terminus == terminal ) {
+                  return this.ds.data.links[i];
+                }
+              }
+              return null;
             },
 
             update : function() {
               if( this.feature == null ) return alert('Feature not found');
+
+
+              this.origins = [];
+              this.terminals = [];
+
+              var link;
+              if( this.feature && this.feature.properties.origins ) {
+                for( var i = 0; i < this.feature.properties.origins.length; i++ ) {
+                  link = this._lookupLink(this.feature.properties.origins[i], this.feature.properties.prmname);
+                  if( link ) {
+                    this.origins.push({
+                      name: this.feature.properties.origins[i], 
+                      link: link.properties.prmname,
+                      description: link.properties.description
+                    });
+                  } else {
+                    this.origins.push({name: this.feature.properties.origins[i], link: '', description: ''});
+                  }
+                }
+              }
+
+              if( this.feature && this.feature.properties.terminals ) {
+                for( var i = 0; i < this.feature.properties.terminals.length; i++ ) {
+                  link = this._lookupLink(this.feature.properties.prmname, this.feature.properties.terminals[i]);
+                  if( link ) {
+                    this.terminals.push({
+                      name: this.feature.properties.terminals[i], 
+                      link: link.properties.prmname,
+                      description: link.properties.description
+                    });
+                  } else {
+                    this.terminals.push({name: this.feature.properties.terminals[i], link: '', description: ''});
+                  }
+                }
+              }
 
               // reset flags
               this.climateLoadError = false;
@@ -933,6 +999,7 @@ Polymer('cwn-icon');;
               this.loadClimateData();
               this.loadCostData();
 
+              this.async(this._updateSize);
             },
 
             loadClimateData : function() {
