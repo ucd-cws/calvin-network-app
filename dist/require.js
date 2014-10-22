@@ -936,11 +936,19 @@ Polymer('cwn-icon');;
               var w = $(window).width();
 
               if( w < 992 ) {
-                this.$.middleCol.style.marginTop = '';
-              } else {
-                var ele = $(this.$.middleCol);
-                this.$.middleCol.style.marginTop = Math.floor(((ele.parent().height()-ele.height()) / 2)) + 'px';
+                this.$.middleCol.style.marginTop = '0px';
+                return;
               }
+              
+              var ele = $(this.$.middleCol);
+              
+              var h = ele.next().height();
+              if( h < ele.prev().height() ) h = ele.prev().height();
+              if( h < ele.height() ) h = ele.height();
+
+
+              this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
+              
             },
 
             _lookupLink : function(origin, terminal) {
@@ -1001,7 +1009,7 @@ Polymer('cwn-icon');;
               this.loadClimateData();
               this.loadCostData();
 
-              this.async(this._updateSize);
+              setTimeout(this._updateSize.bind(this), 100);
             },
 
             loadClimateData : function() {
