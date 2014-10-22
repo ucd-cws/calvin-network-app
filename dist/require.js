@@ -967,7 +967,8 @@ Polymer('cwn-icon');;
                     this.origins.push({
                       name: this.feature.properties.origins[i], 
                       link: link.properties.prmname,
-                      description: link.properties.description
+                      description: this.ds.lookupMap[this.feature.properties.origins[i]] ? 
+                                    this.ds.lookupMap[this.feature.properties.origins[i]].properties.description : ''
                     });
                   } else {
                     this.origins.push({name: this.feature.properties.origins[i], link: '', description: ''});
@@ -982,7 +983,8 @@ Polymer('cwn-icon');;
                     this.terminals.push({
                       name: this.feature.properties.terminals[i], 
                       link: link.properties.prmname,
-                      description: link.properties.description
+                      description: this.ds.lookupMap[this.feature.properties.terminals[i]] ? 
+                                    this.ds.lookupMap[this.feature.properties.terminals[i]].properties.description : ''
                     });
                   } else {
                     this.terminals.push({name: this.feature.properties.terminals[i], link: '', description: ''});
