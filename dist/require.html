@@ -748,7 +748,7 @@ triggered only when value is a different instance.
                 <div style="padding: 10px 10px 0 10px; color: #888">
                   {{feature.properties.description}}
                 </div>
-                <div>
+                <div hidden?="{{feature.properties.type == &apos;Diversion&apos;}}">
                   <a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a>
                 </div>
               </div>
