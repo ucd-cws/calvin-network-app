@@ -1,4 +1,4 @@
-<polymer-element name="cwn-info-page" attributes="ds settings">
+<polymer-element name="cwn-info-page" attributes="ds settings leaflet">
     <template>
         <style>
           :host {
@@ -96,8 +96,11 @@
                     </td>
                   </tr>
                 </table>
-                <div style="padding: 10px; color: #888">
+                <div style="padding: 10px 10px 0 10px; color: #888">
                   {{feature.properties.description}}
+                </div>
+                <div>
+                  <a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a>
                 </div>
               </div>
             
@@ -563,6 +566,14 @@
             _setCostMonth : function(e) {
               var index = parseInt(e.currentTarget.getAttribute('index'));
               this.costs.selected = index;
+            },
+
+            goTo : function() {
+              window.location.hash = 'map';
+              this.async(function() {
+                var pts = this.feature.geometry.coordinates;
+                this.leaflet.setView([pts[1], pts[0]], 12);
+              });
             }
 
         });

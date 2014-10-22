@@ -1126,6 +1126,14 @@ Polymer('cwn-icon');;
             _setCostMonth : function(e) {
               var index = parseInt(e.currentTarget.getAttribute('index'));
               this.costs.selected = index;
+            },
+
+            goTo : function() {
+              window.location.hash = 'map';
+              this.async(function() {
+                var pts = this.feature.geometry.coordinates;
+                this.leaflet.setView([pts[1], pts[0]], 12);
+              });
             }
 
         });

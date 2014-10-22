@@ -641,7 +641,7 @@ triggered only when value is a different instance.
     <template></template>
     
 </polymer-element></div>
-<div hidden><polymer-element name="cwn-info-page" attributes="ds settings" assetpath="elements/">
+<div hidden><polymer-element name="cwn-info-page" attributes="ds settings leaflet" assetpath="elements/">
     <template>
         <style>
           :host {
@@ -739,8 +739,11 @@ triggered only when value is a different instance.
                     </td>
                   </tr>
                 </table>
-                <div style="padding: 10px; color: #888">
+                <div style="padding: 10px 10px 0 10px; color: #888">
                   {{feature.properties.description}}
+                </div>
+                <div>
+                  <a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a>
                 </div>
               </div>
             
@@ -1593,9 +1596,9 @@ triggered only when value is a different instance.
             <cwn-settings id="settings" ds="{{$.ds}}" content=""></cwn-settings>
 
             <!--<core-animated-pages id="pages" content transitions="slide-from-right">-->
-              <cwn-map content="" legend="{{legend}}" ds="{{$.ds}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}" hidden?="{{selectedPage != PAGES.MAP}}">
+              <cwn-map content="" id="map" legend="{{legend}}" ds="{{$.ds}}" filters="{{$.filters.filters}}" on-selected="{{onFeatureSelected}}" hidden?="{{selectedPage != PAGES.MAP}}">
               </cwn-map>
-              <cwn-info-page content="" id="info" ds="{{$.ds}}" settings="{{$.settings.settings}}" hidden?="{{selectedPage != PAGES.INFO}}">
+              <cwn-info-page content="" id="info" leaflet="{{$.map.map}}" ds="{{$.ds}}" settings="{{$.settings.settings}}" hidden?="{{selectedPage != PAGES.INFO}}">
               </cwn-info-page>
             <!--</core-animated-pages>-->
         </cwn-app-layout>
