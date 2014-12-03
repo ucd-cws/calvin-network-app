@@ -740,24 +740,101 @@ Polymer('cwn-icon');;
                 });
             },
 
-            reload : function(callback) {
+            reload : function(query, callback) {
+                this.reset();
+                this.init(query, callback);
+            },
+
+            init : function(query, callback) {
+                if( !query || typeof query == 'function' ) {
+                    this.callback = query;
+                    this.loadDefaultGraph();
+                } else {
+                    this.callback = callback;
+                    this.loadCustomGraph(query);
+                }
+            },
+
+            reset : function() {
                 this.loading = true;
-                
                 this.data = {
                     nodesLoaded : false,
                     linksLoaded : false,
                     links : [],
                     nodes : []
                 };
-                this.lookupMap = {};
-
-                this.init(callback);
+                lookupMap = {};
             },
 
-            init : function(callback) {
-                this.callback = callback;
+            loadDefaultGraph : function() {
                 this._loadNodes();
                 this._loadLinks();
+            },
+
+            loadCustomGraph : function(query) {
+                //var query = 'MATCH (n {prmname: "C59"})-[r]->(m) RETURN n.geojson, r.geojson, m.geojson';
+
+                $.ajax({
+                    type : 'POST',
+                    url : this.settings.neo4jUrl+'/cypher',
+                    data : {
+                        query : query
+                    },
+                    success : function(resp) {
+                        this._processCustomResponse(resp, query);
+                    }.bind(this),
+                    error : function(resp) {
+                        this.loading = false;
+                        if( this.callback ) this.callback(true);
+                        alert('Error loading custom cypher: '+query);
+                    }.bind(this)
+                });
+            },
+
+            _processCustomResponse : function(resp, query) {
+                if( !resp ) {
+                    this.data.nodesLoaded = true;
+                    this.data.linksLoaded = true;
+                    this._checkLoaded();
+                    return alert('Error loading custom cypher: '+query);
+                }
+                if( !resp.data ) {
+                    this.data.nodesLoaded = true;
+                    this.data.linksLoaded = true;
+                    this._checkLoaded();
+                    return alert('Error loading custom cypher: '+query);
+                }
+
+                var counts = {
+                    query : query,
+                    links : 0,
+                    nodes : 0
+                }
+
+                for( var i = 0; i < resp.data.length; i++ ) {
+                    var row = resp.data[i];
+
+                    for( var j = 0; j < row.length; j++ ) {
+                        try {
+                            json = JSON.parse(row[j]);
+
+                            if( json && json.properties ) {
+                                if( json.properties.type == 'Diversion' ) {
+                                    this._processLink(json);
+                                    counts.links++;
+                                } else {
+                                    this._processNode(json);
+                                    counts.nodes++;
+                                }
+                            }
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                }
+                this.data.nodesLoaded = true;
+                this.data.linksLoaded = true;
+                this._checkLoaded(counts);
             },
 
             _loadNodes : function() {
@@ -778,13 +855,7 @@ Polymer('cwn-icon');;
                                 continue;
                             }
 
-                            if( !d ) continue;
-                            if( !d.properties ) continue;
-                            if( !d.properties.prmname ) continue;
-
-                            this._markCalibrationNode(d);
-                            this.lookupMap[d.properties.prmname] = d;
-                            this.data.nodes.push(d);
+                            this._processNode(d);
                         }
                         this.data.nodesLoaded = true;
                         this._checkLoaded();
@@ -795,6 +866,26 @@ Polymer('cwn-icon');;
                         alert('Error retrieving data from: '+this.settings.neo4jUrl+'/cypher');
                     }.bind(this)
                 });
+            },
+
+            _processNode : function(node) {
+                if( !node ) return;
+                if( !node.properties ) return;
+                if( !node.properties.prmname ) return;
+
+                this._markCalibrationNode(node);
+                this.lookupMap[node.properties.prmname] = node;
+                this.data.nodes.push(node);
+            },
+
+            _processLink : function(link) {
+                if( !link ) return;
+                if( !link.properties ) return;
+                if( !link.properties.prmname ) return;
+
+                this._markCalibrationNode(link);
+                this.data.links.push(link);
+                this.lookupMap[link.properties.prmname] = link;
             },
 
             _loadLinks : function() {
@@ -815,10 +906,7 @@ Polymer('cwn-icon');;
                             } catch (e) {
                                 continue;
                             }
-
-                            this._markCalibrationNode(d);
-                            this.data.links.push(d);
-                            this.lookupMap[d.properties.prmname] = d;
+                            this._processLink(d);
                         }
 
                         this.data.linksLoaded = true;
@@ -830,11 +918,11 @@ Polymer('cwn-icon');;
                 });
             },
 
-            _checkLoaded : function() {
+            _checkLoaded : function(info) {
                 if( this.data.nodesLoaded && this.data.linksLoaded ) {                    
                     this.fire('loaded');
                     this.loading = false;
-                    if( this.callback ) this.callback();
+                    if( this.callback ) this.callback(null, info);
                 }
             },
 
@@ -1153,16 +1241,23 @@ Polymer('cwn-icon');;
             iconSize : 22,
 
             dbType : 'default',
+            cypherType : 'default',
             defaultServer : 'http://watershed.ice.ucdavis.edu/neo4jdb/data',
+            
+            // response info from a custom query
+            showInfo : false,
+            respInfo : null,
 
             settings : {
-                neo4jUrl : ''
+                neo4jUrl : '',
+                cypherQuery : ''
             },
 
             observe : {
                 dbType : 'onDbTypeChange',
                 'settings.neo4jUrl' : 'save'
             },
+
             
             onDbTypeChange : function() {
                 if( this.dbType == 'default' ) this.settings.neo4jUrl = this.defaultServer;
@@ -1183,14 +1278,47 @@ Polymer('cwn-icon');;
                 this.$.storage.save();
             },
 
+            onCypherInputKey : function(e) {
+                if( e.which == 13 ) this.reloadData();
+            },
+
             reloadData : function() {
                 this.$.reloadBtn.classList.add('disabled');
                 this.$.reloadBtn.innerHTML = '<cwn-icon icon="fa-refresh fa-spin"></cwn-icon> Loading...'
 
-                this.ds.reload(function(err){
-                    this.$.reloadBtn.classList.remove('disabled');
-                    this.$.reloadBtn.innerHTML = '<cwn-icon icon="fa-refresh"></cwn-icon> Reload Data';
-                }.bind(this));
+                if( this.cypherType == 'default' ) {
+                    this.ds.reload(this.onDataLoaded.bind(this));
+                    return;
+                }
+
+                var query = this.settings.cypherQuery.replace(/return/i, 'RETURN');
+                if( !query.match(/.*RETURN.*/) ) {
+                    this.onDataLoaded();
+                    return alert('You must provide a RETURN clause');
+                }
+
+                // need to make sure that only the geojson property is returned, regardless of what the user provides
+                var parts = query.split("RETURN");
+                var returns = parts[1].replace(/\s/g, '').split(',');
+                for( var i = 0; i < returns.length; i++ ) {
+                    returns[i] = returns[i].replace(/\..*/,'') + '.geojson'
+                }
+                query = parts[0]+' RETURN '+returns.join(', ');
+                console.log(query);
+
+                this.ds.reload(query, this.onDataLoaded.bind(this));
+            },
+
+            onDataLoaded : function(err, info) {
+                if( info ) {
+                    this.showInfo = true;
+                    this.respInfo = info;
+                } else {
+                    this.showInfo = false;
+                }
+
+                this.$.reloadBtn.classList.remove('disabled');
+                this.$.reloadBtn.innerHTML = '<cwn-icon icon="fa-refresh"></cwn-icon> Reload Data';
             },
 
             show : function() {
