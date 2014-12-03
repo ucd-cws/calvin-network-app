@@ -110,7 +110,7 @@
                             json = JSON.parse(row[j]);
 
                             if( json && json.properties ) {
-                                if( json.properties.type == 'Diversion' ) {
+                                if( json.properties.type == 'Diversion' || json.properties.type == 'Return Flow' ) {
                                     this._processLink(json);
                                     counts.links++;
                                 } else {

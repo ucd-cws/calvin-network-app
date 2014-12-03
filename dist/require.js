@@ -819,7 +819,7 @@ Polymer('cwn-icon');;
                             json = JSON.parse(row[j]);
 
                             if( json && json.properties ) {
-                                if( json.properties.type == 'Diversion' ) {
+                                if( json.properties.type == 'Diversion' || json.properties.type == 'Return Flow' ) {
                                     this._processLink(json);
                                     counts.links++;
                                 } else {
@@ -1385,7 +1385,7 @@ Polymer('cwn-icon');;
                 for( var i = 0; i < this.ds.data.length; i++ ) {
                     var d = this.ds.data[i];
 
-                    if( d.properties.type == 'Diversion' ) {
+                    if( d.properties.type == 'Diversion' || d.properties.type == 'Return Flow' ) {
                         this.links.push(d);
                     } else {
                         this.nodes.push(d);
@@ -1447,7 +1447,7 @@ Polymer('cwn-icon');;
                     this.edgeLayer = L.geoJson(this.ds.data.links, {
                         style: function(feature) {
                             var line = {
-                                color: 'red',
+                                color: feature.properties.type == 'Return Flow' ? '#fdae6b' : 'red',
                                 weight: 3,
                                 opacity: 0.4,
                                 smoothFactor: 1

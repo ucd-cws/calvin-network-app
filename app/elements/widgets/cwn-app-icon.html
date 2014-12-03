@@ -5,8 +5,8 @@
                 display: inline-block;
             }
         </style>
-        <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == 'Diversion'}}"></canvas>
-        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != 'Diversion'}}"></cwn-icon>
+        <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == 'Diversion' || type == 'Return Flow'}}"></canvas>
+        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != 'Diversion' && type != 'Return Flow'}}"></cwn-icon>
     </template>
     <script>
         Polymer('cwn-app-icon', {

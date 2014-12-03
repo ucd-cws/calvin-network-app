@@ -431,8 +431,8 @@ triggered only when value is a different instance.
                 display: inline-block;
             }
         </style>
-        <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == &apos;Diversion&apos;}}"></canvas>
-        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != &apos;Diversion&apos;}}"></cwn-icon>
+        <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == &apos;Diversion&apos; || type == &apos;Return Flow&apos;}}"></canvas>
+        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != &apos;Diversion&apos; &amp;&amp; type != &apos;Return Flow&apos;}}"></cwn-icon>
     </template>
     
 </polymer-element></div>

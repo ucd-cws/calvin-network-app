@@ -13,7 +13,13 @@ var searchAttrs = ['prmname','type','origin','terminus'];
 // geojson column - column in vizsource of geojson
 var geojsonCol = 3;
 
-if( fs.existsSync('./query.js') ) {
+var useCache = false;
+process.argv.forEach(function (val, index, array) {
+    if( val == '--cache' ) useCache = true;
+});
+
+if( fs.existsSync('./query.js') && useCache ) {
+    console.log('Using cached query.js files');
     var body = fs.readFileSync('./query.js',{encoding: 'utf8'});
     dropAllNodes(function(){
          dtToArray(eval('('+body+')'));
@@ -97,7 +103,7 @@ function dtToArray(dt) {
     // set cleaned up geojson
     node.geojson = JSON.stringify(item);
     
-    if( node.type == 'Diversion' ) {
+    if( node.type == 'Diversion' || node.type == 'Return Flow' ) {
         links.push(node);
     } else {
         nodes.push(node);
