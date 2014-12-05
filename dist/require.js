@@ -13058,9 +13058,9 @@ Polymer('cwn-icon');;
                     if( resp.data.length == 0 ) return this.climateLoadError = true;
 
                     this.renderClimateData(JSON.parse(resp.data[0][0]));
-//                    this.async(function(){
-//                     this.$.dateslider.resize();
-//                    });
+                    this.async(function(){
+                      this.$.dateslider.resize();
+                    });
                   }.bind(this),
                   error : function(resp) {
                     this.climateLoadError = true;
