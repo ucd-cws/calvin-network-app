@@ -2,7 +2,7 @@
 <!--
     data should be format [[date,value],[date,value]...]
 -->
-<polymer-element name="cwn-date-linechart" attributes="label xlabel ylabel data start stop height">
+<polymer-element name="cwn-date-linechart" attributes="label xlabel ylabel data start stop height options cols type">
     <template>
         <style>
             :host {
@@ -29,6 +29,10 @@
                 stop  : 'update'
             },
 
+            options : null,
+            type : null,
+            cols : null,
+
             onLoadHandlerSet : false,
 
             ready : function() {
@@ -39,8 +43,6 @@
 
             setOnloadHandler : function() {
                 if( this.onLoadHandlerSet ) return;
-
-                console.log('callback set');
 
                 // put in global scope by cwn-datastore
                 chartLoadHandlers.push(function(){
@@ -54,11 +56,18 @@
                 if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
                 if( !this.chart ) {
-                    this.chart = new google.visualization.LineChart(this.$.root);
+                    if( this.type ) {
+                        this.chart = new google.visualization[this.type](this.$.root);
+                    } else {
+                        this.chart = new google.visualization.LineChart(this.$.root);
+                    }
                 }
 
-                if( !this.data ) this.data = ['date', 'value'];
-                if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
+                if( !this.cols ) {
+                    if( !this.data ) this.data = ['date', 'value'];
+                    if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
+                }
+                
 
                 if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
                 this.updateTimer = setTimeout(function() {
@@ -67,9 +76,21 @@
                 }.bind(this), 500);
             },
 
+            _setDataTable : function(data) {
+                if( this.cols ) {
+                    this.dt = new google.visualization.DataTable();
+                    for( var i = 0; i < this.cols.length; i++ ) {
+                        this.dt.addColumn(this.cols[i]);
+                    }
+                    this.dt.addRows(data);
+                } else {
+                    this.dt = google.visualization.arrayToDataTable(data);
+                }
+            },
+
             _update : function() {
                 if( !this.start && !this.stop ) {
-                    this.dt = google.visualization.arrayToDataTable(this.data);
+                    this._setDataTable(this.data);
                     this.redraw();
                     return;
                 }
@@ -94,7 +115,7 @@
                     }
                 }
 
-                this.dt = google.visualization.arrayToDataTable(filteredData);
+                this._setDataTable(filteredData);
                 this.redraw();
             },
 
@@ -104,20 +125,28 @@
                 var options = {
                     legend : {
                         position : 'none'
-                    },
-                    vAxis : {},
-                    hAxis : {}
+                    }
                 };
 
-                if( this.label && this.label != '' ) {
-                    options.title = this.label;
+                if( !this.options ) {
+                    options.vAxis = {};
+                    options.hAxis = {};
+
+                    if( this.label && this.label != '' ) {
+                        options.title = this.label;
+                    }
+                    if( this.xlabel && this.xlabel != '' ) {
+                        options.hAxis.title = this.xlabel;
+                    }
+                    if( this.ylabel && this.ylabel != '' ) {
+                        options.vAxis.title = this.ylabel;
+                    }
+                } else {
+                    for( var key in this.options ) {
+                        options[key] = this.options[key];
+                    }
                 }
-                if( this.xlabel && this.xlabel != '' ) {
-                    options.hAxis.title = this.xlabel;
-                }
-                if( this.ylabel && this.ylabel != '' ) {
-                    options.vAxis.title = this.ylabel;
-                }
+
 
                 this.chart.draw(this.dt, options);
             }

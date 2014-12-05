@@ -12254,6 +12254,10 @@ Polymer('cwn-icon');;
                 stop  : 'update'
             },
 
+            options : null,
+            type : null,
+            cols : null,
+
             onLoadHandlerSet : false,
 
             ready : function() {
@@ -12264,8 +12268,6 @@ Polymer('cwn-icon');;
 
             setOnloadHandler : function() {
                 if( this.onLoadHandlerSet ) return;
-
-                console.log('callback set');
 
                 // put in global scope by cwn-datastore
                 chartLoadHandlers.push(function(){
@@ -12279,11 +12281,18 @@ Polymer('cwn-icon');;
                 if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
                 if( !this.chart ) {
-                    this.chart = new google.visualization.LineChart(this.$.root);
+                    if( this.type ) {
+                        this.chart = new google.visualization[this.type](this.$.root);
+                    } else {
+                        this.chart = new google.visualization.LineChart(this.$.root);
+                    }
                 }
 
-                if( !this.data ) this.data = ['date', 'value'];
-                if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
+                if( !this.cols ) {
+                    if( !this.data ) this.data = ['date', 'value'];
+                    if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
+                }
+                
 
                 if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
                 this.updateTimer = setTimeout(function() {
@@ -12292,9 +12301,21 @@ Polymer('cwn-icon');;
                 }.bind(this), 500);
             },
 
+            _setDataTable : function(data) {
+                if( this.cols ) {
+                    this.dt = new google.visualization.DataTable();
+                    for( var i = 0; i < this.cols.length; i++ ) {
+                        this.dt.addColumn(this.cols[i]);
+                    }
+                    this.dt.addRows(data);
+                } else {
+                    this.dt = google.visualization.arrayToDataTable(data);
+                }
+            },
+
             _update : function() {
                 if( !this.start && !this.stop ) {
-                    this.dt = google.visualization.arrayToDataTable(this.data);
+                    this._setDataTable(this.data);
                     this.redraw();
                     return;
                 }
@@ -12319,7 +12340,7 @@ Polymer('cwn-icon');;
                     }
                 }
 
-                this.dt = google.visualization.arrayToDataTable(filteredData);
+                this._setDataTable(filteredData);
                 this.redraw();
             },
 
@@ -12329,20 +12350,28 @@ Polymer('cwn-icon');;
                 var options = {
                     legend : {
                         position : 'none'
-                    },
-                    vAxis : {},
-                    hAxis : {}
+                    }
                 };
 
-                if( this.label && this.label != '' ) {
-                    options.title = this.label;
+                if( !this.options ) {
+                    options.vAxis = {};
+                    options.hAxis = {};
+
+                    if( this.label && this.label != '' ) {
+                        options.title = this.label;
+                    }
+                    if( this.xlabel && this.xlabel != '' ) {
+                        options.hAxis.title = this.xlabel;
+                    }
+                    if( this.ylabel && this.ylabel != '' ) {
+                        options.vAxis.title = this.ylabel;
+                    }
+                } else {
+                    for( var key in this.options ) {
+                        options[key] = this.options[key];
+                    }
                 }
-                if( this.xlabel && this.xlabel != '' ) {
-                    options.hAxis.title = this.xlabel;
-                }
-                if( this.ylabel && this.ylabel != '' ) {
-                    options.vAxis.title = this.ylabel;
-                }
+
 
                 this.chart.draw(this.dt, options);
             }
@@ -12394,7 +12423,11 @@ Polymer('cwn-icon');;
                 if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
                 if( !this.chart ) {
-                    this.chart = new google.visualization.ComboChart(this.$.root);
+                    if( this.type ) {
+                        this.chart = new google.visualization[this.type](this.$.root);
+                    } else {
+                        this.chart = new google.visualization.LineChart(this.$.root);
+                    }
                 }
 
                 if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
@@ -12829,6 +12862,7 @@ Polymer('cwn-icon');;
             },
             // Elevation / Area / Capacity charts
             eacChart : {
+              type : 'ComboChart',
               cols : [
                 {id: 'capacity', label: 'capacity', type: 'number'},
                 {id: 'elevation', label: 'elevation', type: 'number'},
@@ -12854,6 +12888,24 @@ Polymer('cwn-icon');;
                 ,interpolateNulls : true
               }
             },
+
+            constraintChart : {
+              isTimeSeries : false,
+              cols : [
+                {id:'date', type:'string'},
+                {id:'upper_value', type:'number'},
+                {id:'upper_interval', type:'number', role:'interval'},
+                {id:'lower_interval', type:'number', role:'interval'},
+                {id: 'tooltip', type: 'string', role:'tooltip'}
+              ],
+              data : [],
+              options : {
+                series: [{'color': '#F1CA3A'}],
+                intervals: { 'style':'area' }
+              }
+            },
+
+            months : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
 
             // date filtering
             filters : {
@@ -12977,9 +13029,9 @@ Polymer('cwn-icon');;
                     if( resp.data.length == 0 ) return this.climateLoadError = true;
 
                     this.renderClimateData(JSON.parse(resp.data[0][0]));
-                    this.async(function(){
-                      this.$.dateslider.resize();
-                    });
+//                    this.async(function(){
+//                     this.$.dateslider.resize();
+//                    });
                   }.bind(this),
                   error : function(resp) {
                     this.climateLoadError = true;
@@ -13070,6 +13122,8 @@ Polymer('cwn-icon');;
             },
 
             renderCostData : function(d) {
+              if( d.constraints ) this.renderConstraints(d.constraints);
+
               this.costs.label = d.costs.type;
               this.costs.data = {};
               this.costs.months = [];
@@ -13102,6 +13156,104 @@ Polymer('cwn-icon');;
 
               }
 
+            },
+
+            renderConstraints : function(constraints) {
+              console.log(constraints);
+              this.constraintChart.data = [];
+              this.constraintChart.isTimeSeries = false;
+
+              if( constraints.constraint_type == 'Bounded' ) {
+                var length = this.getContraintsLength(constraints);
+                if( length < 12 ) length = 12;
+                for( var i = 0; i < length; i++ ) {
+                  this.constraintChart.data.push(this.getConstraintRow(constraints, i));
+                }
+                console.log(this.constraintChart);
+
+              } else {
+                console.log('Unknown Constraint Type: '+constraints.constraint_type);
+              }
+            },
+
+            getConstraintRow : function(constraints, index) {
+              var row = [];
+
+              if( constraints.lower && constraints.lower.bound_type == 'TimeSeries' ) {
+                row.push(constraints.lower.date[index]);
+              } else if ( constraints.upper && constraints.upper.bound_type == 'TimeSeries' ) {
+                row.push(constraints.upper.date[index]);
+              } else {
+                row.push(this.months[index]);
+              }
+
+              var tooltip = row[0]+'\n';
+
+              if( constraints.upper ) {
+                if( constraints.upper.bound_type == 'Constant' ) {
+                  row.push(constraints.upper.bound);
+                  row.push(constraints.upper.bound);
+                  tooltip += 'Upper: '+constraints.upper.bound;
+                } else if ( constraints.upper.bound_type == 'TimeSeries' || constraints.upper.bound_type == 'Monthly') {
+                  row.push(constraints.upper.bound[index]);
+                  row.push(constraints.upper.bound[index]);
+                  tooltip += 'Upper: '+constraints.upper.bound[index];
+                } else if ( constraints.upper.bound_type == 'None' ) {
+                  tooltip += 'Upper: None';
+                }
+              }
+
+              if( constraints.lower ) {
+
+                if( constraints.lower.bound_type == 'Constant' ) {
+                  row.push(constraints.lower.bound);
+                  tooltip += ', Lower: '+constraints.lower.bound;
+                } else if ( constraints.lower.bound_type == 'TimeSeries' || constraints.upper.bound_type == 'Monthly' ) {
+                  row.push(constraints.lower.bound[index]);
+                  tooltip += ', Lower: '+constraints.lower.bound[index];
+                } else if ( constraints.lower.bound_type == 'None' ) {
+                  row.push(0);
+                  tooltip += ', Lower: 0';
+                }
+
+                if( row.length == 2) {
+                  row.push(null);
+                  row.push(null);
+                } 
+
+              } 
+              if( row.length == 3 ) {
+                row.push(null);
+                tooltip += ', Lower: Unknown';
+              }
+              row.push(tooltip);
+
+              return row;
+            },
+
+            getContraintsLength : function(constraints) {
+              var l = 0;
+              if( constraints.lower ) {
+                if( constraints.lower.bound_type == 'Constant' ) {
+                  l = 1;
+                } else if ( constraints.lower.bound_type == 'TimeSeries' ) {
+                  this.constraintChart.isTimeSeries = true;
+                  l = constraints.lower.bound.length;
+                } else if ( constraints.lower.bound_type == 'Monthly' ) {
+                  l = constraints.lower.bound.length;
+                }
+              }
+              if (constraints.upper ) {
+                if( constraints.upper.bound_type == 'Constant' && l == 0 ) {
+                  l = 1;
+                } else if(constraints.upper.bound_type == 'TimeSeries' && l < constraints.upper.bound.length ) {
+                  this.constraintChart.isTimeSeries = true;
+                  l = constraints.upper.bound.length;
+                } else if ( constraints.upper.bound_type == 'Monthly' && l < constraints.upper.bound.length ) {
+                  l = constraints.upper.bound.length;
+                }
+              }
+              return l;
             },
 
             updateDateFilters : function(e) {

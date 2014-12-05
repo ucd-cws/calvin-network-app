@@ -2,7 +2,7 @@
 <!--
     data should be format [[date,value],[date,value]...]
 -->
-<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols">
+<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols type">
     <template>
         <style>
             :host {
@@ -57,7 +57,11 @@
                 if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
                 if( !this.chart ) {
-                    this.chart = new google.visualization.ComboChart(this.$.root);
+                    if( this.type ) {
+                        this.chart = new google.visualization[this.type](this.$.root);
+                    } else {
+                        this.chart = new google.visualization.LineChart(this.$.root);
+                    }
                 }
 
                 if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);

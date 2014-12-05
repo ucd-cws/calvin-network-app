@@ -440,7 +440,7 @@ triggered only when value is a different instance.
 <!--
     data should be format [[date,value],[date,value]...]
 -->
-<polymer-element name="cwn-date-linechart" attributes="label xlabel ylabel data start stop height" assetpath="elements/widgets/">
+<polymer-element name="cwn-date-linechart" attributes="label xlabel ylabel data start stop height options cols type" assetpath="elements/widgets/">
     <template>
         <style>
             :host {
@@ -455,7 +455,7 @@ triggered only when value is a different instance.
 <!--
     data should be format [[date,value],[date,value]...]
 -->
-<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols" assetpath="elements/widgets/">
+<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols type" assetpath="elements/widgets/">
     <template>
         <style>
             :host {
@@ -689,7 +689,7 @@ triggered only when value is a different instance.
           <cwn-icon icon="fa-arrow-left"></cwn-icon>
         </a>
 
-        <div class="card" hidden?="{{ds.loading}}">
+      <div class="card" hidden?="{{ds.loading}}">
         <div class="row">
           <div class="col-md-4 no-float">
 
@@ -793,6 +793,13 @@ triggered only when value is a different instance.
         </div>
       </div>
 
+      <template bind="" if="{{inflows.length &gt; 0 || constraintChart.isTimeSeries}}">
+        <div style="padding:20px 50px 5px 50px">
+          <h4>Date Range</h4>
+          <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
+        </div>
+      </template>
+
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">
               <div class="card">
@@ -809,9 +816,6 @@ triggered only when value is a different instance.
                 </div>
 
                 <div hidden?="{{!feature.properties.hasClimate || climateLoadError || climateLoading}}">
-                  <h4>Date Range</h4>
-
-                  <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
 
                   <div hidden?="{{inflows.length == 0}}">
                     <h4>Inflows</h4>
@@ -820,9 +824,9 @@ triggered only when value is a different instance.
                     <cwn-date-linechart label="{{inflow.label}}" ylabel="Flow (kaf)" data="{{inflow.data}}" start="{{filters.start}}" stop="{{filters.stop}}"></cwn-date-linechart>
                   </template>
 
-                  <template bind="" if="{{eacChart.data.length &gt; 0}">
+                  <template bind="" if="{{eacChart.data.length &gt; 0}}">
                     <h4>Elevation / Area / Capacity</h4>
-                    <cwn-linechart data="{{eacChart.data}}" cols="{{eacChart.cols}}" options="{{eacChart.options}}">
+                    <cwn-linechart data="{{eacChart.data}}" cols="{{eacChart.cols}}" options="{{eacChart.options}}" type="{{eacChart.type}}">
                     </cwn-linechart>
                   </template>
                   
@@ -864,6 +868,21 @@ triggered only when value is a different instance.
                     <div><b>{{costs.label}}</b>: Not implemented yet</div>
                   </template>
                 </template>
+
+                <template bind="" if="{{constraintChart.data.length &gt; 0}}">
+                  <h4>Constraints</h4>
+
+                  <template bind="" if="{{constraintChart.isTimeSeries}}">
+                    <cwn-date-linechart data="{{constraintChart.data}}" cols="{{constraintChart.cols}}" options="{{constraintChart.options}}" start="{{filters.start}}" stop="{{filters.stop}}">
+                    </cwn-date-linechart>
+                  </template>
+
+                  <template bind="" if="{{!constraintChart.isTimeSeries}}">
+                    <cwn-linechart data="{{constraintChart.data}}" cols="{{constraintChart.cols}}" options="{{constraintChart.options}}">
+                    </cwn-linechart>
+                  </template>
+                </template>
+
               </div>
             </div>
           </div>
