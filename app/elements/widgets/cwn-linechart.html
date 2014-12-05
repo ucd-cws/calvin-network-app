@@ -2,7 +2,7 @@
 <!--
     data should be format [[date,value],[date,value]...]
 -->
-<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate">
+<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols">
     <template>
         <style>
             :host {
@@ -27,10 +27,14 @@
                 height : 'redraw',
                 data  : 'update',
                 start : 'update',
-                stop  : 'update'
+                stop  : 'update',
+                options : 'update'
             },
 
             onLoadHandlerSet : false,
+
+            options : null,
+            cols : null,
 
             ready : function() {
                 $(window).on('resize', function(){
@@ -40,8 +44,6 @@
 
             setOnloadHandler : function() {
                 if( this.onLoadHandlerSet ) return;
-
-                console.log('callback set');
 
                 // put in global scope by cwn-datastore
                 chartLoadHandlers.push(function(){
@@ -55,7 +57,7 @@
                 if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
                 if( !this.chart ) {
-                    this.chart = new google.visualization.LineChart(this.$.root);
+                    this.chart = new google.visualization.ComboChart(this.$.root);
                 }
 
                 if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
@@ -66,7 +68,16 @@
             },
 
             _update : function() {
-                this.dt = google.visualization.arrayToDataTable(this.data);
+                if( this.cols ) {
+                    this.dt = new google.visualization.DataTable();
+                    for( var i = 0; i < this.cols.length; i++ ) {
+                        this.dt.addColumn(this.cols[i]);
+                    }
+                    this.dt.addRows(this.data);
+                } else {
+                    this.dt = google.visualization.arrayToDataTable(this.data);
+                }
+                
                 this.redraw();
             },
 
@@ -76,19 +87,26 @@
                 var options = {
                     legend : {
                         position : 'none'
-                    },
-                    vAxis : {},
-                    hAxis : {}
+                    }
                 };
 
-                if( this.label && this.label != '' ) {
-                    options.title = this.label;
-                }
-                if( this.xlabel && this.xlabel != '' ) {
-                    options.hAxis.title = this.xlabel;
-                }
-                if( this.ylabel && this.ylabel != '' ) {
-                    options.vAxis.title = this.ylabel;
+                if( !this.options ) {
+                    options.vAxis = {};
+                    options.hAxis = {};
+
+                    if( this.label && this.label != '' ) {
+                        options.title = this.label;
+                    }
+                    if( this.xlabel && this.xlabel != '' ) {
+                        options.hAxis.title = this.xlabel;
+                    }
+                    if( this.ylabel && this.ylabel != '' ) {
+                        options.vAxis.title = this.ylabel;
+                    }
+                } else {
+                    for( var key in this.options ) {
+                        options[key] = this.options[key];
+                    }
                 }
 
                 if( this.animate ) {

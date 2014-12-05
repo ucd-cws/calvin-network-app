@@ -17,13 +17,12 @@
     "tests"
   ],
   "dependencies": {
-    "bootstrap": "~3.2.0",
-    "font-awesome": "~4.1.0",
-    "leaflet": "~0.7.3",
-    "animate-css": "~3.2.0",
-    "d3": "~3.4.11",
-    "leaflet-map": "~0.3.0",
-    "core-elements": "Polymer/core-elements#~0.3.5",
-    "polymer": "Polymer/polymer#~0.3.5"
+    "bootstrap": "*",
+    "font-awesome": "*",
+    "leaflet": "*",
+    "animate-css": "~*",
+    "d3": "*",
+    "core-elements": "Polymer/core-elements#*",
+    "polymer": "Polymer/polymer#*"
   }
 }

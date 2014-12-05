@@ -149,110 +149,6 @@
           </div>
         </div>
       </div>
-        
-        <!--
-        <div class="row" hidden?="{{ds.loading}}" >
-          <div class="col-md-6">
-
-            <div class="card">
-              <div layout horizontal>
-                <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillFromType="true" style="margin:15px"></cwn-app-icon>
-                <div flex>
-                  <h2>{{feature.properties.prmname}}</h2>
-                  <div><b>{{feature.properties.type}}</b></div>
-                </div>
-              </div>
-              <div style="padding: 10px; color: #888">
-                {{feature.properties.description}}
-              </div>
-            </div>
-
-          </div>
-          <div class="col-md-6">
-            <div class="card">
-              <h4>Origins</h4>
-              <div>
-                <template bind if="{{feature.properties.origin != null}}">
-                  <table class="table">
-                    <tr>
-                      <td>
-                        <cwn-info-link name="{{feature.properties.origin}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="description">
-                        <template bind if="{{ds.lookupMap[feature.properties.origin] != null}}">
-                          {{ds.lookupMap[feature.properties.origin].properties.description}}
-                        </template>
-                      </td>
-                    </tr>
-                  </table>
-                </template>
-
-                <template bind if="{{feature.properties.origins.length > 0}}">
-                  <table class="table">
-                    <tr template repeat="{{origin in feature.properties.origins}}">
-                      <td style="white-space:nowrap">
-                        <cwn-info-link name="{{origin}}" ds="{{ds}}"></cwn-info-link>
-                        <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
-                        <cwn-info-link name="{{origin+'_'+feature.properties.prmname}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="description">
-                        <template bind if="{{ds.lookupMap[origin] != null}}">
-                          {{ds.lookupMap[origin].properties.description}}
-                        </template>
-                        <template bind if="{{ds.lookupMap[origin+'_'+feature.properties.prmname] != null && ds.lookupMap[origin] != null}}">
-                            <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
-                        </template>
-                        <template bind if="{{ds.lookupMap[origin+'_'+feature.properties.prmname] != null}}">
-                          {{ds.lookupMap[origin+'_'+feature.properties.prmname].properties.description}}
-                        </template>
-                      </td>
-                    </tr>
-                  </table>
-                </template>
-
-              </div>
-
-              <h4>Terminals</h4>
-              <div>
-                <template bind if="{{feature.properties.terminus != null}}">
-                  <table class="table">
-                    <tr>
-                      <td>
-                        <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="description">
-                        <template bind if="{{ds.lookupMap[feature.properties.terminus] != null}}">
-                          {{ds.lookupMap[feature.properties.terminus].properties.description}}
-                        </template>
-                      </td>
-                    </tr>
-                  </table>
-                </template>
-
-                <template bind if="{{feature.properties.terminals.length > 0}}">
-                  <table class="table">
-                    <tr template repeat="{{terminal in feature.properties.terminals}}">
-                      <td style="white-space:nowrap">
-                        <cwn-info-link name="{{feature.properties.prmname+'_'+terminal}}" ds="{{ds}}"></cwn-info-link>
-                        <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
-                        <cwn-info-link name="{{terminal}}" ds="{{ds}}"></cwn-info-link>
-                      </td><td class="description">
-                        <template bind if="{{ds.lookupMap[feature.properties.prmname+'_'+terminal] != null}}">
-                          {{ds.lookupMap[feature.properties.prmname+'_'+terminal].properties.description}}
-                        </template>
-                        <template bind if="{{ds.lookupMap[feature.properties.prmname+'_'+terminal] != null && ds.lookupMap[terminal] != null}}">
-                            <cwn-icon icon="fa-arrow-right" style="font-size:14px;vertical-align:super"></cwn-icon>
-                        </template>
-                        <template bind if="{{ds.lookupMap[terminal] != null}}">
-                          {{ds.lookupMap[terminal].properties.description}}
-                        </template>
-                      </td>
-                    </tr>
-                  </table>
-                </template>
-
-              </div>
-            </div>
-          </div>
-        </div>
-      -->
 
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">
@@ -279,6 +175,15 @@
                   </div>
                   <template repeat="{{inflow in inflows}}">
                     <cwn-date-linechart label="{{inflow.label}}" ylabel="Flow (kaf)" data="{{inflow.data}}" start="{{filters.start}}" stop="{{filters.stop}}"></cwn-date-linechart>
+                  </template>
+
+                  <template bind if="{{eacChart.data.length > 0}">
+                    <h4>Elevation / Area / Capacity</h4>
+                    <cwn-linechart
+                      data="{{eacChart.data}}"
+                      cols="{{eacChart.cols}}"
+                      options="{{eacChart.options}}">
+                    </cwn-linechart>
                   </template>
                   
                 </div>
@@ -351,6 +256,33 @@
               cost : 0, // for constant costs
               months : [],
               selected : 0
+            },
+            // Elevation / Area / Capacity charts
+            eacChart : {
+              cols : [
+                {id: 'capacity', label: 'capacity', type: 'number'},
+                {id: 'elevation', label: 'elevation', type: 'number'},
+                {id: 'area', label: 'area', type: 'number'},
+                {id: 'initial', type: 'number', label: 'initial'},
+                {id: 'tooltip', type: 'string', role:'tooltip'}
+              ],
+              data : [],
+              options : {
+                hAxis : {
+                  title : 'Capacity (kAF)'
+                },
+                vAxes : [
+                  {title:'Elevation (ft)'}, // axis 0
+                  {title:'Area (ac)'} // Axis 1
+                ],
+                seriesType: "bars",
+                series :{
+                  0: {type: "line", targetAxisIndex:0},
+                  1: {type: "line", targetAxisIndex:1},
+                  2: {targetAxisIndex: 0},
+                }
+                ,interpolateNulls : true
+              }
             },
 
             // date filtering
@@ -499,6 +431,40 @@
                   this.inflows.push(inflow);
                 }
               }
+
+              this.eacChart.data = [];
+              if( data.el_ar_cap ) {
+                
+                var max = 0;
+                for( var i = 0; i < data.el_ar_cap.length; i++ ) {
+                  this.eacChart.data.push([
+                    data.el_ar_cap[i].capacity,
+                    data.el_ar_cap[i].elevation,
+                    data.el_ar_cap[i].area,
+                    null,
+                    null
+                  ]);
+                  if( data.el_ar_cap[i].elevation > max ) max = data.el_ar_cap[i].elevation;
+                }
+
+                if( this.feature.properties.initialstorage ) {
+                  this.eacChart.data.push([
+                    this.feature.properties.initialstorage,
+                    null,
+                    null,
+                    max,
+                    'Initial: '+this.feature.properties.initialstorage
+                  ]);
+                }
+
+                this.eacChart.data.sort(function(a,b){
+                  if( a[0] > b[0] ) return 1;
+                  if( a[0] < b[0] ) return -1;
+                  return 0;
+                });
+              }
+
+
 
             },
 
