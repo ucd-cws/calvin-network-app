@@ -214,7 +214,7 @@
                   <template bind if="{{costs.label == 'Monthly Variable'}}">
                     <div class="btn-group">
                       <template repeat="{{month,i in costs.months}}">
-                        <a class="btn btn-primary" index="{{i}}" disabled?="{{costs.selected == i}}" on-tap="{{_setCostMonth}}">{{month}}</a>
+                        <a class="btn btn-xs btn-primary" index="{{i}}" disabled?="{{costs.selected == i}}" on-tap="{{_setCostMonth}}">{{month}}</a>
                       </template>
                     </div>
 
