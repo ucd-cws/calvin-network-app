@@ -11953,13 +11953,7 @@ scope.importElements = importElements;
             cBarWidth : 0,
 
             ready : function() {
-                this.startDate = this.start ? new Date(this.start) : new Date();
-                this.stopDate = this.stop ? new Date(this.stop) : new Date();
-
-                this.numDays = (this.stopDate - this.startDate)/(1000*60*60*24);
-
-                this.current.start = this.startDate;
-                this.current.end = this.endDate;
+                this.reset();
 
                 $(this).on('mouseup mouseout touchend touchcancel', function(e){
                     this.endDrag(e.originalEvent);
@@ -11975,6 +11969,16 @@ scope.importElements = importElements;
                 setTimeout(function(){
                     this.resize();
                 }.bind(this),500);
+            },
+
+            reset : function() {
+                this.startDate = this.start ? new Date(this.start) : new Date();
+                this.stopDate = this.stop ? new Date(this.stop) : new Date();
+
+                this.numDays = (this.stopDate - this.startDate)/(1000*60*60*24);
+
+                this.current.start = this.startDate;
+                this.current.end = this.endDate;
             },
 
             domReady : function() {
@@ -12320,7 +12324,12 @@ Polymer('cwn-icon');;
                     return;
                 }
 
-                var filteredData = [this.data[0]];
+                var filteredData;
+                if( !this.cols ) {
+                    filteredData = [this.data[0]];
+                } else {
+                    filteredData = [];
+                }
                 var d;
                 for( var i = 1; i < this.data.length; i++ ) {
                     d = new Date(this.data[i][0]).getTime();
@@ -12884,12 +12893,17 @@ Polymer('cwn-icon');;
                   0: {type: "line", targetAxisIndex:0},
                   1: {type: "line", targetAxisIndex:1},
                   2: {targetAxisIndex: 0},
+                },
+                interpolateNulls : true,
+                legend : {
+                  position: 'top'
                 }
-                ,interpolateNulls : true
               }
             },
 
             constraintChart : {
+              constant: -1,
+              label : '',
               isTimeSeries : false,
               cols : [
                 {id:'date', type:'string'},
@@ -12901,7 +12915,10 @@ Polymer('cwn-icon');;
               data : [],
               options : {
                 series: [{'color': '#F1CA3A'}],
-                intervals: { 'style':'area' }
+                intervals: { 'style':'area' },
+                vAxis : {
+                  viewWindow:{ min: 0 }
+                }
               }
             },
 
@@ -13000,11 +13017,16 @@ Polymer('cwn-icon');;
                 }
               }
 
-              // reset flags
               this.climateLoadError = false;
               this.costLoadError = false;
               this.climateLoading = false;
               this.costLoading = false;
+
+              this.eacChart.data = [];
+              this.constraintChart.data = [];
+              this.constraintChart.isTimeSeries = false;
+              this.constraintChart.constant = -1;
+              this.constraintChart.label = '';
 
               this.loadClimateData();
               this.loadCostData();
@@ -13017,11 +13039,18 @@ Polymer('cwn-icon');;
               this.climateLoading = true;
               this.inflows = [];
 
+              var query;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                query = 'MATCH (n)-[r { prmname: "'+this.feature.properties.prmname+'" }]->() RETURN r.climate';
+              } else {
+                query ='MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.climate';
+              }
+
               $.ajax({
                   type : 'POST',
                   url : this.settings.neo4jUrl+'/cypher',
                   data : {
-                      query : 'MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.climate',
+                      query : query,
                       params : {}
                   },
                   success : function(resp) {
@@ -13096,7 +13125,7 @@ Polymer('cwn-icon');;
               this.costLoadError = false;
 
               var query;
-              if( this.feature.properties.type == 'Diversion' ) {
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
                 query = 'MATCH (n)-[r { prmname: "'+this.feature.properties.prmname+'" }]->() RETURN r.costs';
               } else {
                 query ='MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.costs';
@@ -13124,6 +13153,8 @@ Polymer('cwn-icon');;
             renderCostData : function(d) {
               if( d.constraints ) this.renderConstraints(d.constraints);
 
+              if( !d.costs ) return;
+
               this.costs.label = d.costs.type;
               this.costs.data = {};
               this.costs.months = [];
@@ -13137,22 +13168,25 @@ Polymer('cwn-icon');;
               for( var i = 0; i < d.costs.costs.length; i++ ) {
                 var m = d.costs.costs[i];
 
-                this.costs.data[m.label] = [];
-                this.costs.months.push(m.label);
+                var label = m.label;
+                if( (!label || label == '') && i < 12 ) label = this.months[i];
+
+                this.costs.data[label] = [];
+                this.costs.months.push(label);
 
                 for( var j = 0; j < m.costs.length; j++ ) {
-                  this.costs.data[m.label].push([
+                  this.costs.data[label].push([
                     m.costs[j].capacity,
                     m.costs[j].cost
                   ]);
                 }
 
-                this.costs.data[m.label].sort(function(a, b){
+                this.costs.data[label].sort(function(a, b){
                   if( a[0] > b[0] ) return 1;
                   if( a[0] < b[0] ) return -1;
                   return 0;
                 });
-                this.costs.data[m.label].splice(0,0, ['Capacity','Cost']);
+                this.costs.data[label].splice(0,0, ['Capacity','Cost']);
 
               }
 
@@ -13160,16 +13194,44 @@ Polymer('cwn-icon');;
 
             renderConstraints : function(constraints) {
               console.log(constraints);
-              this.constraintChart.data = [];
-              this.constraintChart.isTimeSeries = false;
+
 
               if( constraints.constraint_type == 'Bounded' ) {
                 var length = this.getContraintsLength(constraints);
                 if( length < 12 ) length = 12;
+
                 for( var i = 0; i < length; i++ ) {
                   this.constraintChart.data.push(this.getConstraintRow(constraints, i));
                 }
-                console.log(this.constraintChart);
+
+              } else if( constraints.constraint_type == 'Constrained' ) {
+
+                if( constraints.constraint.bound_type == 'Constant') {
+                  this.constraintChart.constant = constraints.constraint.bound;
+                } else if( constraints.constraint.bound_type == 'Monthly') {
+                  for( var i = 0; i < 12; i++ ) {
+                    this.constraintChart.data.push([
+                      this.months[i],
+                      constraints.constraint.bound[i],
+                      null,
+                      null,
+                      'Constrained: '+constraints.constraint.bound[i]
+                    ]);
+                  }
+                } if( constraints.constraint.bound_type == 'TimeSeries') {
+
+                  this.constraintChart.isTimeSeries = true;
+                  for( var i = 0; i < constraints.constraint.bound.length; i++ ) {
+                    this.constraintChart.data.push([
+                      constraints.constraint.date[i],
+                      constraints.constraint.bound[i],
+                      null,
+                      null,
+                      'Constrained: '+constraints.constraint.bound[i]
+                    ]);
+                  }
+
+                }
 
               } else {
                 console.log('Unknown Constraint Type: '+constraints.constraint_type);
@@ -13195,9 +13257,14 @@ Polymer('cwn-icon');;
                   row.push(constraints.upper.bound);
                   tooltip += 'Upper: '+constraints.upper.bound;
                 } else if ( constraints.upper.bound_type == 'TimeSeries' || constraints.upper.bound_type == 'Monthly') {
-                  row.push(constraints.upper.bound[index]);
-                  row.push(constraints.upper.bound[index]);
-                  tooltip += 'Upper: '+constraints.upper.bound[index];
+                  var i = index;
+                  if( i > 11 && constraints.upper.bound_type == 'Monthly' ) {
+                    i = parseInt(row[0].split("-")[1])-1;
+                  }
+
+                  row.push(constraints.upper.bound[i]);
+                  row.push(constraints.upper.bound[i]);
+                  tooltip += 'Upper: '+constraints.upper.bound[i];
                 } else if ( constraints.upper.bound_type == 'None' ) {
                   tooltip += 'Upper: None';
                 }
@@ -13208,24 +13275,25 @@ Polymer('cwn-icon');;
                 if( constraints.lower.bound_type == 'Constant' ) {
                   row.push(constraints.lower.bound);
                   tooltip += ', Lower: '+constraints.lower.bound;
-                } else if ( constraints.lower.bound_type == 'TimeSeries' || constraints.upper.bound_type == 'Monthly' ) {
-                  row.push(constraints.lower.bound[index]);
-                  tooltip += ', Lower: '+constraints.lower.bound[index];
+                } else if ( constraints.lower.bound_type == 'TimeSeries' || constraints.lower.bound_type == 'Monthly' ) {
+                  var i = index;
+                  if( i > 11 && constraints.upper.bound_type == 'Monthly' ) {
+                    i = parseInt(row[0].split("-")[1])-1;
+                  }
+
+                  row.push(constraints.lower.bound[i]);
+                  tooltip += ', Lower: '+constraints.lower.bound[i];
                 } else if ( constraints.lower.bound_type == 'None' ) {
                   row.push(0);
                   tooltip += ', Lower: 0';
+                } else {
+                   tooltip += ', Lower: Unknown';
                 }
 
-                if( row.length == 2) {
-                  row.push(null);
-                  row.push(null);
-                } 
-
               } 
-              if( row.length == 3 ) {
-                row.push(null);
-                tooltip += ', Lower: Unknown';
-              }
+
+              while(row.length < 4) row.push(null);
+
               row.push(tooltip);
 
               return row;

@@ -150,12 +150,16 @@
         </div>
       </div>
 
-      <template bind if="{{inflows.length > 0 || constraintChart.isTimeSeries}}">
+      <div hidden?="{{!(inflows.length > 0 || constraintChart.isTimeSeries)}}">
         <div style="padding:20px 50px 5px 50px">
           <h4>Date Range</h4>
-          <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
+          <cwn-dateslider 
+            id="dateslider" 
+            start="1920-01-01" 
+            on-values-changed="{{updateDateFilters}}">
+          </cwn-dateslider>
         </div>
-      </template>
+      </div>
 
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">
@@ -224,15 +228,20 @@
                   <template bind if="{{costs.label == 'Constant'}}">
                     <h5>Constant: ${{costs.cost}}</h5>
                   </template>
-
+<!--
                   <template bind if="{{costs.label != 'Constant' && costs.label != 'Monthly Variable'}}">
                     <div><b>{{costs.label}}</b>: Not implemented yet</div>
-                  </template>
+                  </template> -->
                 </template>
 
-                <template bind if="{{constraintChart.data.length > 0}}">
-                  <h4>Constraints</h4>
 
+                <h4 hidden?="{{constraintChart.data.length == 0 && constraintChart.constant == -1}}">Constraints</h4>
+
+                <h5 hidden?="{{constraintChart.constant == -1}}">
+                  Constant: ${{constraintChart.constant}}
+                </h5>
+
+                <template bind if="{{constraintChart.data.length > 0}}">
                   <template bind if="{{constraintChart.isTimeSeries}}">
                     <cwn-date-linechart
                       data="{{constraintChart.data}}"
@@ -309,12 +318,17 @@
                   0: {type: "line", targetAxisIndex:0},
                   1: {type: "line", targetAxisIndex:1},
                   2: {targetAxisIndex: 0},
+                },
+                interpolateNulls : true,
+                legend : {
+                  position: 'top'
                 }
-                ,interpolateNulls : true
               }
             },
 
             constraintChart : {
+              constant: -1,
+              label : '',
               isTimeSeries : false,
               cols : [
                 {id:'date', type:'string'},
@@ -326,7 +340,10 @@
               data : [],
               options : {
                 series: [{'color': '#F1CA3A'}],
-                intervals: { 'style':'area' }
+                intervals: { 'style':'area' },
+                vAxis : {
+                  viewWindow:{ min: 0 }
+                }
               }
             },
 
@@ -425,11 +442,16 @@
                 }
               }
 
-              // reset flags
               this.climateLoadError = false;
               this.costLoadError = false;
               this.climateLoading = false;
               this.costLoading = false;
+
+              this.eacChart.data = [];
+              this.constraintChart.data = [];
+              this.constraintChart.isTimeSeries = false;
+              this.constraintChart.constant = -1;
+              this.constraintChart.label = '';
 
               this.loadClimateData();
               this.loadCostData();
@@ -442,11 +464,18 @@
               this.climateLoading = true;
               this.inflows = [];
 
+              var query;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                query = 'MATCH (n)-[r { prmname: "'+this.feature.properties.prmname+'" }]->() RETURN r.climate';
+              } else {
+                query ='MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.climate';
+              }
+
               $.ajax({
                   type : 'POST',
                   url : this.settings.neo4jUrl+'/cypher',
                   data : {
-                      query : 'MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.climate',
+                      query : query,
                       params : {}
                   },
                   success : function(resp) {
@@ -521,7 +550,7 @@
               this.costLoadError = false;
 
               var query;
-              if( this.feature.properties.type == 'Diversion' ) {
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
                 query = 'MATCH (n)-[r { prmname: "'+this.feature.properties.prmname+'" }]->() RETURN r.costs';
               } else {
                 query ='MATCH (n { prmname: "'+this.feature.properties.prmname+'" }) RETURN n.costs';
@@ -549,6 +578,8 @@
             renderCostData : function(d) {
               if( d.constraints ) this.renderConstraints(d.constraints);
 
+              if( !d.costs ) return;
+
               this.costs.label = d.costs.type;
               this.costs.data = {};
               this.costs.months = [];
@@ -562,22 +593,25 @@
               for( var i = 0; i < d.costs.costs.length; i++ ) {
                 var m = d.costs.costs[i];
 
-                this.costs.data[m.label] = [];
-                this.costs.months.push(m.label);
+                var label = m.label;
+                if( (!label || label == '') && i < 12 ) label = this.months[i];
+
+                this.costs.data[label] = [];
+                this.costs.months.push(label);
 
                 for( var j = 0; j < m.costs.length; j++ ) {
-                  this.costs.data[m.label].push([
+                  this.costs.data[label].push([
                     m.costs[j].capacity,
                     m.costs[j].cost
                   ]);
                 }
 
-                this.costs.data[m.label].sort(function(a, b){
+                this.costs.data[label].sort(function(a, b){
                   if( a[0] > b[0] ) return 1;
                   if( a[0] < b[0] ) return -1;
                   return 0;
                 });
-                this.costs.data[m.label].splice(0,0, ['Capacity','Cost']);
+                this.costs.data[label].splice(0,0, ['Capacity','Cost']);
 
               }
 
@@ -585,16 +619,44 @@
 
             renderConstraints : function(constraints) {
               console.log(constraints);
-              this.constraintChart.data = [];
-              this.constraintChart.isTimeSeries = false;
+
 
               if( constraints.constraint_type == 'Bounded' ) {
                 var length = this.getContraintsLength(constraints);
                 if( length < 12 ) length = 12;
+
                 for( var i = 0; i < length; i++ ) {
                   this.constraintChart.data.push(this.getConstraintRow(constraints, i));
                 }
-                console.log(this.constraintChart);
+
+              } else if( constraints.constraint_type == 'Constrained' ) {
+
+                if( constraints.constraint.bound_type == 'Constant') {
+                  this.constraintChart.constant = constraints.constraint.bound;
+                } else if( constraints.constraint.bound_type == 'Monthly') {
+                  for( var i = 0; i < 12; i++ ) {
+                    this.constraintChart.data.push([
+                      this.months[i],
+                      constraints.constraint.bound[i],
+                      null,
+                      null,
+                      'Constrained: '+constraints.constraint.bound[i]
+                    ]);
+                  }
+                } if( constraints.constraint.bound_type == 'TimeSeries') {
+
+                  this.constraintChart.isTimeSeries = true;
+                  for( var i = 0; i < constraints.constraint.bound.length; i++ ) {
+                    this.constraintChart.data.push([
+                      constraints.constraint.date[i],
+                      constraints.constraint.bound[i],
+                      null,
+                      null,
+                      'Constrained: '+constraints.constraint.bound[i]
+                    ]);
+                  }
+
+                }
 
               } else {
                 console.log('Unknown Constraint Type: '+constraints.constraint_type);
@@ -620,9 +682,14 @@
                   row.push(constraints.upper.bound);
                   tooltip += 'Upper: '+constraints.upper.bound;
                 } else if ( constraints.upper.bound_type == 'TimeSeries' || constraints.upper.bound_type == 'Monthly') {
-                  row.push(constraints.upper.bound[index]);
-                  row.push(constraints.upper.bound[index]);
-                  tooltip += 'Upper: '+constraints.upper.bound[index];
+                  var i = index;
+                  if( i > 11 && constraints.upper.bound_type == 'Monthly' ) {
+                    i = parseInt(row[0].split("-")[1])-1;
+                  }
+
+                  row.push(constraints.upper.bound[i]);
+                  row.push(constraints.upper.bound[i]);
+                  tooltip += 'Upper: '+constraints.upper.bound[i];
                 } else if ( constraints.upper.bound_type == 'None' ) {
                   tooltip += 'Upper: None';
                 }
@@ -633,24 +700,25 @@
                 if( constraints.lower.bound_type == 'Constant' ) {
                   row.push(constraints.lower.bound);
                   tooltip += ', Lower: '+constraints.lower.bound;
-                } else if ( constraints.lower.bound_type == 'TimeSeries' || constraints.upper.bound_type == 'Monthly' ) {
-                  row.push(constraints.lower.bound[index]);
-                  tooltip += ', Lower: '+constraints.lower.bound[index];
+                } else if ( constraints.lower.bound_type == 'TimeSeries' || constraints.lower.bound_type == 'Monthly' ) {
+                  var i = index;
+                  if( i > 11 && constraints.upper.bound_type == 'Monthly' ) {
+                    i = parseInt(row[0].split("-")[1])-1;
+                  }
+
+                  row.push(constraints.lower.bound[i]);
+                  tooltip += ', Lower: '+constraints.lower.bound[i];
                 } else if ( constraints.lower.bound_type == 'None' ) {
                   row.push(0);
                   tooltip += ', Lower: 0';
+                } else {
+                   tooltip += ', Lower: Unknown';
                 }
 
-                if( row.length == 2) {
-                  row.push(null);
-                  row.push(null);
-                } 
-
               } 
-              if( row.length == 3 ) {
-                row.push(null);
-                tooltip += ', Lower: Unknown';
-              }
+
+              while(row.length < 4) row.push(null);
+
               row.push(tooltip);
 
               return row;

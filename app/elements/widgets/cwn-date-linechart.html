@@ -95,7 +95,12 @@
                     return;
                 }
 
-                var filteredData = [this.data[0]];
+                var filteredData;
+                if( !this.cols ) {
+                    filteredData = [this.data[0]];
+                } else {
+                    filteredData = [];
+                }
                 var d;
                 for( var i = 1; i < this.data.length; i++ ) {
                     d = new Date(this.data[i][0]).getTime();

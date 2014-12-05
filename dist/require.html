@@ -793,12 +793,13 @@ triggered only when value is a different instance.
         </div>
       </div>
 
-      <template bind="" if="{{inflows.length &gt; 0 || constraintChart.isTimeSeries}}">
+      <div hidden?="{{!(inflows.length &gt; 0 || constraintChart.isTimeSeries)}}">
         <div style="padding:20px 50px 5px 50px">
           <h4>Date Range</h4>
-          <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}"></cwn-dateslider>
+          <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="{{updateDateFilters}}">
+          </cwn-dateslider>
         </div>
-      </template>
+      </div>
 
           <div class="row" hidden?="{{ds.loading}}">
             <div class="col-md-6">
@@ -863,15 +864,20 @@ triggered only when value is a different instance.
                   <template bind="" if="{{costs.label == &apos;Constant&apos;}}">
                     <h5>Constant: ${{costs.cost}}</h5>
                   </template>
-
-                  <template bind="" if="{{costs.label != &apos;Constant&apos; &amp;&amp; costs.label != &apos;Monthly Variable&apos;}}">
+<!--
+                  <template bind if="{{costs.label != 'Constant' && costs.label != 'Monthly Variable'}}">
                     <div><b>{{costs.label}}</b>: Not implemented yet</div>
-                  </template>
+                  </template> -->
                 </template>
 
-                <template bind="" if="{{constraintChart.data.length &gt; 0}}">
-                  <h4>Constraints</h4>
 
+                <h4 hidden?="{{constraintChart.data.length == 0 &amp;&amp; constraintChart.constant == -1}}">Constraints</h4>
+
+                <h5 hidden?="{{constraintChart.constant == -1}}">
+                  Constant: ${{constraintChart.constant}}
+                </h5>
+
+                <template bind="" if="{{constraintChart.data.length &gt; 0}}">
                   <template bind="" if="{{constraintChart.isTimeSeries}}">
                     <cwn-date-linechart data="{{constraintChart.data}}" cols="{{constraintChart.cols}}" options="{{constraintChart.options}}" start="{{filters.start}}" stop="{{filters.stop}}">
                     </cwn-date-linechart>

@@ -80,13 +80,7 @@
             cBarWidth : 0,
 
             ready : function() {
-                this.startDate = this.start ? new Date(this.start) : new Date();
-                this.stopDate = this.stop ? new Date(this.stop) : new Date();
-
-                this.numDays = (this.stopDate - this.startDate)/(1000*60*60*24);
-
-                this.current.start = this.startDate;
-                this.current.end = this.endDate;
+                this.reset();
 
                 $(this).on('mouseup mouseout touchend touchcancel', function(e){
                     this.endDrag(e.originalEvent);
@@ -102,6 +96,16 @@
                 setTimeout(function(){
                     this.resize();
                 }.bind(this),500);
+            },
+
+            reset : function() {
+                this.startDate = this.start ? new Date(this.start) : new Date();
+                this.stopDate = this.stop ? new Date(this.stop) : new Date();
+
+                this.numDays = (this.stopDate - this.startDate)/(1000*60*60*24);
+
+                this.current.start = this.startDate;
+                this.current.end = this.endDate;
             },
 
             domReady : function() {
