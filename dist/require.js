@@ -12558,11 +12558,16 @@ Polymer('cwn-icon');;
             },
 
             show : function() {
+                setTimeout(function(){
+                    this.$.root.classList.add('show');
+                }.bind(this), 50);
+
                 this.$.root.classList.add('open');
                 this.classList.add('open');
                 $('html, body').animate({ scrollTop: '0px' });
             },
             hide : function() {
+                this.$.root.classList.remove('show');
                 this.$.root.classList.remove('open');
                 this.classList.remove('open');
             },
@@ -12571,6 +12576,11 @@ Polymer('cwn-icon');;
                 this.classList.toggle('open');
                 if( this.classList.contains('open') ) {
                     $('html, body').animate({ scrollTop: '0px' });
+                    setTimeout(function(){
+                        this.$.root.classList.add('show');
+                    }.bind(this), 50);
+                } else {
+                    this.$.root.classList.remove('show');
                 }
             },
 
@@ -13436,11 +13446,16 @@ Polymer('cwn-icon');;
             },
 
             show : function() {
+                setTimeout(function(){
+                    this.$.root.classList.add('show');
+                }.bind(this), 50);
+
                 this.$.root.classList.add('open');
                 this.classList.add('open');
                 $('html, body').animate({ scrollTop: '0px' });
             },
             hide : function() {
+                this.$.root.classList.remove('show');
                 this.$.root.classList.remove('open');
                 this.classList.remove('open');
             },
@@ -13449,6 +13464,11 @@ Polymer('cwn-icon');;
                 this.classList.toggle('open');
                 if( this.classList.contains('open') ) {
                     $('html, body').animate({ scrollTop: '0px' });
+                    setTimeout(function(){
+                        this.$.root.classList.add('show');
+                    }.bind(this), 50);
+                } else {
+                    this.$.root.classList.remove('show');
                 }
             }
         });
