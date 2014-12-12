@@ -557,6 +557,7 @@ triggered only when value is a different instance.
                 top: 0;
                 width: 100%;
                 z-index: 5000;
+                background-color: rgba(0,0,0,.5);
             }
             :host(.open) {
                 overflow-y: auto;
@@ -566,7 +567,7 @@ triggered only when value is a different instance.
             #root {
                 padding: 10px;
                 background-color: rgba(255,255,255, .9);
-                box-shadow: 0 0 5px;
+                box-shadow: 0 0 10px;
                 display: none;
             }
             #root.open {
@@ -577,8 +578,17 @@ triggered only when value is a different instance.
                 padding:2px 2px 0 2px;
                 border-radius:4px;
             }
+            .showControls {
+                -webkit-transform: translate3d(0, -1000px, 0);
+                transform: translate3d(0, -1000px, 0);
+                transition: all 250ms;
+            }
+            .showControls.show {
+                -webkit-transform: translate3d(0, 0, 0);
+                transform: translate3d(0, 0, 0);
+            }
         </style>
-        <div id="root" class="animated fadeInDown">
+        <div id="root" class="showControls">
             <div class="row">
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
@@ -930,11 +940,20 @@ triggered only when value is a different instance.
             .paddedTop {
                 padding-top: 8px;
             }
+            .showControls {
+                -webkit-transform: translate3d(0, -1000px, 0);
+                transform: translate3d(0, -1000px, 0);
+                transition: all 250ms;
+            }
+            .showControls.show {
+                -webkit-transform: translate3d(0, 0, 0);
+                transform: translate3d(0, 0, 0);
+            }
         </style>
 
         <core-localstorage id="storage" name="settings" value="{{settings}}" on-core-localstorage-load="{{onLocalStorageLoad}}"></core-localstorage>
 
-        <div id="root" class="animated fadeInDown">
+        <div id="root" class="showControls">
             <h2 style="margin-top:5px;text-align:center" class="page-header">Neo4j Settings</h2>
 
            

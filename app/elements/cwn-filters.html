@@ -7,6 +7,7 @@
                 top: 0;
                 width: 100%;
                 z-index: 5000;
+                background-color: rgba(0,0,0,.5);
             }
             :host(.open) {
                 overflow-y: auto;
@@ -16,7 +17,7 @@
             #root {
                 padding: 10px;
                 background-color: rgba(255,255,255, .9);
-                box-shadow: 0 0 5px;
+                box-shadow: 0 0 10px;
                 display: none;
             }
             #root.open {
@@ -27,9 +28,18 @@
                 padding:2px 2px 0 2px;
                 border-radius:4px;
             }
+            .showControls {
+                -webkit-transform: translate3d(0, -1000px, 0);
+                transform: translate3d(0, -1000px, 0);
+                transition: all 250ms;
+            }
+            .showControls.show {
+                -webkit-transform: translate3d(0, 0, 0);
+                transform: translate3d(0, 0, 0);
+            }
         </style>
-        <div id="root" class="animated fadeInDown">
-            <div class="row">
+        <div id="root" class="showControls">
+            <div class="row" >
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
 
@@ -122,11 +132,16 @@
             },
 
             show : function() {
+                setTimeout(function(){
+                    this.$.root.classList.add('show');
+                }.bind(this), 50);
+
                 this.$.root.classList.add('open');
                 this.classList.add('open');
                 $('html, body').animate({ scrollTop: '0px' });
             },
             hide : function() {
+                this.$.root.classList.remove('show');
                 this.$.root.classList.remove('open');
                 this.classList.remove('open');
             },
@@ -135,6 +150,11 @@
                 this.classList.toggle('open');
                 if( this.classList.contains('open') ) {
                     $('html, body').animate({ scrollTop: '0px' });
+                    setTimeout(function(){
+                        this.$.root.classList.add('show');
+                    }.bind(this), 50);
+                } else {
+                    this.$.root.classList.remove('show');
                 }
             },
 

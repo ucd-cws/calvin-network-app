@@ -31,11 +31,20 @@
             .paddedTop {
                 padding-top: 8px;
             }
+            .showControls {
+                -webkit-transform: translate3d(0, -1000px, 0);
+                transform: translate3d(0, -1000px, 0);
+                transition: all 250ms;
+            }
+            .showControls.show {
+                -webkit-transform: translate3d(0, 0, 0);
+                transform: translate3d(0, 0, 0);
+            }
         </style>
 
         <core-localstorage id="storage" name="settings" value="{{settings}}" on-core-localstorage-load="{{onLocalStorageLoad}}" ></core-localstorage>
 
-        <div id="root" class="animated fadeInDown">
+        <div id="root" class="showControls">
             <h2 style="margin-top:5px;text-align:center" class="page-header">Neo4j Settings</h2>
 
            
@@ -198,11 +207,16 @@
             },
 
             show : function() {
+                setTimeout(function(){
+                    this.$.root.classList.add('show');
+                }.bind(this), 50);
+
                 this.$.root.classList.add('open');
                 this.classList.add('open');
                 $('html, body').animate({ scrollTop: '0px' });
             },
             hide : function() {
+                this.$.root.classList.remove('show');
                 this.$.root.classList.remove('open');
                 this.classList.remove('open');
             },
@@ -211,6 +225,11 @@
                 this.classList.toggle('open');
                 if( this.classList.contains('open') ) {
                     $('html, body').animate({ scrollTop: '0px' });
+                    setTimeout(function(){
+                        this.$.root.classList.add('show');
+                    }.bind(this), 50);
+                } else {
+                    this.$.root.classList.remove('show');
                 }
             }
         });
