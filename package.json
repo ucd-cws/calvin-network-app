@@ -34,6 +34,10 @@
     "grunt-contrib-imagemin": "^0.8.0",
     "grunt-contrib-cssmin": "^0.10.0",
     "grunt-svgmin": "^0.4.0",
-    "neo4j": "^1.1.0"
+    "neo4j": "^1.1.0",
+    "connect-redis": "^2.1.0",
+    "redis": "^0.12.1",
+    "express-session": "^1.9.3",
+    "body-parser": "^1.10.0"
   }
 }

@@ -1,0 +1,261 @@
+<polymer-element name="cwn-graph" attributes="ds settings">
+    <template>
+        <style>
+            #sigma {
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+            .maxDepth {
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                z-index: 100;
+            }
+            .maxDepth input {
+                width: 50px;
+            }
+        </style>
+        <div id="sigma">
+            <div class="maxDepth">
+               Max Depth: <input type="number" value="{{maxDepth}}" /><br />
+               Negative Depth: <input type="number" value="{{negativeDepth}}" />
+            </div>
+        </div>
+    </template>
+    <script>
+        Polymer('cwn-graph', {
+            ds : null,
+
+            maxDepth : '6',
+            negativeDepth : '0',
+            graph : null,
+            graphJson : {},
+            updateTimer : -1,
+            prmname : '',
+
+            nodeLevels : {},
+            negativeLevels : {},
+            cnodes : [],
+
+            observe : {
+                ds : 'update',
+                'ds.data.nodes' : 'update',
+                'ds.data.links' : 'update',
+                'prmname' : 'update',
+                'maxDepth' : 'update',
+                'negativeDepth' : 'update'
+            },
+
+            ready : function() {
+                $(window).on('hashchange', this.changeNode.bind(this));
+                this.changeNode();
+            },
+
+            changeNode : function() {
+                var loc = window.location.hash.replace('#','').split('/');
+                if( loc[0] == 'graph' ) {
+                    this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                }
+            },
+
+            update : function() {
+                if( !this.ds ) return;
+                if( this.prmname == '' ) return;
+
+                this.reset();
+
+                this.walk(this.prmname, 0, 'forward');
+                // check max depth
+                if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                    if( 0 < parseInt(this.negativeDepth) ) {
+                        this.walk(this.prmname, 0, 'backward');
+                    }
+                }
+
+                this.setPositions();
+            },
+
+            reset : function() {
+                this.graphJson = {
+                    nodes : [],
+                    edges : []
+                };
+                this.nodeLevels = {};
+                this.negativeLevels = {};
+                this.cnodes = [];
+            },
+
+            walk : function(prmname, level, direction) {
+                if( this.cnodes.indexOf(prmname) != -1 ) {
+                    if( direction == 'forward' || level != 0 ) return;
+                }
+                if( !this.ds.lookupMap[prmname] ) return;
+
+                var node = this.ds.lookupMap[prmname];
+                if( node.properties._render && !node.properties._render.show && level != 0 ) {
+                    return;
+                }
+
+                if( direction == 'forward' || level != 0 ) {
+                    this._addNode(node, level, direction);
+                }
+
+                if( !this.ds.originLookupMap[prmname] ) return;
+
+                var links;
+                if( direction == 'forward' ) {
+                    links = this.ds.originLookupMap[prmname];
+                } else {
+                    links = this.ds.terminalLookupMap[prmname];
+                }
+
+                // check max depth
+                if( direction == 'forward' ) {
+                    if( this.maxDepth && this.maxDepth.length > 0 ) {
+                        if( level >= parseInt(this.maxDepth) ) {
+                            return;
+                        }
+                    }
+                } else {
+                    if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                        if( level >= parseInt(this.negativeDepth) ) {
+                            return;
+                        }
+                    }
+                }
+  
+
+                level++;
+                for( var i = 0; i < links.length; i++ ) {
+                    this._addLink(links[i], level, direction);
+                }
+            },
+
+
+            _addNode : function(node, level, direction) {
+                var gnode = {
+                    id : node.properties.prmname,
+                    calvin : node.properties,
+                    label : node.properties.prmname,
+                    size : 2,
+                };
+
+                if( direction == 'forward' ) {
+                    if( !this.nodeLevels[level] ) {
+                        this.nodeLevels[level] = [gnode];
+                    } else {
+                        this.nodeLevels[level].push(gnode);
+                    }
+                } else {
+                    if( !this.negativeLevels[level] ) {
+                        this.negativeLevels[level] = [gnode];
+                    } else {
+                        this.negativeLevels[level].push(gnode);
+                    }
+                }
+
+
+                this.cnodes.push(node.properties.prmname);
+                this.graphJson.nodes.push(gnode);
+            },
+
+            _addLink : function(link, level, direction) {
+                var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
+                if( !tNode ) return;
+                if( tNode.properties._render && !tNode.properties._render.show ) return;
+                if( this.cnodes.indexOf(link.properties.prmname) != -1 ) return;
+
+                this.graphJson.edges.push({
+                    id : link.properties.prmname,
+                    label : link.properties.prmname,
+                    calvin : link.properties,
+                    type : 'arrow',
+                    size: 2,
+                    source : link.properties.origin,
+                    target : link.properties.terminus
+                });
+
+                this.cnodes.push(link.properties.prmname);
+
+                if( direction == 'forward' ) {
+                    this.walk(link.properties.terminus, level, direction);
+                } else {
+                    this.walk(link.properties.origin, level, direction);
+                }
+                
+            },
+
+            setPositions : function() {
+                var nLevelCount = Object.keys(this.negativeLevels).length;
+                var w = $(this.$.sigma).width();
+                var top = nLevelCount * 75;
+
+                for( var level in this.negativeLevels ) {
+                    var row = this.negativeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top-75;
+                        left += width;
+                    }
+
+                    top -= 75;
+                }
+ 
+                top = nLevelCount * 75;
+
+                for( var level in this.nodeLevels ) {
+                    var row = this.nodeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top;
+                        left += width;
+                    }
+
+                    top += 75;
+                }
+
+                console.log(this.prmname);
+                console.log(this.negativeLevels);
+                console.log(this.nodeLevels);
+                console.log(this.graphJson);
+
+                this.render();
+            },
+
+            render : function() {
+                if( !this.graph ) {
+                    this.graph = new sigma({ 
+                        graph: this.graphJson,
+                        container: this.$.sigma,
+                        settings: {
+                            defaultNodeColor: '#ec5148'
+                        }
+                    });
+                    this.graph.bind('clickNode', function(e){
+                        window.location.hash = 'graph/'+e.data.node.id;
+                    }.bind(this));
+                } else {
+      
+                    this.graph.graph.clear();
+                    this.graph.graph.read(this.graphJson);
+                    // Refresh the display:
+                    this.graph.refresh();
+                }
+
+                
+
+                // ForceAtlas Layout
+                //this.graph.startForceAtlas2();
+            }
+        });
+    </script>
+<polymer-element>

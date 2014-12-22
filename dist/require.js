@@ -12596,15 +12596,27 @@ Polymer('cwn-icon');;
     ;
 
         Polymer('cwn-datastore', {
-            loading: true,
+            loading : true,
             
+            network : 'default',
+
             data : {
-                nodesLoaded : false,
-                linksLoaded : false,
+                nodes : [],
                 links : [],
-                nodes : []
+                default : {
+                    links : [],
+                    nodes : []
+                },
+                custom : {
+                    links : [],
+                    nodes : []
+                }
             },
+            // look up any node or terminal by prmname
             lookupMap : {},
+            // look up any link origin name
+            originLookupMap : {},
+            terminalLookupMap : {},
 
             loadingCharts : true,
             chartLoadHandlers : [],
@@ -12623,132 +12635,80 @@ Polymer('cwn-icon');;
                         }
                     }.bind(this)
                 });
+
+                this.init();
             },
 
-            reload : function(query, callback) {
+            init : function(callback) {
                 this.reset();
-                this.init(query, callback);
-            },
-
-            init : function(query, callback) {
-                if( !query || typeof query == 'function' ) {
-                    this.callback = query;
-                    this.loadDefaultGraph();
-                } else {
-                    this.callback = callback;
-                    this.loadCustomGraph(query);
-                }
+                this.callback = callback;
+                this.reload();
             },
 
             reset : function() {
                 this.loading = true;
                 this.data = {
-                    nodesLoaded : false,
-                    linksLoaded : false,
+                    nodes : [],
                     links : [],
-                    nodes : []
-                };
-                lookupMap = {};
-            },
-
-            loadDefaultGraph : function() {
-                this._loadNodes();
-                this._loadLinks();
-            },
-
-            loadCustomGraph : function(query) {
-                //var query = 'MATCH (n {prmname: "C59"})-[r]->(m) RETURN n.geojson, r.geojson, m.geojson';
-
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : query
+                    default : {
+                        links : [],
+                        nodes : []
                     },
-                    success : function(resp) {
-                        this._processCustomResponse(resp, query);
-                    }.bind(this),
-                    error : function(resp) {
-                        this.loading = false;
-                        if( this.callback ) this.callback(true);
-                        alert('Error loading custom cypher: '+query);
-                    }.bind(this)
-                });
-            },
-
-            _processCustomResponse : function(resp, query) {
-                if( !resp ) {
-                    this.data.nodesLoaded = true;
-                    this.data.linksLoaded = true;
-                    this._checkLoaded();
-                    return alert('Error loading custom cypher: '+query);
-                }
-                if( !resp.data ) {
-                    this.data.nodesLoaded = true;
-                    this.data.linksLoaded = true;
-                    this._checkLoaded();
-                    return alert('Error loading custom cypher: '+query);
-                }
-
-                var counts = {
-                    query : query,
-                    links : 0,
-                    nodes : 0
-                }
-
-                for( var i = 0; i < resp.data.length; i++ ) {
-                    var row = resp.data[i];
-
-                    for( var j = 0; j < row.length; j++ ) {
-                        try {
-                            json = JSON.parse(row[j]);
-
-                            if( json && json.properties ) {
-                                if( json.properties.type == 'Diversion' || json.properties.type == 'Return Flow' ) {
-                                    this._processLink(json);
-                                    counts.links++;
-                                } else {
-                                    this._processNode(json);
-                                    counts.nodes++;
-                                }
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
+                    custom : {
+                        links : [],
+                        nodes : []
                     }
-                }
-                this.data.nodesLoaded = true;
-                this.data.linksLoaded = true;
-                this._checkLoaded(counts);
+                };
+                this.lookupMap = {};
+                this.originLookupMap = {};
+                this.terminalLookupMap = {};
             },
 
-            _loadNodes : function() {
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : 'MATCH n RETURN n.geojson',
-                    },
-                    success : function(resp) {
-                        var d;
-                        for( var i = 0; i < resp.data.length; i++ ) {
-                            
-                            // crappy sanity checking
-                            try {
-                                d = JSON.parse(resp.data[i][0]);
-                            } catch (e) {
-                                continue;
-                            }
+            reload : function() {
+                this.loadNetwork(this.network, function(err){
+                    this.loading = false;
+                    this.fire('loaded');
+                    if( this.callback ) this.callback(err);
+                }.bind(this));
+            },
 
-                            this._processNode(d);
+            loadNetwork : function(network, callback) {
+                var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
+                url += '?network='+network;
+
+                $.ajax({
+                    url : url,
+                    success : function(resp) {
+                        for( var i = 0; i < resp.nodes.length; i++ ) {
+                            try {
+                                d = JSON.parse(resp.nodes[i]);
+                                this._processNode(d);
+                            } catch (e) {
+                                debugger;
+                            }
                         }
-                        this.data.nodesLoaded = true;
-                        this._checkLoaded();
+                        for( var i = 0; i < resp.links.length; i++ ) {
+                            try {
+                                d = JSON.parse(resp.links[i]);
+                                this._processLink(d);
+                            } catch (e) {
+                                debugger;
+                            }
+                        }
+
+                        // we don't care about the custom network
+                        if( this.network == 'default') {
+                            callback();
+                        } else {
+                            // we want to load the default network
+                            if( network == 'default' ) this.loadNetwork('default');
+                            // we loaded the default network
+                            else callback();
+                        }
                     }.bind(this),
                     error : function(resp) {
-                        this.loading = false;
-                        if( this.callback ) this.callback(true);
-                        alert('Error retrieving data from: '+this.settings.neo4jUrl+'/cypher');
+                        alert('Error retrieving data from network: '+network);
+                        callback(true);
                     }.bind(this)
                 });
             },
@@ -12759,8 +12719,18 @@ Polymer('cwn-icon');;
                 if( !node.properties.prmname ) return;
 
                 this._markCalibrationNode(node);
+                
+                if( !this.lookupMap[node.properties.prmname] ) {
+                    this.data.nodes.push(node);
+                }
+
                 this.lookupMap[node.properties.prmname] = node;
-                this.data.nodes.push(node);
+
+                if( node.properties.network == 'default') {
+                    this.data.default.nodes.push(node);
+                } else {
+                    this.data.custom.nodes.push(node);
+                }
             },
 
             _processLink : function(link) {
@@ -12769,49 +12739,34 @@ Polymer('cwn-icon');;
                 if( !link.properties.prmname ) return;
 
                 this._markCalibrationNode(link);
-                this.data.links.push(link);
+
+                if( !this.lookupMap[link.properties.prmname] ) {
+                    this.data.links.push(link);
+                }
+
                 this.lookupMap[link.properties.prmname] = link;
-            },
 
-            _loadLinks : function() {
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : 'start r=rel(*) return r.geojson',
-                        params : {}
-                    },
-                    success : function(resp) {
-                        var d;
-                        for( var i = 0; i < resp.data.length; i++ ) {
-                            
-                            // crappy sanity checking
-                            try {
-                                d = JSON.parse(resp.data[i][0]);
-                            } catch (e) {
-                                continue;
-                            }
-                            this._processLink(d);
-                        }
+                if( !this.originLookupMap[link.properties.origin] ) {
+                    this.originLookupMap[link.properties.origin] = [link];
+                } else {
+                    this.originLookupMap[link.properties.origin].push(link);
+                }
 
-                        this.data.linksLoaded = true;
-                        this._checkLoaded();
-                    }.bind(this),
-                    error : function(resp) {
-                        // fail silently for now
-                    }.bind(this)
-                });
-            },
+                if( !this.terminalLookupMap[link.properties.terminus] ) {
+                    this.terminalLookupMap[link.properties.terminus] = [link];
+                } else {
+                    this.terminalLookupMap[link.properties.terminus].push(link);
+                }
 
-            _checkLoaded : function(info) {
-                if( this.data.nodesLoaded && this.data.linksLoaded ) {                    
-                    this.fire('loaded');
-                    this.loading = false;
-                    if( this.callback ) this.callback(null, info);
+
+                if( link.properties.network == 'default') {
+                    this.data.default.links.push(link);
+                } else {
+                    this.data.custom.links.push(link);
                 }
             },
 
-             _markCalibrationNode : function(node) {
+            _markCalibrationNode : function(node) {
                 if( node.properties.prmname.indexOf('_') > -1 ) {
                     var parts = node.properties.prmname.split('_');
                     if( !(parts[0].match(/^CN.*/) || parts[1].match(/^CN.*/)) ) {
@@ -12820,8 +12775,6 @@ Polymer('cwn-icon');;
                 } else if( !node.properties.prmname.match(/^CN.*/) ) {
                     return;
                 }
-
-                
 
                 var hasIn = false;
                 var hasOut = false;
@@ -12849,7 +12802,7 @@ Polymer('cwn-icon');;
                 if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
                 else if ( hasIn ) node.properties.calibrationMode = 'in';
                 else if ( hasOut ) node.properties.calibrationMode = 'out';
-            },
+            }
         })
     ;
 
@@ -13354,6 +13307,10 @@ Polymer('cwn-icon');;
                 var pts = this.feature.geometry.coordinates;
                 this.leaflet.setView([pts[1], pts[0]], 12);
               });
+            },
+
+            goToGraph : function() {
+              window.location.hash = 'graph/'+this.feature.properties.prmname;
             }
 
         });
@@ -13470,6 +13427,241 @@ Polymer('cwn-icon');;
                 } else {
                     this.$.root.classList.remove('show');
                 }
+            }
+        });
+    ;
+
+        Polymer('cwn-graph', {
+            ds : null,
+
+            maxDepth : '6',
+            negativeDepth : '0',
+            graph : null,
+            graphJson : {},
+            updateTimer : -1,
+            prmname : '',
+
+            nodeLevels : {},
+            negativeLevels : {},
+            cnodes : [],
+
+            observe : {
+                ds : 'update',
+                'ds.data.nodes' : 'update',
+                'ds.data.links' : 'update',
+                'prmname' : 'update',
+                'maxDepth' : 'update',
+                'negativeDepth' : 'update'
+            },
+
+            ready : function() {
+                $(window).on('hashchange', this.changeNode.bind(this));
+                this.changeNode();
+            },
+
+            changeNode : function() {
+                var loc = window.location.hash.replace('#','').split('/');
+                if( loc[0] == 'graph' ) {
+                    this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                }
+            },
+
+            update : function() {
+                if( !this.ds ) return;
+                if( this.prmname == '' ) return;
+
+                this.reset();
+
+                this.walk(this.prmname, 0, 'forward');
+                // check max depth
+                if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                    if( 0 < parseInt(this.negativeDepth) ) {
+                        this.walk(this.prmname, 0, 'backward');
+                    }
+                }
+
+                this.setPositions();
+            },
+
+            reset : function() {
+                this.graphJson = {
+                    nodes : [],
+                    edges : []
+                };
+                this.nodeLevels = {};
+                this.negativeLevels = {};
+                this.cnodes = [];
+            },
+
+            walk : function(prmname, level, direction) {
+                if( this.cnodes.indexOf(prmname) != -1 ) {
+                    if( direction == 'forward' || level != 0 ) return;
+                }
+                if( !this.ds.lookupMap[prmname] ) return;
+
+                var node = this.ds.lookupMap[prmname];
+                if( node.properties._render && !node.properties._render.show && level != 0 ) {
+                    return;
+                }
+
+                if( direction == 'forward' || level != 0 ) {
+                    this._addNode(node, level, direction);
+                }
+
+                if( !this.ds.originLookupMap[prmname] ) return;
+
+                var links;
+                if( direction == 'forward' ) {
+                    links = this.ds.originLookupMap[prmname];
+                } else {
+                    links = this.ds.terminalLookupMap[prmname];
+                }
+
+                // check max depth
+                if( direction == 'forward' ) {
+                    if( this.maxDepth && this.maxDepth.length > 0 ) {
+                        if( level >= parseInt(this.maxDepth) ) {
+                            return;
+                        }
+                    }
+                } else {
+                    if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                        if( level >= parseInt(this.negativeDepth) ) {
+                            return;
+                        }
+                    }
+                }
+  
+
+                level++;
+                for( var i = 0; i < links.length; i++ ) {
+                    this._addLink(links[i], level, direction);
+                }
+            },
+
+
+            _addNode : function(node, level, direction) {
+                var gnode = {
+                    id : node.properties.prmname,
+                    calvin : node.properties,
+                    label : node.properties.prmname,
+                    size : 2,
+                };
+
+                if( direction == 'forward' ) {
+                    if( !this.nodeLevels[level] ) {
+                        this.nodeLevels[level] = [gnode];
+                    } else {
+                        this.nodeLevels[level].push(gnode);
+                    }
+                } else {
+                    if( !this.negativeLevels[level] ) {
+                        this.negativeLevels[level] = [gnode];
+                    } else {
+                        this.negativeLevels[level].push(gnode);
+                    }
+                }
+
+
+                this.cnodes.push(node.properties.prmname);
+                this.graphJson.nodes.push(gnode);
+            },
+
+            _addLink : function(link, level, direction) {
+                var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
+                if( !tNode ) return;
+                if( tNode.properties._render && !tNode.properties._render.show ) return;
+                if( this.cnodes.indexOf(link.properties.prmname) != -1 ) return;
+
+                this.graphJson.edges.push({
+                    id : link.properties.prmname,
+                    label : link.properties.prmname,
+                    calvin : link.properties,
+                    type : 'arrow',
+                    size: 2,
+                    source : link.properties.origin,
+                    target : link.properties.terminus
+                });
+
+                this.cnodes.push(link.properties.prmname);
+
+                if( direction == 'forward' ) {
+                    this.walk(link.properties.terminus, level, direction);
+                } else {
+                    this.walk(link.properties.origin, level, direction);
+                }
+                
+            },
+
+            setPositions : function() {
+                var nLevelCount = Object.keys(this.negativeLevels).length;
+                var w = $(this.$.sigma).width();
+                var top = nLevelCount * 75;
+
+                for( var level in this.negativeLevels ) {
+                    var row = this.negativeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top-75;
+                        left += width;
+                    }
+
+                    top -= 75;
+                }
+ 
+                top = nLevelCount * 75;
+
+                for( var level in this.nodeLevels ) {
+                    var row = this.nodeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top;
+                        left += width;
+                    }
+
+                    top += 75;
+                }
+
+                console.log(this.prmname);
+                console.log(this.negativeLevels);
+                console.log(this.nodeLevels);
+                console.log(this.graphJson);
+
+                this.render();
+            },
+
+            render : function() {
+                if( !this.graph ) {
+                    this.graph = new sigma({ 
+                        graph: this.graphJson,
+                        container: this.$.sigma,
+                        settings: {
+                            defaultNodeColor: '#ec5148'
+                        }
+                    });
+                    this.graph.bind('clickNode', function(e){
+                        window.location.hash = 'graph/'+e.data.node.id;
+                    }.bind(this));
+                } else {
+      
+                    this.graph.graph.clear();
+                    this.graph.graph.read(this.graphJson);
+                    // Refresh the display:
+                    this.graph.refresh();
+                }
+
+                
+
+                // ForceAtlas Layout
+                //this.graph.startForceAtlas2();
             }
         });
     ;
@@ -13622,6 +13814,7 @@ Polymer('cwn-icon');;
                     }
 
                     this.updating = false;
+                    this.fire('filtering-complete');
                 }.bind(this), 200);
                 
             },
@@ -13845,7 +14038,8 @@ Polymer('cwn-icon');;
         Polymer('cwn-app', {
             PAGES : {
               MAP : 0,
-              INFO : 1
+              INFO : 1,
+              GRAPH : 2
             },
             selectedPage : 0,
 
@@ -13921,6 +14115,8 @@ Polymer('cwn-icon');;
                 } else {
                   this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
                 }
+              } else if ( loc == 'graph' ) {
+                this.selectedPage = this.PAGES.GRAPH;
               }
             },
 
@@ -13935,16 +14131,15 @@ Polymer('cwn-icon');;
               for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
                 this.dataLoadHandlers[i]();
               }
+              this.dataLoadHandlers = [];
             },
 
             showFilters : function() {
-                this.$.settings.hide();
                 this.$.filters.toggle();
             },
 
-            showSettings : function() {
-                this.$.filters.hide();
-                this.$.settings.toggle();
+            updateGraph : function() {
+              this.$.graph.update();
             },
 
             onFeatureSelected : function(e) {

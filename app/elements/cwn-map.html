@@ -184,6 +184,7 @@
                     }
 
                     this.updating = false;
+                    this.fire('filtering-complete');
                 }.bind(this), 200);
                 
             },

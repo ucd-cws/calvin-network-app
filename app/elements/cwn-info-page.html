@@ -106,6 +106,7 @@
                   {{feature.properties.description}}
                 </div>
                 <div hidden?="{{feature.properties.type == 'Diversion'}}">
+                  <a class="btn btn-link" on-click="{{goToGraph}}"><cwn-icon icon="fa-code-fork"></cwn-icon> View Network Graph</a> <br />
                   <a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a>
                 </div>
               </div>
@@ -769,6 +770,10 @@
                 var pts = this.feature.geometry.coordinates;
                 this.leaflet.setView([pts[1], pts[0]], 12);
               });
+            },
+
+            goToGraph : function() {
+              window.location.hash = 'graph/'+this.feature.properties.prmname;
             }
 
         });

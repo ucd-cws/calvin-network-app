@@ -48,8 +48,8 @@ if( fs.existsSync('./query.js') && useCache ) {
 
 function dropAllNodes(callback) {
     var query = [
-        'MATCH (n)',
-        'OPTIONAL MATCH (n)-[r]-()',
+        'MATCH (n {network:"default"})',
+        'OPTIONAL MATCH (n)-[r {network:"default"}]-()',
         'DELETE n,r'
     ].join('\n');
 
@@ -99,6 +99,10 @@ function dtToArray(dt) {
         }
     }
     node.costs = JSON.stringify(costs);
+
+    // set network name
+    item.properties.network = 'default';
+    node.network = 'default'
 
     // set cleaned up geojson
     node.geojson = JSON.stringify(item);
