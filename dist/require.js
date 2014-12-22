@@ -12673,7 +12673,9 @@ Polymer('cwn-icon');;
             },
 
             loadNetwork : function(network, callback) {
-                var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
+                var url = window.location.protocol+'//'+window.location.host+
+                            (window.location.host == 'watershed.ice.ucdavis.edu' ? '/networkv2' : '') +
+                            '/rest/getNetwork';
                 url += '?network='+network;
 
                 $.ajax({
