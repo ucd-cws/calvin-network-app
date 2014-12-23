@@ -41,6 +41,17 @@
                 this.fontSize = this.width-15;
                 if( this.fontSize < 14 ) this.fontSize = 14;
 
+                var ctx = this.$.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.width, this.height);
+
+                if( !CWN.render[this.type] ) return;
+                CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
+            },
+
+            /*redraw : function() {
+                this.fontSize = this.width-15;
+                if( this.fontSize < 14 ) this.fontSize = 14;
+
                 var c2 = this.$.canvas.getContext('2d');
                 c2.clearRect(0, 0, this.width, this.height);
 
@@ -106,7 +117,7 @@
                 cxt.strokeStyle = "#333";
                 cxt.lineWidth = 1;
                 cxt.stroke();
-            }
+            }*/
 
         }); 
     </script>

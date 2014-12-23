@@ -12171,6 +12171,17 @@ Polymer('cwn-icon');;
                 this.fontSize = this.width-15;
                 if( this.fontSize < 14 ) this.fontSize = 14;
 
+                var ctx = this.$.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.width, this.height);
+
+                if( !CWN.render[this.type] ) return;
+                CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
+            },
+
+            /*redraw : function() {
+                this.fontSize = this.width-15;
+                if( this.fontSize < 14 ) this.fontSize = 14;
+
                 var c2 = this.$.canvas.getContext('2d');
                 c2.clearRect(0, 0, this.width, this.height);
 
@@ -12236,7 +12247,7 @@ Polymer('cwn-icon');;
                 cxt.strokeStyle = "#333";
                 cxt.lineWidth = 1;
                 cxt.stroke();
-            }
+            }*/
 
         }); 
     ;
@@ -12500,6 +12511,235 @@ Polymer('cwn-icon');;
         });
     ;
 
+        Polymer('cwn-popup', {
+            ele : {},
+            target : null,
+            label : '',
+            initd : false,
+          ready : function() {
+            this.ele = {};
+            this.target = {};
+            this.lanel = '';
+            this.initd = false;
+          },
+            targetChanged: function() {
+                if( this.initd ) return;
+                this.initd = true;
+                this.ele = this.$.root;
+                /*var children = this.childNodes;
+                for( var i = 0; i < children.length; i++ ) {
+                    this.removeChild(children[0]);
+                    console.log(children[0]);
+                    if( !children[0].classList ) continue;
+                    if( children[0].classList.contains('popup-body') ) {
+                        this.$.body.appendChild(children[0]);
+                    } else if( children[0].classList.contains('popup-footer') ) {
+                        this.$.footer.appendChild(children[0]);
+                    }
+                }*/
+                var target = this.target.parentNode ? this.target : this;
+
+                target.parentNode.removeChild(target);
+                document.querySelector('body').appendChild(target);
+                $(this.ele).modal({
+              show:false,
+              backdrop:'static'
+            });
+                
+                $(this.querySelectorAll('[data-dismiss="modal"]'))
+                    .on('click', function(){
+                        this.hide();
+                    }.bind(this));
+            },
+            show: function() {
+                $(this.ele).modal('show');
+            },
+            hide: function() {
+                $(this.ele).modal('hide');
+            }
+        });
+
++function ($) {
+  'use strict';
+  // MODAL CLASS DEFINITION
+  // ======================
+  var Modal = function (element, options) {
+    this.options   = options
+    this.$element  = $(element)
+    this.$backdrop =
+    this.isShown   = null
+    if (this.options.remote) {
+      this.$element
+        .find('.modal-content')
+        .load(this.options.remote, $.proxy(function () {
+          this.$element.trigger('loaded.bs.modal')
+        }, this))
+    }
+  }
+  Modal.DEFAULTS = {
+    backdrop: true,
+    keyboard: true,
+    show: true
+  }
+  Modal.prototype.toggle = function (_relatedTarget) {
+    return this[!this.isShown ? 'show' : 'hide'](_relatedTarget)
+  }
+  Modal.prototype.show = function (_relatedTarget) {
+    var that = this
+    var e    = $.Event('show.bs.modal', { relatedTarget: _relatedTarget })
+    this.$element.trigger(e)
+    if (this.isShown || e.isDefaultPrevented()) return
+    this.isShown = true
+    this.escape()
+    this.$element.on('click.dismiss.bs.modal', '[data-dismiss="modal"]', $.proxy(this.hide, this))
+    $(document.body).addClass('modal-open');
+    this.backdrop(function () {
+      var transition = $.support.transition && that.$element.hasClass('fade')
+      // JM
+      //if (!that.$element.parent().length) {
+      //  that.$element.appendTo(document.body) // don't move modals dom position
+      //}
+      that.$element
+        .show()
+        .scrollTop(0)
+      if (transition) {
+        that.$element[0].offsetWidth // force reflow
+      }
+      that.$element
+        .addClass('in')
+        .attr('aria-hidden', false)
+      that.enforceFocus()
+      var e = $.Event('shown.bs.modal', { relatedTarget: _relatedTarget })
+      transition ?
+        that.$element.find('.modal-dialog') // wait for modal to slide in
+          .one($.support.transition.end, function () {
+            that.$element.focus().trigger(e)
+          })
+          .emulateTransitionEnd(300) :
+        that.$element.focus().trigger(e)
+    })
+  }
+  Modal.prototype.hide = function (e) {
+    if (e) e.preventDefault()
+    e = $.Event('hide.bs.modal')
+    this.$element.trigger(e)
+    if (!this.isShown || e.isDefaultPrevented()) return
+    this.isShown = false
+    this.escape()
+    $(document).off('focusin.bs.modal')
+    $(document.body).removeClass('modal-open')
+    this.$element
+      .removeClass('in')
+      .attr('aria-hidden', true)
+      .off('click.dismiss.bs.modal')
+    $.support.transition && this.$element.hasClass('fade') ?
+      this.$element
+        .one($.support.transition.end, $.proxy(this.hideModal, this))
+        .emulateTransitionEnd(300) :
+      this.hideModal()
+  }
+  Modal.prototype.enforceFocus = function () {
+    $(document)
+      .off('focusin.bs.modal') // guard against infinite focus loop
+      .on('focusin.bs.modal', $.proxy(function (e) {
+        if (this.$element[0] !== e.target && !this.$element.has(e.target).length) {
+          this.$element.focus()
+        }
+      }, this))
+  }
+  Modal.prototype.escape = function () {
+    if (this.isShown && this.options.keyboard) {
+      this.$element.on('keyup.dismiss.bs.modal', $.proxy(function (e) {
+        e.which == 27 && this.hide()
+      }, this))
+    } else if (!this.isShown) {
+      this.$element.off('keyup.dismiss.bs.modal')
+    }
+  }
+  Modal.prototype.hideModal = function () {
+    var that = this
+    this.$element.hide()
+    this.backdrop(function () {
+      that.removeBackdrop()
+      that.$element.trigger('hidden.bs.modal')
+    })
+  }
+  Modal.prototype.removeBackdrop = function () {
+    this.$backdrop && this.$backdrop.remove()
+    this.$backdrop = null
+  }
+  Modal.prototype.backdrop = function (callback) {
+    var animate = this.$element.hasClass('fade') ? 'fade' : ''
+    if (this.isShown && this.options.backdrop) {
+      var doAnimate = $.support.transition && animate
+      this.$backdrop = $('<div class="modal-backdrop ' + animate + '" />')
+        .appendTo(document.body)
+      this.$element.on('click.dismiss.bs.modal', $.proxy(function (e) {
+        if (e.target !== e.currentTarget) return
+        this.options.backdrop == 'static'
+          ? this.$element[0].focus.call(this.$element[0])
+          : this.hide.call(this)
+      }, this))
+      if (doAnimate) this.$backdrop[0].offsetWidth // force reflow
+      this.$backdrop.addClass('in')
+      if (!callback) return
+      doAnimate ?
+        this.$backdrop
+          .one($.support.transition.end, callback)
+          .emulateTransitionEnd(150) :
+        callback()
+    } else if (!this.isShown && this.$backdrop) {
+      this.$backdrop.removeClass('in')
+      $.support.transition && this.$element.hasClass('fade') ?
+        this.$backdrop
+          .one($.support.transition.end, callback)
+          .emulateTransitionEnd(150) :
+        callback()
+    } else if (callback) {
+      callback()
+    }
+  }
+  // MODAL PLUGIN DEFINITION
+  // =======================
+  var old = $.fn.modal
+  $.fn.modal = function (option, _relatedTarget) {
+    return this.each(function () {
+      var $this   = $(this)
+      var data    = $this.data('bs.modal')
+      var options = $.extend({}, Modal.DEFAULTS, $this.data(), typeof option == 'object' && option)
+      if (!data) $this.data('bs.modal', (data = new Modal(this, options)))
+      if (typeof option == 'string') data[option](_relatedTarget)
+      else if (options.show) data.show(_relatedTarget)
+    })
+  }
+  $.fn.modal.Constructor = Modal
+  // MODAL NO CONFLICT
+  // =================
+  $.fn.modal.noConflict = function () {
+    $.fn.modal = old
+    return this
+  }
+  // MODAL DATA-API
+  // ==============
+  $(document).on('click.bs.modal.data-api', '[data-toggle="modal"]', function (e) {
+    var $this   = $(this)
+    var href    = $this.attr('href')
+    var $target = $($this.attr('data-target') || (href && href.replace(/.*(?=#[^\s]+$)/, ''))) //strip for ie7
+    var option  = $target.data('bs.modal') ? 'toggle' : $.extend({ remote: !/#/.test(href) && href }, $target.data(), $this.data())
+    if ($this.is('a')) e.preventDefault()
+    $target
+      .modal(option, this)
+      .one('hide', function () {
+        $this.is(':visible') && $this.focus()
+      })
+  })
+  // JM
+  //$(document)
+  //  .on('show.bs.modal', '.modal', function () { $(document.body).addClass('modal-open') })
+  //  .on('hidden.bs.modal', '.modal', function () { $(document.body).removeClass('modal-open') })
+}(jQuery);
+    ;
+
         Polymer('cwn-app-layout', {
             initd : false,
             attached : function(){
@@ -12545,7 +12785,6 @@ Polymer('cwn-icon');;
                     this.filters[key.replace(' ','_').replace('-','_')] = true;
                     this.legendArr.push({
                         name : key,
-                        color : this.legend[key].color,
                         checked : true
                     });
                 }
@@ -12997,7 +13236,7 @@ Polymer('cwn-icon');;
               setTimeout(this._updateSize.bind(this), 100);
             },
 
-            loadClimateData : function() {
+            /*loadClimateData : function() {
               if( !this.feature.properties.hasClimate ) return;
               this.climateLoading = true;
               this.inflows = [];
@@ -13021,6 +13260,38 @@ Polymer('cwn-icon');;
                     if( resp.data.length == 0 ) return this.climateLoadError = true;
 
                     this.renderClimateData(JSON.parse(resp.data[0][0]));
+                    this.async(function(){
+                      this.$.dateslider.resize();
+                    });
+                  }.bind(this),
+                  error : function(resp) {
+                    this.climateLoadError = true;
+                  }.bind(this)
+              });
+            },*/
+
+            loadClimateData : function() {
+              if( !this.feature.properties.hasClimate ) return;
+              this.climateLoading = true;
+              this.inflows = [];
+
+              var type;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                type = 'link';
+              } else {
+                type = 'node';
+              }
+
+              var params = '?prmname='+ this.feature.properties.prmname +
+                '&type=' + type + '&attribute=climate'
+
+              $.ajax({
+                  url : '/rest/getAttribute'+params,
+                  success : function(resp) {
+                    this.climateLoading = false;
+                    if( !resp.climate ) return this.climateLoadError = true;
+
+                    this.renderClimateData(JSON.parse(resp.climate));
                     this.async(function(){
                       this.$.dateslider.resize();
                     });
@@ -13082,7 +13353,7 @@ Polymer('cwn-icon');;
 
             },
 
-            loadCostData : function() {
+            /*loadCostData : function() {
               if( !this.feature.properties.hasCosts ) return;
               this.costLoading = true;
               this.costLoadError = false;
@@ -13106,6 +13377,35 @@ Polymer('cwn-icon');;
                     if( resp.data.length == 0 ) return this.costLoadError = true;
 
                     this.renderCostData(JSON.parse(resp.data[0][0]));
+                  }.bind(this),
+                  error : function(resp) {
+                    this.costLoadError = true;
+                  }.bind(this)
+              });
+            },*/
+
+            loadCostData : function() {
+              if( !this.feature.properties.hasCosts ) return;
+              this.costLoading = true;
+              this.costLoadError = false;
+
+              var type;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                type = 'link';
+              } else {
+                type = 'node';
+              }
+
+              var params = '?prmname='+ this.feature.properties.prmname +
+                '&type=' + type + '&attribute=costs'
+
+              $.ajax({
+                  url : '/rest/getAttribute'+params,
+                  success : function(resp) {
+                    this.costLoading = false;
+                    if( !resp.costs ) return this.costLoadError = true;
+
+                    this.renderCostData(JSON.parse(resp.costs));
                   }.bind(this),
                   error : function(resp) {
                     this.costLoadError = true;
@@ -13433,6 +13733,7 @@ Polymer('cwn-icon');;
 
         Polymer('cwn-graph', {
             ds : null,
+            hack : '',
 
             maxDepth : '6',
             negativeDepth : '0',
@@ -13440,6 +13741,7 @@ Polymer('cwn-icon');;
             graphJson : {},
             updateTimer : -1,
             prmname : '',
+            popupNode : {},
 
             nodeLevels : {},
             negativeLevels : {},
@@ -13455,6 +13757,7 @@ Polymer('cwn-icon');;
             },
 
             ready : function() {
+                this.$.popup.target = this;
                 $(window).on('hashchange', this.changeNode.bind(this));
                 this.changeNode();
             },
@@ -13462,14 +13765,24 @@ Polymer('cwn-icon');;
             changeNode : function() {
                 var loc = window.location.hash.replace('#','').split('/');
                 if( loc[0] == 'graph' ) {
-                    this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                    this.async(function(){
+                        this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                    });
+
+                    // make sure it was drawn correctly
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 500);
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 1000);
                 }
             },
 
             update : function() {
                 if( !this.ds ) return;
                 if( this.prmname == '' ) return;
-
+                
                 this.reset();
 
                 this.walk(this.prmname, 0, 'forward');
@@ -13495,10 +13808,10 @@ Polymer('cwn-icon');;
 
             walk : function(prmname, level, direction) {
                 // has this node already been added to the graph?
-                if( this.cnodes.indexOf(prmname) != -1 ) {
+                //if( this.cnodes.indexOf(prmname) != -1 ) {
                     // if we are walking backward, we need to process the first node again
-                    if( direction == 'forward' || level != 0 ) return;
-                }
+                //    if( direction == 'forward' || level != 0 ) return;
+                //}
 
                 // does the node actually exist?
                 if( !this.ds.lookupMap[prmname] ) return;
@@ -13510,7 +13823,7 @@ Polymer('cwn-icon');;
                 }
 
                 // add the node, unless this is level 0 and we are walking backward
-                if( direction == 'forward' || level != 0 ) {
+                if( (direction == 'forward' || level != 0) && this.cnodes.indexOf(prmname) == -1  ) {
                     this._addNode(node, level, direction);
                 }
 
@@ -13554,7 +13867,8 @@ Polymer('cwn-icon');;
                     id : node.properties.prmname,
                     calvin : node.properties,
                     label : node.properties.prmname,
-                    size : 2,
+                    type : node.properties.type,
+                    size : 8,
                 };
 
                 // set the graph node to the list at the current later
@@ -13666,12 +13980,14 @@ Polymer('cwn-icon');;
                         },
                         settings: {
                             defaultNodeColor: '#ec5148',
-                            //defaultEdgeType:'arrow',
-                            minArrowSize:5
+                            minArrowSize : 6,
+                            minNodeSize: 10
                         }
                     });
                     this.graph.bind('clickNode', function(e){
-                        window.location.hash = 'graph/'+e.data.node.id;
+                        //window.location.hash = 'graph/'+e.data.node.id;
+                        this.popupNode = this.ds.lookupMap[e.data.node.id];
+                        this.$.popup.show();
                     }.bind(this));
                 } else {
       
@@ -13680,12 +13996,24 @@ Polymer('cwn-icon');;
                     // Refresh the display:
                     this.graph.refresh();
                 }
-
-                
-
                 // ForceAtlas Layout
                 //this.graph.startForceAtlas2();
+            },
+
+            goTo : function() {
+                window.location.hash = 'map';
+                setTimeout(function() {
+                    var pts = this.popupNode.geometry.coordinates;
+                    var ele =document.querySelector('html /deep/ cwn-map')
+                    ele.map.setView([pts[1], pts[0]], 12);
+                    this.$.popup.hide();
+                }.bind(this), 500);
+            },
+
+            hide : function() {
+                this.$.popup.hide();
             }
+
         });
     ;
 
@@ -13697,7 +14025,7 @@ Polymer('cwn-icon');;
 
             observe : {
                 'ds.loading' : 'update',
-                '$.leaflet.map' : 'update',
+                'map' : 'update',
                 'filters.calibrationMode' : 'update',
                 'filters.oneStepMode' : 'update',
                 'filters.Junction' : 'update',
@@ -13717,6 +14045,10 @@ Polymer('cwn-icon');;
 
             map : null,
 
+            ready : function() {
+                this._process();
+            },
+
             domReady : function() {
                 this.async(function(){
                     this.map = L.map(this.$.leaflet).setView([40, -121], 5);
@@ -13727,6 +14059,7 @@ Polymer('cwn-icon');;
             },
 
             _process : function() {
+                if( !this.ds ) return;
                 if( this.ds.loading || !this.map ) return;
 
                 this.edges = [];
@@ -13838,7 +14171,7 @@ Polymer('cwn-icon');;
 
                     this.updating = false;
                     this.fire('filtering-complete');
-                }.bind(this), 200);
+                }.bind(this), 250);
                 
             },
 

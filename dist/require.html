@@ -466,6 +466,36 @@ triggered only when value is a different instance.
     </template>
     
 </polymer-element></div>
+<div hidden><polymer-element name="cwn-popup" attributes="label target noFooter" assetpath="elements/widgets/">
+    <template>      
+    <style>
+      .modal {
+        overflow: auto !important;
+        z-index: 10050 !important;
+      }
+      .modal-content {
+        box-shadow: 0 0 15px black;
+      }
+    </style>
+        <div class="modal fade" id="root">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header" id="header" style="display: {{label.length == 0 ? &apos;none&apos; : &apos;block&apos;}}">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&#xD7;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title">{{label}}</h4>
+              </div>
+              <div class="modal-body" id="body">
+                <content select=".popup-body"></content>
+              </div>
+              <div class="modal-footer" id="footer" hidden?="{{noFooter}}">
+                <content select=".popup-footer"></content>
+              </div>
+            </div><!-- /.modal-content -->
+          </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+    </template>
+    
+</polymer-element></div>
 
 <div hidden><polymer-element name="cwn-app-layout" assetpath="elements/">
     <template>
@@ -627,8 +657,8 @@ triggered only when value is a different instance.
                             <template repeat="{{item in legendArr}}">
                                 <label class="checkbox-inline">
                                     <input type="checkbox" name="{{item.name}}" checked="{{item.checked}}" on-change="{{_updateCheckbox}}">
-                                    <div class="cb-border" style="border: 2px solid {{item.color}}">
-                                        <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}" fillstyle="{{item.color}}"></cwn-app-icon>
+                                    <div class="cb-border">
+                                        <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}"></cwn-app-icon>
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">{{item.name}}</div>
                                     </div>
                                 </label>
@@ -1044,17 +1074,59 @@ triggered only when value is a different instance.
                 left: 0;
                 bottom: 0;
                 z-index: 100;
+                background-color: rgba(220,220,220,.85);
+                color: #888;
+                padding: 5px;
+                border-radius: 0 3px 0 0;
+                box-shadow: 0 0 5px #333;
             }
             .maxDepth input {
-                width: 50px;
+                width: 60px !important;
+            }
+            table td {
+                padding: 3px !important;
             }
         </style>
-        <div id="sigma">
-            <div class="maxDepth">
-               Max Depth: <input type="number" value="{{maxDepth}}"><br>
-               Negative Depth: <input type="number" value="{{negativeDepth}}">
-            </div>
+        <div id="sigma"></div>
+        <div class="maxDepth">
+            <table>
+                <tr>
+                    <td>Max Depth: </td>
+                    <td><input type="number" value="{{maxDepth}}" class="form-control"></td>
+                </tr>
+                <tr>
+                    <td>Negative Depth: </td>
+                    <td><input type="number" value="{{negativeDepth}}" class="form-control"></td>
+                
+                </tr><tr>
+                    <td><a href="{{hack}}#map">Back to Map</a></td>
+                    <td></td>
+                
+            </tr></table>
         </div>
+
+        <cwn-popup id="popup" label="{{popupNode.properties.prmname}}" nofooter="{{true}}">
+            <div class="popup-body">
+                <div layout="" horizontal="">
+                    <div>
+                        <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
+                    </div>
+                    <div flex="">
+                        <div style="padding-left:25px">
+                            <div>{{popupNode.properties.description}}</div>
+                            <h4 style="margin-top: 30px">Actions</h4>
+                            <ul>
+                                <li><a class="btn btn-link" href="#graph/{{popupNode.properties.prmname}}" on-click="{{hide}}">
+                                        Set as Graph Root</a>
+                                </li>
+                                <li><a class="btn btn-link" href="#info/{{popupNode.properties.prmname}}" on-click="{{hide}}">View Info</a></li>
+                                <li><a class="btn btn-link" on-click="{{goTo}}">View on Map</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+        </cwn-popup>
     </template>
     
 <polymer-element assetpath="elements/"></polymer-element></polymer-element></div>

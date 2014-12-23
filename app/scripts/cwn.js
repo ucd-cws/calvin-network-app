@@ -135,6 +135,28 @@ CWN.render['Groundwater Storage'] = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
+CWN.render['Sink'] = function(ctx, l, t, w, h) {
+    ctx.fillStyle = CWN.colors.base;
+    ctx.strokeStyle = CWN.colors.lightGrey;
+    ctx.lineWidth = 1;
+
+    CWN.render._nSidedPath(ctx, l, t, w/2, 4, 45);
+    ctx.fill();
+    ctx.closePath();
+    ctx.stroke();
+}
+
+CWN.render['Non-Standard Demand'] = function(ctx, l, t, w, h) {
+    ctx.fillStyle = CWN.colors.red;
+    ctx.strokeStyle = CWN.colors.lightGrey;
+    ctx.lineWidth = 1;
+
+    CWN.render._nSidedPath(ctx, l, t, w/2, 4, 45);
+    ctx.fill();
+    ctx.closePath();
+    ctx.stroke();
+}
+
 CWN.render['Agricultural Demand'] = function(ctx, l, t, w, h) {
     CWN.render._oval(ctx, l, t, w, h, CWN.colors.lightBlue);
 }

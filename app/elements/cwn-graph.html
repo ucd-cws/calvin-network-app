@@ -11,21 +11,67 @@
                 left: 0;
                 bottom: 0;
                 z-index: 100;
+                background-color: rgba(220,220,220,.85);
+                color: #888;
+                padding: 5px;
+                border-radius: 0 3px 0 0;
+                box-shadow: 0 0 5px #333;
             }
             .maxDepth input {
-                width: 50px;
+                width: 60px !important;
+            }
+            table td {
+                padding: 3px !important;
             }
         </style>
-        <div id="sigma">
-            <div class="maxDepth">
-               Max Depth: <input type="number" value="{{maxDepth}}" /><br />
-               Negative Depth: <input type="number" value="{{negativeDepth}}" />
-            </div>
+        <div id="sigma"></div>
+        <div class="maxDepth">
+            <table>
+                <tr>
+                    <td>Max Depth: </td>
+                    <td><input type="number" value="{{maxDepth}}" class="form-control" /></td>
+                </tr>
+                <tr>
+                    <td>Negative Depth: </td>
+                    <td><input type="number" value="{{negativeDepth}}" class="form-control" /></td>
+                </td>
+                <tr>
+                    <td><a href="{{hack}}#map">Back to Map</a></td>
+                    <td></td>
+                </td>
+            </table>
         </div>
+
+        <cwn-popup id="popup" label="{{popupNode.properties.prmname}}" noFooter="{{true}}">
+            <div class="popup-body">
+                <div layout horizontal>
+                    <div>
+                        <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
+                    </div>
+                    <div flex>
+                        <div style="padding-left:25px">
+                            <div>{{popupNode.properties.description}}</div>
+                            <h4 style="margin-top: 30px">Actions</h4>
+                            <ul>
+                                <li><a 
+                                        class="btn btn-link" 
+                                        href="#graph/{{popupNode.properties.prmname}}"
+                                        on-click="{{hide}}">
+                                        Set as Graph Root</a>
+                                </li>
+                                <li><a class="btn btn-link" href="#info/{{popupNode.properties.prmname}}" on-click="{{hide}}">View Info</a></li>
+                                <li><a class="btn btn-link" on-click="{{goTo}}">View on Map</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+        </cwn-popup>
     </template>
     <script>
         Polymer('cwn-graph', {
             ds : null,
+            hack : '',
 
             maxDepth : '6',
             negativeDepth : '0',
@@ -33,6 +79,7 @@
             graphJson : {},
             updateTimer : -1,
             prmname : '',
+            popupNode : {},
 
             nodeLevels : {},
             negativeLevels : {},
@@ -48,6 +95,7 @@
             },
 
             ready : function() {
+                this.$.popup.target = this;
                 $(window).on('hashchange', this.changeNode.bind(this));
                 this.changeNode();
             },
@@ -55,14 +103,24 @@
             changeNode : function() {
                 var loc = window.location.hash.replace('#','').split('/');
                 if( loc[0] == 'graph' ) {
-                    this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                    this.async(function(){
+                        this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                    });
+
+                    // make sure it was drawn correctly
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 500);
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 1000);
                 }
             },
 
             update : function() {
                 if( !this.ds ) return;
                 if( this.prmname == '' ) return;
-
+                
                 this.reset();
 
                 this.walk(this.prmname, 0, 'forward');
@@ -88,10 +146,10 @@
 
             walk : function(prmname, level, direction) {
                 // has this node already been added to the graph?
-                if( this.cnodes.indexOf(prmname) != -1 ) {
+                //if( this.cnodes.indexOf(prmname) != -1 ) {
                     // if we are walking backward, we need to process the first node again
-                    if( direction == 'forward' || level != 0 ) return;
-                }
+                //    if( direction == 'forward' || level != 0 ) return;
+                //}
 
                 // does the node actually exist?
                 if( !this.ds.lookupMap[prmname] ) return;
@@ -103,7 +161,7 @@
                 }
 
                 // add the node, unless this is level 0 and we are walking backward
-                if( direction == 'forward' || level != 0 ) {
+                if( (direction == 'forward' || level != 0) && this.cnodes.indexOf(prmname) == -1  ) {
                     this._addNode(node, level, direction);
                 }
 
@@ -147,7 +205,8 @@
                     id : node.properties.prmname,
                     calvin : node.properties,
                     label : node.properties.prmname,
-                    size : 2,
+                    type : node.properties.type,
+                    size : 8,
                 };
 
                 // set the graph node to the list at the current later
@@ -259,12 +318,14 @@
                         },
                         settings: {
                             defaultNodeColor: '#ec5148',
-                            //defaultEdgeType:'arrow',
-                            minArrowSize:5
+                            minArrowSize : 6,
+                            minNodeSize: 10
                         }
                     });
                     this.graph.bind('clickNode', function(e){
-                        window.location.hash = 'graph/'+e.data.node.id;
+                        //window.location.hash = 'graph/'+e.data.node.id;
+                        this.popupNode = this.ds.lookupMap[e.data.node.id];
+                        this.$.popup.show();
                     }.bind(this));
                 } else {
       
@@ -273,12 +334,24 @@
                     // Refresh the display:
                     this.graph.refresh();
                 }
-
-                
-
                 // ForceAtlas Layout
                 //this.graph.startForceAtlas2();
+            },
+
+            goTo : function() {
+                window.location.hash = 'map';
+                setTimeout(function() {
+                    var pts = this.popupNode.geometry.coordinates;
+                    var ele =document.querySelector('html /deep/ cwn-map')
+                    ele.map.setView([pts[1], pts[0]], 12);
+                    this.$.popup.hide();
+                }.bind(this), 500);
+            },
+
+            hide : function() {
+                this.$.popup.hide();
             }
+
         });
     </script>
 <polymer-element>

@@ -44,7 +44,7 @@
 
             observe : {
                 'ds.loading' : 'update',
-                '$.leaflet.map' : 'update',
+                'map' : 'update',
                 'filters.calibrationMode' : 'update',
                 'filters.oneStepMode' : 'update',
                 'filters.Junction' : 'update',
@@ -64,6 +64,10 @@
 
             map : null,
 
+            ready : function() {
+                this._process();
+            },
+
             domReady : function() {
                 this.async(function(){
                     this.map = L.map(this.$.leaflet).setView([40, -121], 5);
@@ -74,6 +78,7 @@
             },
 
             _process : function() {
+                if( !this.ds ) return;
                 if( this.ds.loading || !this.map ) return;
 
                 this.edges = [];
@@ -185,7 +190,7 @@
 
                     this.updating = false;
                     this.fire('filtering-complete');
-                }.bind(this), 200);
+                }.bind(this), 250);
                 
             },
 
