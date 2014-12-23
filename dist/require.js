@@ -13494,30 +13494,37 @@ Polymer('cwn-icon');;
             },
 
             walk : function(prmname, level, direction) {
+                // has this node already been added to the graph?
                 if( this.cnodes.indexOf(prmname) != -1 ) {
+                    // if we are walking backward, we need to process the first node again
                     if( direction == 'forward' || level != 0 ) return;
                 }
+
+                // does the node actually exist?
                 if( !this.ds.lookupMap[prmname] ) return;
 
                 var node = this.ds.lookupMap[prmname];
+                // is the node hidden (ie been filtered out)
                 if( node.properties._render && !node.properties._render.show && level != 0 ) {
                     return;
                 }
 
+                // add the node, unless this is level 0 and we are walking backward
                 if( direction == 'forward' || level != 0 ) {
                     this._addNode(node, level, direction);
                 }
 
-                if( !this.ds.originLookupMap[prmname] ) return;
-
+                // find the links by using the datastores lookup indexes
                 var links;
                 if( direction == 'forward' ) {
+                    if( !this.ds.originLookupMap[prmname] ) return;
                     links = this.ds.originLookupMap[prmname];
                 } else {
+                    if( !this.ds.terminalLookupMap[prmname] ) return;
                     links = this.ds.terminalLookupMap[prmname];
                 }
 
-                // check max depth
+                // check max depth, quit if we have passed it
                 if( direction == 'forward' ) {
                     if( this.maxDepth && this.maxDepth.length > 0 ) {
                         if( level >= parseInt(this.maxDepth) ) {
@@ -13533,7 +13540,9 @@ Polymer('cwn-icon');;
                 }
   
 
+                // increase the level
                 level++;
+                // add the links to the graph
                 for( var i = 0; i < links.length; i++ ) {
                     this._addLink(links[i], level, direction);
                 }
@@ -13548,6 +13557,8 @@ Polymer('cwn-icon');;
                     size : 2,
                 };
 
+                // set the graph node to the list at the current later
+                // this list will be used later on to render the nodes location
                 if( direction == 'forward' ) {
                     if( !this.nodeLevels[level] ) {
                         this.nodeLevels[level] = [gnode];
@@ -13562,37 +13573,44 @@ Polymer('cwn-icon');;
                     }
                 }
 
-
+                // add the nodes name to the list of nodes already in the graph
                 this.cnodes.push(node.properties.prmname);
+                // add the node to the graph
                 this.graphJson.nodes.push(gnode);
             },
 
             _addLink : function(link, level, direction) {
+                // get the links next node
                 var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
+                // make sure the next node exists
                 if( !tNode ) return;
+                // make sure the next node is being shown
                 if( tNode.properties._render && !tNode.properties._render.show ) return;
+                // make sure the link hasn't already been added
                 if( this.cnodes.indexOf(link.properties.prmname) != -1 ) return;
 
+                // add the link to the graph
                 this.graphJson.edges.push({
                     id : link.properties.prmname,
                     label : link.properties.prmname,
                     calvin : link.properties,
                     type : 'arrow',
-                    size: 2,
                     source : link.properties.origin,
                     target : link.properties.terminus
                 });
 
+                // add to the list of nodes/links already used
                 this.cnodes.push(link.properties.prmname);
 
+                // walk the next node in the graph
                 if( direction == 'forward' ) {
                     this.walk(link.properties.terminus, level, direction);
                 } else {
                     this.walk(link.properties.origin, level, direction);
                 }
-                
             },
 
+            // set the position for all nodes in the graph
             setPositions : function() {
                 var nLevelCount = Object.keys(this.negativeLevels).length;
                 var w = $(this.$.sigma).width();
@@ -13642,9 +13660,14 @@ Polymer('cwn-icon');;
                 if( !this.graph ) {
                     this.graph = new sigma({ 
                         graph: this.graphJson,
-                        container: this.$.sigma,
+                        renderer : {
+                            container: this.$.sigma,
+                            type : 'canvas'
+                        },
                         settings: {
-                            defaultNodeColor: '#ec5148'
+                            defaultNodeColor: '#ec5148',
+                            //defaultEdgeType:'arrow',
+                            minArrowSize:5
                         }
                     });
                     this.graph.bind('clickNode', function(e){
