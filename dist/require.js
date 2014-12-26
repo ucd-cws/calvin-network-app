@@ -12977,7 +12977,11 @@ Polymer('cwn-icon');;
                 if( !link.properties ) return;
                 if( !link.properties.prmname ) return;
 
+                // mark if this node is a calibration or not
                 this._markCalibrationNode(link);
+
+                // 
+                this._markLinkTypes(link);
 
                 if( !this.lookupMap[link.properties.prmname] ) {
                     this.data.links.push(link);
@@ -12985,12 +12989,14 @@ Polymer('cwn-icon');;
 
                 this.lookupMap[link.properties.prmname] = link;
 
+                // set the origin lookup map
                 if( !this.originLookupMap[link.properties.origin] ) {
                     this.originLookupMap[link.properties.origin] = [link];
                 } else {
                     this.originLookupMap[link.properties.origin].push(link);
                 }
 
+                // set the terminal lookup map
                 if( !this.terminalLookupMap[link.properties.terminus] ) {
                     this.terminalLookupMap[link.properties.terminus] = [link];
                 } else {
@@ -13003,6 +13009,53 @@ Polymer('cwn-icon');;
                 } else {
                     this.data.custom.links.push(link);
                 }
+            },
+
+            _markLinkTypes : function(link) {
+                link.properties.renderInfo = {
+                    cost : link.properties.hasCosts ? true : false,
+                    amplitude : link.properties.amplitude ? true : false,
+                    // TODO: parser needs to sheet shortcut for contraint type
+                    // data will still need to be loaded on second call
+                    constraints : link.properties.hasConstraints ? true : false,
+                    environmental : link.properties.hasClimate ? true : false
+                };
+
+                // Flow to a sink
+                if( this.lookupMap[link.properties.terminus] && 
+                    this.lookupMap[link.properties.terminus].properties.type == 'Sink' ) {
+                    link.properties.renderInfo.type = 'flowToSink';
+                
+                } else if( link.properties.type == 'Return Flow' ) {
+                    link.properties.renderInfo.type = 'returnFlowFromDemand';
+
+                } else if ( this._isGWToDemand(link) ) {
+                    link.properties.renderInfo.type = 'gwToDemand';
+
+                } else if( this.lookupMap[link.properties.origin] && 
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'both' ) {
+
+                    link.properties.renderInfo.type = 'artificalRecharge';
+                } else {
+
+                    link.properties.renderInfo.type = 'unknown';
+                }
+
+            },
+
+            _isGWToDemand : function(link) {
+                var origin = this.lookupMap[link.properties.origin];
+                var terminal = this.lookupMap[link.properties.terminal];
+
+                if( !origin || !terminal ) return false;
+
+                if( origin.properties.type != 'Groundwater Storage' ) return false;
+                if( terminal.properties.type == 'Non-Standard Demand' || 
+                    terminal.properties.type == 'Agricultural Demand' ||
+                    terminal.properties.type == 'Urban Demand' ) return true;
+
+                return false;
             },
 
             _markCalibrationNode : function(node) {
@@ -13903,15 +13956,18 @@ Polymer('cwn-icon');;
                 // make sure the link hasn't already been added
                 if( this.cnodes.indexOf(link.properties.prmname) != -1 ) return;
 
-                // add the link to the graph
-                this.graphJson.edges.push({
+                var edge = {
                     id : link.properties.prmname,
                     label : link.properties.prmname,
                     calvin : link.properties,
-                    type : 'arrow',
+                    type : 'cwn',
                     source : link.properties.origin,
-                    target : link.properties.terminus
-                });
+                    target : link.properties.terminus,
+                    color: 'blue'
+                };
+
+                // add the link to the graph
+                this.graphJson.edges.push(edge);
 
                 // add to the list of nodes/links already used
                 this.cnodes.push(link.properties.prmname);
@@ -14055,6 +14111,8 @@ Polymer('cwn-icon');;
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 18
                     }).addTo(this.map);
+
+                    this.map.on('zoomend', this._onZoomEnd.bind(this));
                 });
             },
 
@@ -14253,7 +14311,6 @@ Polymer('cwn-icon');;
                         d.properties._render.show = false;
                     }
                 }
-
             },
 
             _isTextMatch : function(re, props) {
@@ -14264,56 +14321,56 @@ Polymer('cwn-icon');;
                 return false;
             },
 
+            _onZoomEnd : function() {
+                if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
+
+                this.markerLayer = L.geoJson(this.ds.data.nodes, {
+                    pointToLayer: function(feature, ll) {
+                        return this._getMarker(feature, ll);
+                    }.bind(this),
+                    filter: function(feature, layer) {
+                        return feature.properties._render.show || 
+                                (feature.properties._render.oneStep && oneStepMode);
+                    }
+                }).addTo(this.map);
+                this.markerLayer.on('click', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
+                for( var key in this.markerLayer._layers ) {
+                    this._hackTouchEvent(this.markerLayer._layers[key]);
+                }
+            },
+
             _getMarker : function(feature, ll) {
                 var render = feature.properties._render || {};
                 var type = feature.properties.type;
 
+                if( this.map.getZoom() < 10 ) {
+                    s = this.map.getZoom() * 3;
+                } else {
+                    s = this.map.getZoom() * 4;
+                }
+
                 var options = {
-                    radius : 20,
-                    color : '#333',
-                    fillColor : this.legend[feature.properties.type] ? 
-                                    this.legend[feature.properties.type].color : '#000000',
-                    opacity: render.oneStep ? .3 : .9,
-                    fillOpacity : render.oneStep ? .1 : .7
+                    iconSize : new L.Point(s, s),
+                    type : type
                 };
 
-                if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
+                /*if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
                     options.radius = 30,
                     options.weight = 7;
                     if( feature.properties.calibrationMode == 'both' ) options.color = 'red';
                     else if( feature.properties.calibrationMode == 'in' ) options.color = 'yellow';
                     else if( feature.properties.calibrationMode == 'out' ) options.color = 'blue';
-                }
-                
+                }*/
 
-                if( type == 'Junction' || type == 'Pump Plant' || type == 'Power Plant' ) {
+                var m = new L.Marker(ll, {
+                    icon: new L.Icon.Canvas(options), 
+                    opacity: render.oneStep ? .1 : .7
+                });
 
-                    return L.circleMarker(ll, options);
-
-                } else if ( type == 'Water Treatment' ) {
-
-                    options.sides = 6;
-                    return L.myMarker(ll, options);
-                
-                } else if ( type == 'Surface Storage' || type == 'Groundwater Storage' ) {
-
-                    options.sides = 3;
-                    options.rotate = 90;
-                    return L.myMarker(ll, options);
-
-                } else if ( type == 'Agricultural Demand' || type == 'Urban Demand' ) {
-
-                    options.sides = 5;
-                    options.rotate = 18;
-                    return L.myMarker(ll, options);
-
-                } else {
-
-                    options.sides = 4;
-                    options.rotate = 45;
-                    return L.myMarker(ll, options);
-
-                }
+                return m;
             },
 
             // hack so we know if the map is moving for touch events
@@ -14344,49 +14401,31 @@ Polymer('cwn-icon');;
             },
 
             initMarker : function() {
-                // add custom marker
-                L.MyMarker = L.CircleMarker.extend({
-
-                    initialize: function (latlng, options) {
-                        L.Circle.prototype.initialize.call(this, latlng, null, options);
-                        this._radius = this.options.radius;
-                        this._sides = this.options.sides ? this.options.sides : 6;
-                        this._rotate = this.options.rotate ? this.options.rotate : 0;
+                // can we pass in type and then just use
+                L.Icon.Canvas = L.Icon.extend({
+                    options: {
+                        iconSize: new L.Point(20, 20), // Have to be supplied
+                        className: 'leaflet-canvas-icon'
                     },
 
-
-                    getPathString: function () {
-                        var p = this._point;
-                        if (this._checkIfEmpty()) {
-                            return '';
-                        }
-
-                        if (L.Browser.svg) {
-                            return this.polygon(p.x, p.y, this._radius, this._sides, this._rotate);
-                        } else {
-                            console.error("MyMarker not using svg!!!");
-                        }
+                    createIcon: function () {
+                        var e = document.createElement('canvas');
+                        this._setIconStyles(e, 'icon');
+                        var s = this.options.iconSize;
+                        e.width = s.x;
+                        e.height = s.y;
+                        this.draw(e.getContext('2d'), s.x, s.y);
+                        return e;
                     },
 
-                    polygon : function(x, y, radius, sides, startAngle) {
-                      if (sides < 3) return;
-                      var a = ((Math.PI * 2)/sides);
-                      var r = startAngle * (Math.PI / 180);
+                    createShadow: function () {
+                        return null;
+                    },
 
-                      // think you need to adjust by x, y
-                      var p = "M";
-                      for (var i = 0; i < sides; i++) {
-                         p += (x+(radius*Math.cos(a*i-r)))+","+(y+(radius*Math.sin(a*i-r)))+" ";
-                      }
-                      p +=" z";
-                      return p;
+                    draw: function(ctx, width, height) {
+                        CWN.render[this.options.type](ctx, 2, 2, width-4, height-4);
                     }
-
                 });
-
-                L.myMarker = function (latlng, options) {
-                    return new L.MyMarker(latlng, options);
-                };
             }
         });
     ;
