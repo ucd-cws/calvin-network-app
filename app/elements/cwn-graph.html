@@ -241,15 +241,18 @@
                 // make sure the link hasn't already been added
                 if( this.cnodes.indexOf(link.properties.prmname) != -1 ) return;
 
-                // add the link to the graph
-                this.graphJson.edges.push({
+                var edge = {
                     id : link.properties.prmname,
                     label : link.properties.prmname,
                     calvin : link.properties,
-                    type : 'arrow',
+                    type : 'cwn',
                     source : link.properties.origin,
-                    target : link.properties.terminus
-                });
+                    target : link.properties.terminus,
+                    color: 'blue'
+                };
+
+                // add the link to the graph
+                this.graphJson.edges.push(edge);
 
                 // add to the list of nodes/links already used
                 this.cnodes.push(link.properties.prmname);

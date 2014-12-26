@@ -96,6 +96,9 @@ function dtToArray(dt) {
             costs[costAttrs[j]] = item.properties[costAttrs[j]];
             delete item.properties[costAttrs[j]];
             item.properties.hasCosts = true;
+            if( costAttrs[j] == 'constraints' ) {
+                item.properties.hasConstraints = true;
+            }
         }
     }
     node.costs = JSON.stringify(costs);

@@ -144,7 +144,11 @@
                 if( !link.properties ) return;
                 if( !link.properties.prmname ) return;
 
+                // mark if this node is a calibration or not
                 this._markCalibrationNode(link);
+
+                // 
+                this._markLinkTypes(link);
 
                 if( !this.lookupMap[link.properties.prmname] ) {
                     this.data.links.push(link);
@@ -152,12 +156,14 @@
 
                 this.lookupMap[link.properties.prmname] = link;
 
+                // set the origin lookup map
                 if( !this.originLookupMap[link.properties.origin] ) {
                     this.originLookupMap[link.properties.origin] = [link];
                 } else {
                     this.originLookupMap[link.properties.origin].push(link);
                 }
 
+                // set the terminal lookup map
                 if( !this.terminalLookupMap[link.properties.terminus] ) {
                     this.terminalLookupMap[link.properties.terminus] = [link];
                 } else {
@@ -170,6 +176,53 @@
                 } else {
                     this.data.custom.links.push(link);
                 }
+            },
+
+            _markLinkTypes : function(link) {
+                link.properties.renderInfo = {
+                    cost : link.properties.hasCosts ? true : false,
+                    amplitude : link.properties.amplitude ? true : false,
+                    // TODO: parser needs to sheet shortcut for contraint type
+                    // data will still need to be loaded on second call
+                    constraints : link.properties.hasConstraints ? true : false,
+                    environmental : link.properties.hasClimate ? true : false
+                };
+
+                // Flow to a sink
+                if( this.lookupMap[link.properties.terminus] && 
+                    this.lookupMap[link.properties.terminus].properties.type == 'Sink' ) {
+                    link.properties.renderInfo.type = 'flowToSink';
+                
+                } else if( link.properties.type == 'Return Flow' ) {
+                    link.properties.renderInfo.type = 'returnFlowFromDemand';
+
+                } else if ( this._isGWToDemand(link) ) {
+                    link.properties.renderInfo.type = 'gwToDemand';
+
+                } else if( this.lookupMap[link.properties.origin] && 
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'both' ) {
+
+                    link.properties.renderInfo.type = 'artificalRecharge';
+                } else {
+
+                    link.properties.renderInfo.type = 'unknown';
+                }
+
+            },
+
+            _isGWToDemand : function(link) {
+                var origin = this.lookupMap[link.properties.origin];
+                var terminal = this.lookupMap[link.properties.terminal];
+
+                if( !origin || !terminal ) return false;
+
+                if( origin.properties.type != 'Groundwater Storage' ) return false;
+                if( terminal.properties.type == 'Non-Standard Demand' || 
+                    terminal.properties.type == 'Agricultural Demand' ||
+                    terminal.properties.type == 'Urban Demand' ) return true;
+
+                return false;
             },
 
             _markCalibrationNode : function(node) {

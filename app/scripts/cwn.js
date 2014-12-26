@@ -121,7 +121,7 @@ CWN.render['Surface Storage'] = function(ctx, l, t, w, h) {
 CWN.render['Groundwater Storage'] = function(ctx, l, t, w, h) {
     var r = w / 2;
     
-    var grd = ctx.createLinearGradient(l+r, t, l+r, t+h-(.1*h));
+    var grd = ctx.createLinearGradient(l+r, t, l+r, t+h-(.25*h));
     grd.addColorStop(0, CWN.colors.lightGrey);
     grd.addColorStop(1, CWN.colors.base);
     ctx.fillStyle=grd;
