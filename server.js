@@ -7,9 +7,9 @@ var bodyParser = require('body-parser')
 var neo4j = require('neo4j');
 var db = new neo4j.GraphDatabase('http://localhost:7474');
 // redis
-var redis = require("redis");
-var redisClient = redis.createClient();
-var RedisStore = require('connect-redis')(session);
+//var redis = require("redis");
+//var redisClient = redis.createClient();
+//var RedisStore = require('connect-redis')(session);
 
 
 var dir = __dirname + '/dist';
@@ -17,13 +17,13 @@ process.argv.forEach(function(val){
     if( val == '--dev' ) dir = __dirname + '/app';
 });
 
-app.use(session({
+/*app.use(session({
   key: 'app.sess',
   store: new RedisStore(),
   secret: 'SEKR37',
   resave: false,
   saveUninitialized: true
-}));
+}));*/
 app.use(express.static(dir));
 app.use(bodyParser.json());
 

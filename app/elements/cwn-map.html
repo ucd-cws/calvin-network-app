@@ -293,8 +293,8 @@
                     }.bind(this),
                     filter: function(feature, layer) {
                         return feature.properties._render.show || 
-                                (feature.properties._render.oneStep && oneStepMode);
-                    }
+                                (feature.properties._render.oneStep && this.filters.oneStepMode);
+                    }.bind(this)
                 }).addTo(this.map);
                 this.markerLayer.on('click', function(e){
                     this.fire('selected', e.layer.feature);

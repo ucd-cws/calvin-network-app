@@ -13838,13 +13838,29 @@ Polymer('cwn-icon');;
                 
                 this.reset();
 
+                var t1 = new Date().getTime();
+
                 this.walk(this.prmname, 0, 'forward');
+
+                var t2 = new Date().getTime();
+
                 // check max depth
                 if( this.negativeDepth && this.negativeDepth.length > 0 ) {
                     if( 0 < parseInt(this.negativeDepth) ) {
                         this.walk(this.prmname, 0, 'backward');
                     }
                 }
+
+                var t3 = new Date().getTime();
+
+                // make sure all links for all node are in tree
+                this._addMissingLinks();
+
+                var t4 = new Date().getTime();
+                console.log('positive walk time: '+(t4-t1)+'ms');
+                console.log('negative walk time: '+(t4-t2)+'ms');
+                console.log('missing check time: '+(t4-t3)+'ms');
+
 
                 this.setPositions();
             },
@@ -13916,6 +13932,11 @@ Polymer('cwn-icon');;
 
 
             _addNode : function(node, level, direction) {
+                if( this.cnodes.indexOf(node.properties.prmname) != -1 ) {
+                    console.log('found repeat: '+node.properties.prmname);
+                    return;
+                }
+
                 var gnode = {
                     id : node.properties.prmname,
                     calvin : node.properties,
@@ -13951,12 +13972,41 @@ Polymer('cwn-icon');;
                 var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
                 // make sure the next node exists
                 if( !tNode ) return;
+                
                 // make sure the next node is being shown
-                if( tNode.properties._render && !tNode.properties._render.show ) return;
-                // make sure the link hasn't already been added
-                if( this.cnodes.indexOf(link.properties.prmname) != -1 ) return;
+                if( tNode.properties._render && !tNode.properties._render.show ) {
+                    this._followLink(link, level, direction);
+                    return;
+                }
 
-                var edge = {
+                // make sure the link hasn't already been added
+                if( this.cnodes.indexOf(link.properties.prmname) != -1 ) {
+                    this._followLink(link, level, direction);
+                    return;
+                }
+
+                var edge = this._createEdge(link);
+
+                // add the link to the graph
+                this.graphJson.edges.push(edge);
+
+                // add to the list of nodes/links already used
+                this.cnodes.push(link.properties.prmname);
+
+                this._followLink(link, level, direction);
+            },
+
+            _followLink : function(link, level, direction) {
+                // walk the next node in the graph
+                if( direction == 'forward' ) {
+                    this.walk(link.properties.terminus, level, direction);
+                } else {
+                    this.walk(link.properties.origin, level, direction);
+                }
+            },
+
+            _createEdge : function(link) {
+                return {
                     id : link.properties.prmname,
                     label : link.properties.prmname,
                     calvin : link.properties,
@@ -13965,18 +14015,38 @@ Polymer('cwn-icon');;
                     target : link.properties.terminus,
                     color: 'blue'
                 };
+            },
 
-                // add the link to the graph
-                this.graphJson.edges.push(edge);
+            // if we are at max depth (positive or negative) we still want add links for the
+            // node where the given node links back to nodes we have already added
+            _addMissingLinks : function() {
+                var i, n, link;
+                for( i = 0; i < this.graphJson.nodes.length; i++ ) {
+                    n = this.graphJson.nodes[i];
 
-                // add to the list of nodes/links already used
-                this.cnodes.push(link.properties.prmname);
+                    links = this.ds.originLookupMap[n.id] || [];
+                    for( var j = 0; j < links.length; j++ ) {
+                        this._addLinkIfMissing(links[j]);
+                    }
+                    links = this.ds.terminalLookupMap[n.id] || [];
+                    for( var j = 0; j < links.length; j++ ) {
+                        this._addLinkIfMissing(links[j]);
+                    }
+                }
+            },
 
-                // walk the next node in the graph
-                if( direction == 'forward' ) {
-                    this.walk(link.properties.terminus, level, direction);
-                } else {
-                    this.walk(link.properties.origin, level, direction);
+            _addLinkIfMissing : function(link) {
+                if( this.cnodes.indexOf(link.properties.origin) != -1 &&
+                    this.cnodes.indexOf(link.properties.terminus) != -1 &&
+                    this.cnodes.indexOf(link.properties.prmname) == -1 ) {
+
+                    var edge = this._createEdge(link);
+
+                    // add the link to the graph
+                    this.graphJson.edges.push(edge);
+
+                    // add to the list of nodes/links already used
+                    this.cnodes.push(edge.id);
                 }
             },
 
@@ -14018,9 +14088,9 @@ Polymer('cwn-icon');;
                     top += 75;
                 }
 
-                console.log(this.prmname);
-                console.log(this.negativeLevels);
-                console.log(this.nodeLevels);
+                //console.log(this.prmname);
+                //console.log(this.negativeLevels);
+                //console.log(this.nodeLevels);
                 console.log(this.graphJson);
 
                 this.render();
@@ -14330,8 +14400,8 @@ Polymer('cwn-icon');;
                     }.bind(this),
                     filter: function(feature, layer) {
                         return feature.properties._render.show || 
-                                (feature.properties._render.oneStep && oneStepMode);
-                    }
+                                (feature.properties._render.oneStep && this.filters.oneStepMode);
+                    }.bind(this)
                 }).addTo(this.map);
                 this.markerLayer.on('click', function(e){
                     this.fire('selected', e.layer.feature);
