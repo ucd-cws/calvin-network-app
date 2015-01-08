@@ -16,14 +16,14 @@ var requests = [
 ];
 
 // load data
-async.each(
-    requests, loadJson,
-    function(err) {
-        run();
-    }
-);
+async.each(requests, loadJson, run);
 
-function run() {
+function run(err) {
+    if( err ) {
+        console.log(colors.red('Error loading data.'));
+        return console.log(error);
+    }
+
     console.log('data loaded. validating...');
 
     var hasError = false;
