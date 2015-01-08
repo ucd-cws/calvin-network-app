@@ -38,6 +38,8 @@
     "connect-redis": "^2.1.0",
     "redis": "^0.12.1",
     "express-session": "^1.9.3",
-    "body-parser": "^1.10.0"
+    "body-parser": "^1.10.0",
+    "jjv": "^1.0.2",
+    "colors": "^1.0.3"
   }
 }
