@@ -34,6 +34,7 @@ function run(err) {
 
         // this is stringify'd geojson, we just care about the properties
         var node = JSON.parse(data.network.nodes[i]).properties;
+	console.log(node);
 
         var errors = env.validate('calvin', node);
 
