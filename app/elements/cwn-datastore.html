@@ -147,7 +147,7 @@
                 // mark if this node is a calibration or not
                 this._markCalibrationNode(link);
 
-                // 
+                // set up render info flags for markers
                 this._markLinkTypes(link);
 
                 if( !this.lookupMap[link.properties.prmname] ) {
@@ -208,6 +208,12 @@
 
                     link.properties.renderInfo.type = 'unknown';
                 }
+
+                // finally, mark the angle of the line, so we can rotate the icon on the
+                // map accordingly
+                var width = link.geometry.coordinates[1][0] - link.geometry.coordinates[0][0];
+                var height = link.geometry.coordinates[1][1] - link.geometry.coordinates[0][1];
+                link.properties.renderInfo.rotate =  Math.atan(width / height) * (180 / Math.PI);
 
             },
 

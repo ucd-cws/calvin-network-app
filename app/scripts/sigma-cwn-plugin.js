@@ -169,56 +169,6 @@
   'use strict';
 
   sigma.utils.pkg('sigma.canvas.edges');
-  var markers = {
-    cost : function(cxt, x, y, s){
-      cxt.beginPath();
-      cxt.arc(x, y, s, 0, 2 * Math.PI, false);
-      cxt.fillStyle = CWN.colors.green;
-      cxt.fill();
-      cxt.closePath();
-    },
-    amplitude : function(cxt, x, y, s){
-      cxt.beginPath();
-      cxt.arc(x, y, s, 0, 2 * Math.PI, false);
-      cxt.lineWidth = 2;
-      cxt.strokeStyle = CWN.colors.black;
-      cxt.stroke();
-      cxt.closePath();
-    },
-    constraints : function(cxt, x, y, s, vX, vY){
-      cxt.beginPath();
-      /*cxt.moveTo(x + vY, y - vX);
-      cxt.lineTo(x + vY, y + vX);
-      cxt.lineTo(x - vY, y + vX);
-      cxt.lineTo(x - vY, y - vX);
-      cxt.lineTo(x + vY, y - vX);
-      cxt.lineWidth = 2;
-      cxt.strokeStyle = CWN.colors.black;
-      cxt.stroke();*/
-      var dx = vX * .4;
-      var dy = vY * .4;   
-
-      cxt.beginPath();
-      cxt.moveTo(x+vY+dx, y-vX+dy);
-      cxt.lineTo(x+vY-dx, y-vX-dy);
-      
-      cxt.lineTo(x-vY-dx, y+vX-dy);
-      cxt.lineTo(x-vY+dx, y+vX+dy);
-      cxt.lineTo(x+vY+dx, y-vX+dy);
-      cxt.strokeStyle = CWN.colors.black;
-      cxt.stroke();
-      cxt.closePath();
-      
-    }, 
-    environmental : function(cxt, x, y, s){
-      cxt.beginPath();
-      cxt.arc(x, y, s, 0, 2 * Math.PI, false);
-      cxt.lineWidth = 2;
-      cxt.strokeStyle = CWN.colors.green;
-      cxt.stroke();
-      cxt.closePath();
-    }
-  };
 
   /**
    * This edge renderer will display edges as arrows going from the source node
@@ -284,9 +234,9 @@
     /* Now lets line add markers */
     var mX = sX+vX*3, mY = sY+vY*3;
     if( edge.calvin.renderInfo ) {
-      for( var key in markers ) {
+      for( var key in CWN.render.lineMarkers ) {
         if( edge.calvin.renderInfo[key]) {
-          markers[key](context, mX, mY, 4, vX, vY);
+          CWN.render.lineMarkers[key](context, mX, mY, 4, vX, vY);
           mX += vX * 1.75;
           mY += vY * 1.75;
         }

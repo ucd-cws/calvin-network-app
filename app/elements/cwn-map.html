@@ -146,11 +146,27 @@
                     // update filtering
                     this._filter();
 
+                    var lineMarkers = this.getEdgeMarkers();
+
+
                     var calibrationMode = this.filters.calibrationMode;
-                    this.edgeLayer = L.geoJson(this.ds.data.links, {
+                    this.edgeLayer = L.geoJson(lineMarkers, {
                         style: function(feature) {
+                            var color = CWN.colors.salmon;
+                            if( feature.properties.renderInfo ) {
+                                if( feature.properties.renderInfo.type == 'flowToSink' ) {
+                                  color = CWN.colors.lightGrey;
+                                } else if( feature.properties.renderInfo.type == 'returnFlowFromDemand' ) {
+                                    color = CWN.colors.red;
+                                } else if( feature.properties.renderInfo.type == 'gwToDemand' ) {
+                                    color = CWN.colors.black;
+                                } else if( feature.properties.renderInfo.type == 'artificalRecharge' ) {
+                                    color = CWN.colors.purple;
+                                }
+                            }
+
                             var line = {
-                                color: feature.properties.type == 'Return Flow' ? 'green' : 'red',
+                                color: color,
                                 weight: 3,
                                 opacity: 0.4,
                                 smoothFactor: 1
@@ -161,10 +177,14 @@
                             }
                             return line;
                         },
+                        pointToLayer: function (feature, latlng) {
+                            return this._getLineMarker(feature, latlng);
+                        }.bind(this),
                         filter: function(feature, layer) {
                             return feature.properties._render.show;
                         }
                     }).addTo(map);
+
                     this.edgeLayer.on('click', function(e){
                         this.fire('selected', e.layer.feature);
                     }.bind(this));
@@ -194,6 +214,31 @@
                     this.fire('filtering-complete');
                 }.bind(this), 250);
                 
+            },
+
+            getEdgeMarkers : function() {
+                var x2, y2, i, coord, link, markers = [];
+
+                for( i = 0; i < this.ds.data.links.length; i++ ) {
+                    link = this.ds.data.links[i];
+                    if( !link.properties._render.show ) continue;
+                    coord = link.geometry.coordinates;
+                    
+                    x2 = (coord[0][0] + coord[1][0]) / 2;
+                    y2 = (coord[0][1] + coord[1][1]) / 2;
+
+                    x2 = (x2 + coord[1][0]) / 2;
+                    y2 = (y2 + coord[1][1]) / 2;
+
+                    markers.push(link);
+                    markers.push({
+                        type: "Point", 
+                        coordinates : [x2, y2],
+                        properties : link.properties
+                    });
+                }
+
+                return markers;
             },
 
             // marker nodes that are linked to a visible node with the 'nodeStep' attribute
@@ -336,6 +381,25 @@
                 return m;
             },
 
+            _getLineMarker : function(feature, ll) {
+                if( this.map.getZoom() < 10 ) {
+                    s = this.map.getZoom() * 3;
+                } else {
+                    s = this.map.getZoom() * 4;
+                }
+
+                var options = {
+                    iconSize : new L.Point(s, s),
+                    renderInfo : feature.properties.renderInfo || {}
+                };
+
+                var m = new L.Marker(ll, {
+                    icon: new L.Icon.LineCanvas(options)
+                });
+
+                return m;
+            },
+
             // hack so we know if the map is moving for touch events
             lastMove : -1,
             mapMoving : false,
@@ -387,6 +451,68 @@
 
                     draw: function(ctx, width, height) {
                         CWN.render[this.options.type](ctx, 2, 2, width-4, height-4);
+                    }
+                });
+
+                L.Icon.LineCanvas = L.Icon.extend({
+                    options: {
+                        iconSize: new L.Point(20, 20), // Have to be supplied
+                        className: 'leaflet-canvas-icon'
+                    },
+                    _transformProps : ['webkitTransform', 'MozTransform', 'msTransform', 'transform'],
+
+                    createIcon: function () {
+                        var icon = document.createElement('div');
+                        var canvas = document.createElement('canvas');
+                        icon.appendChild(canvas);
+
+                        this._setIconStyles(icon, 'icon');
+
+                        var s = this.options.iconSize;
+                        canvas.width = s.x;
+                        canvas.height = s.y;
+                        this.draw(canvas.getContext('2d'), s.x, s.y);
+
+                        // now we need to rotate the icon
+                        var rotate = this.options.renderInfo.rotate || 0;
+                        console.log(rotate);
+
+                        for( var i = 0; i < this._transformProps.length; i++ ) {
+                            canvas.style[this._transformProps[i]] = 'rotate('+rotate+'deg)';
+                        }
+
+                        return icon;
+                    },
+
+                    createShadow: function () {
+                        return null;
+                    },
+
+                    draw: function(ctx, width, height) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(width, 0);
+                        ctx.lineTo(width, height);
+                        ctx.lineTo(0, height);
+                        ctx.moveTo(0, 0);
+                        ctx.closePath();
+                        ctx.stroke();
+
+                        var mX = 5;
+                        var mY = height / 2;
+                        var vX = 10;
+                        var vY = 10;
+
+
+                        if( this.options.renderInfo ) {
+                          for( var key in CWN.render.lineMarkers ) {
+                            if( this.options.renderInfo[key] ) {
+                              CWN.render.lineMarkers[key](ctx, mX, mY, 4, vX, vY);
+                              mX += vX * 1.75;
+                              mY += vY * 1.75;
+                            }
+                          }
+                        }
                     }
                 });
             }

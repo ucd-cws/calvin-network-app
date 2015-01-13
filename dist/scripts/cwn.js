@@ -217,3 +217,55 @@ CWN.render._nSidedPath = function(ctx, left, top, radius, sides, startAngle) {
     // not painting, leave this to the draw function
 }
 
+/* Line Markers */
+CWN.render.lineMarkers = {
+    cost : function(cxt, x, y, s){
+      cxt.beginPath();
+      cxt.arc(x, y, s, 0, 2 * Math.PI, false);
+      cxt.fillStyle = CWN.colors.green;
+      cxt.fill();
+      cxt.closePath();
+    },
+    amplitude : function(cxt, x, y, s){
+      cxt.beginPath();
+      cxt.arc(x, y, s, 0, 2 * Math.PI, false);
+      cxt.lineWidth = 2;
+      cxt.strokeStyle = CWN.colors.black;
+      cxt.stroke();
+      cxt.closePath();
+    },
+    constraints : function(cxt, x, y, s, vX, vY){
+      cxt.beginPath();
+      /*cxt.moveTo(x + vY, y - vX);
+      cxt.lineTo(x + vY, y + vX);
+      cxt.lineTo(x - vY, y + vX);
+      cxt.lineTo(x - vY, y - vX);
+      cxt.lineTo(x + vY, y - vX);
+      cxt.lineWidth = 2;
+      cxt.strokeStyle = CWN.colors.black;
+      cxt.stroke();*/
+      var dx = vX * .4;
+      var dy = vY * .4;   
+
+      cxt.beginPath();
+      cxt.moveTo(x+vY+dx, y-vX+dy);
+      cxt.lineTo(x+vY-dx, y-vX-dy);
+      
+      cxt.lineTo(x-vY-dx, y+vX-dy);
+      cxt.lineTo(x-vY+dx, y+vX+dy);
+      cxt.lineTo(x+vY+dx, y-vX+dy);
+      cxt.strokeStyle = CWN.colors.black;
+      cxt.stroke();
+      cxt.closePath();
+      
+    }, 
+    environmental : function(cxt, x, y, s){
+      cxt.beginPath();
+      cxt.arc(x, y, s, 0, 2 * Math.PI, false);
+      cxt.lineWidth = 2;
+      cxt.strokeStyle = CWN.colors.green;
+      cxt.stroke();
+      cxt.closePath();
+    }
+};
+
