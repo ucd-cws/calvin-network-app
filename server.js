@@ -6,7 +6,9 @@ var bodyParser = require('body-parser')
 // neo4j
 var neo4j = require('neo4j');
 var db = new neo4j.GraphDatabase('http://localhost:7474');
+
 // redis
+// start of auth logins
 //var redis = require("redis");
 //var redisClient = redis.createClient();
 //var RedisStore = require('connect-redis')(session);
@@ -17,6 +19,7 @@ process.argv.forEach(function(val){
     if( val == '--dev' ) dir = __dirname + '/app';
 });
 
+// start of auth login/
 /*app.use(session({
   key: 'app.sess',
   store: new RedisStore(),
@@ -33,7 +36,8 @@ app.get('/rest/getNetworks', function(req, resp){
 
     var networks = [];
 
-    db.query(nodeQuery, {networkName: networkName}, function (err, results) {
+    //db.query(nodeQuery, {networkName: networkName}, function (err, results) {
+    db.query(nodeQuery, function (err, results) {
         if (err) return sendError(resp, err);
 
         for( var i = 0; i < results.length; i++ ) {
@@ -42,7 +46,8 @@ app.get('/rest/getNetworks', function(req, resp){
             }
         }
         
-        db.query(linkQuery, {networkName: networkName}, function (err, results) {
+        //db.query(linkQuery, {networkName: networkName}, function (err, results) {
+        db.query(linkQuery, function (err, results) {
             if (err) return sendError(resp, err);
 
             for( var i = 0; i < results.length; i++ ) {
@@ -59,25 +64,29 @@ app.get('/rest/getNetworks', function(req, resp){
 });
 
 app.get('/rest/getNetwork', function(req, resp){
-    var networkName = req.query.network || 'default';
+    //var networkName = req.query.network || 'default';
 
     // see blow
-    var nodeQuery = 'MATCH (n {network: {networkName}}) RETURN n.geojson';
-    var linkQuery = 'MATCH ()-[r {network: {networkName}}]->() return r.geojson';
+    //var nodeQuery = 'MATCH (n {network: {networkName}}) RETURN n.geojson';
+    //var linkQuery = 'MATCH ()-[r {network: {networkName}}]->() return r.geojson';
+    var nodeQuery = 'MATCH (n) RETURN n.geojson';
+    var linkQuery = 'MATCH ()-[r]->() return r.geojson';
 
     var network = {
         nodes : [],
         links : []
     };
 
-    db.query(nodeQuery, {networkName: networkName}, function (err, results) {
+    //db.query(nodeQuery, {networkName: networkName}, function (err, results) {
+    db.query(nodeQuery, function (err, results) {
         if (err) return sendError(resp, err);
 
         for( var i = 0; i < results.length; i++ ) {
             network.nodes.push(results[i]['n.geojson']);
         }
         
-        db.query(linkQuery, {networkName: networkName}, function (err, results) {
+        //db.query(linkQuery, {networkName: networkName}, function (err, results) {
+        db.query(linkQuery, function (err, results) {
             if (err) return sendError(resp, err);
             
             for( var i = 0; i < results.length; i++ ) {
@@ -90,7 +99,7 @@ app.get('/rest/getNetwork', function(req, resp){
 });
 
 app.get('/rest/getAttribute', function(req, resp){
-    var networkName = req.query.network || 'default';
+    //var networkName = req.query.network || 'default';
     var name = req.query.prmname;
     var type = req.query.type;
     var attribute = req.query.attribute;
@@ -104,12 +113,14 @@ app.get('/rest/getAttribute', function(req, resp){
 
     var query = '';
     if( type == 'link' ) {
-        query = 'MATCH (n)-[r { prmname: {name}, network: {networkName} }]->() RETURN r.'+attribute;
+        //query = 'MATCH (n)-[r { prmname: {name}, network: {networkName} }]->() RETURN r.'+attribute;
+        query = 'MATCH (n)-[r { prmname: {name}]->() RETURN r.'+attribute;
     } else {
-        query ='MATCH (n { prmname: {name}, network: {networkName} }) RETURN n.'+attribute;
+        //query ='MATCH (n { prmname: {name}, network: {networkName} }) RETURN n.'+attribute;
+        query ='MATCH (n { prmname: {name} }) RETURN n.'+attribute;
     }
 
-    db.query(query, {name: name, networkName: networkName}, function (err, results) {
+    db.query(query, {name: name}, function (err, results) {
         if (err) return sendError(resp, err);
 
         var result = {};
@@ -124,7 +135,7 @@ app.get('/rest/getAttribute', function(req, resp){
 });
 
 
-
+/*
 app.get('/rest/edit', function(req, resp){
     var geojson = req.body;
     var item = {};
@@ -180,7 +191,7 @@ app.get('/rest/edit', function(req, resp){
 function editNode(node) {
     
 }
-
+*./
 
 
 /*
