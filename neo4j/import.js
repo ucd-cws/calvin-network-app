@@ -47,6 +47,11 @@ if( fs.existsSync('./query.js') && useCache ) {
 }
 
 function dropAllNodes(callback) {
+    /*var query = [
+        'MATCH (n {network:"default"})',
+        'OPTIONAL MATCH (n)-[r {network:"default"}]-()',
+        'DELETE n,r'
+    ].join('\n');*/
     var query = [
         'MATCH (n)',
         'OPTIONAL MATCH (n)-[r]-()',
@@ -96,9 +101,16 @@ function dtToArray(dt) {
             costs[costAttrs[j]] = item.properties[costAttrs[j]];
             delete item.properties[costAttrs[j]];
             item.properties.hasCosts = true;
+            if( costAttrs[j] == 'constraints' ) {
+                item.properties.hasConstraints = true;
+            }
         }
     }
     node.costs = JSON.stringify(costs);
+
+    // set network name
+    //item.properties.network = 'default';
+    //node.network = 'default'
 
     // set cleaned up geojson
     node.geojson = JSON.stringify(item);

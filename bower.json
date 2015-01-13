@@ -23,6 +23,7 @@
     "animate-css": "~*",
     "d3": "*",
     "core-elements": "Polymer/core-elements#*",
-    "polymer": "Polymer/polymer#*"
+    "polymer": "Polymer/polymer#*",
+    "sigma.js": "*"
   }
 }

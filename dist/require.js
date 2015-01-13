@@ -12171,6 +12171,17 @@ Polymer('cwn-icon');;
                 this.fontSize = this.width-15;
                 if( this.fontSize < 14 ) this.fontSize = 14;
 
+                var ctx = this.$.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.width, this.height);
+
+                if( !CWN.render[this.type] ) return;
+                CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
+            },
+
+            /*redraw : function() {
+                this.fontSize = this.width-15;
+                if( this.fontSize < 14 ) this.fontSize = 14;
+
                 var c2 = this.$.canvas.getContext('2d');
                 c2.clearRect(0, 0, this.width, this.height);
 
@@ -12236,7 +12247,7 @@ Polymer('cwn-icon');;
                 cxt.strokeStyle = "#333";
                 cxt.lineWidth = 1;
                 cxt.stroke();
-            }
+            }*/
 
         }); 
     ;
@@ -12500,6 +12511,235 @@ Polymer('cwn-icon');;
         });
     ;
 
+        Polymer('cwn-popup', {
+            ele : {},
+            target : null,
+            label : '',
+            initd : false,
+          ready : function() {
+            this.ele = {};
+            this.target = {};
+            this.lanel = '';
+            this.initd = false;
+          },
+            targetChanged: function() {
+                if( this.initd ) return;
+                this.initd = true;
+                this.ele = this.$.root;
+                /*var children = this.childNodes;
+                for( var i = 0; i < children.length; i++ ) {
+                    this.removeChild(children[0]);
+                    console.log(children[0]);
+                    if( !children[0].classList ) continue;
+                    if( children[0].classList.contains('popup-body') ) {
+                        this.$.body.appendChild(children[0]);
+                    } else if( children[0].classList.contains('popup-footer') ) {
+                        this.$.footer.appendChild(children[0]);
+                    }
+                }*/
+                var target = this.target.parentNode ? this.target : this;
+
+                target.parentNode.removeChild(target);
+                document.querySelector('body').appendChild(target);
+                $(this.ele).modal({
+              show:false,
+              backdrop:'static'
+            });
+                
+                $(this.querySelectorAll('[data-dismiss="modal"]'))
+                    .on('click', function(){
+                        this.hide();
+                    }.bind(this));
+            },
+            show: function() {
+                $(this.ele).modal('show');
+            },
+            hide: function() {
+                $(this.ele).modal('hide');
+            }
+        });
+
++function ($) {
+  'use strict';
+  // MODAL CLASS DEFINITION
+  // ======================
+  var Modal = function (element, options) {
+    this.options   = options
+    this.$element  = $(element)
+    this.$backdrop =
+    this.isShown   = null
+    if (this.options.remote) {
+      this.$element
+        .find('.modal-content')
+        .load(this.options.remote, $.proxy(function () {
+          this.$element.trigger('loaded.bs.modal')
+        }, this))
+    }
+  }
+  Modal.DEFAULTS = {
+    backdrop: true,
+    keyboard: true,
+    show: true
+  }
+  Modal.prototype.toggle = function (_relatedTarget) {
+    return this[!this.isShown ? 'show' : 'hide'](_relatedTarget)
+  }
+  Modal.prototype.show = function (_relatedTarget) {
+    var that = this
+    var e    = $.Event('show.bs.modal', { relatedTarget: _relatedTarget })
+    this.$element.trigger(e)
+    if (this.isShown || e.isDefaultPrevented()) return
+    this.isShown = true
+    this.escape()
+    this.$element.on('click.dismiss.bs.modal', '[data-dismiss="modal"]', $.proxy(this.hide, this))
+    $(document.body).addClass('modal-open');
+    this.backdrop(function () {
+      var transition = $.support.transition && that.$element.hasClass('fade')
+      // JM
+      //if (!that.$element.parent().length) {
+      //  that.$element.appendTo(document.body) // don't move modals dom position
+      //}
+      that.$element
+        .show()
+        .scrollTop(0)
+      if (transition) {
+        that.$element[0].offsetWidth // force reflow
+      }
+      that.$element
+        .addClass('in')
+        .attr('aria-hidden', false)
+      that.enforceFocus()
+      var e = $.Event('shown.bs.modal', { relatedTarget: _relatedTarget })
+      transition ?
+        that.$element.find('.modal-dialog') // wait for modal to slide in
+          .one($.support.transition.end, function () {
+            that.$element.focus().trigger(e)
+          })
+          .emulateTransitionEnd(300) :
+        that.$element.focus().trigger(e)
+    })
+  }
+  Modal.prototype.hide = function (e) {
+    if (e) e.preventDefault()
+    e = $.Event('hide.bs.modal')
+    this.$element.trigger(e)
+    if (!this.isShown || e.isDefaultPrevented()) return
+    this.isShown = false
+    this.escape()
+    $(document).off('focusin.bs.modal')
+    $(document.body).removeClass('modal-open')
+    this.$element
+      .removeClass('in')
+      .attr('aria-hidden', true)
+      .off('click.dismiss.bs.modal')
+    $.support.transition && this.$element.hasClass('fade') ?
+      this.$element
+        .one($.support.transition.end, $.proxy(this.hideModal, this))
+        .emulateTransitionEnd(300) :
+      this.hideModal()
+  }
+  Modal.prototype.enforceFocus = function () {
+    $(document)
+      .off('focusin.bs.modal') // guard against infinite focus loop
+      .on('focusin.bs.modal', $.proxy(function (e) {
+        if (this.$element[0] !== e.target && !this.$element.has(e.target).length) {
+          this.$element.focus()
+        }
+      }, this))
+  }
+  Modal.prototype.escape = function () {
+    if (this.isShown && this.options.keyboard) {
+      this.$element.on('keyup.dismiss.bs.modal', $.proxy(function (e) {
+        e.which == 27 && this.hide()
+      }, this))
+    } else if (!this.isShown) {
+      this.$element.off('keyup.dismiss.bs.modal')
+    }
+  }
+  Modal.prototype.hideModal = function () {
+    var that = this
+    this.$element.hide()
+    this.backdrop(function () {
+      that.removeBackdrop()
+      that.$element.trigger('hidden.bs.modal')
+    })
+  }
+  Modal.prototype.removeBackdrop = function () {
+    this.$backdrop && this.$backdrop.remove()
+    this.$backdrop = null
+  }
+  Modal.prototype.backdrop = function (callback) {
+    var animate = this.$element.hasClass('fade') ? 'fade' : ''
+    if (this.isShown && this.options.backdrop) {
+      var doAnimate = $.support.transition && animate
+      this.$backdrop = $('<div class="modal-backdrop ' + animate + '" />')
+        .appendTo(document.body)
+      this.$element.on('click.dismiss.bs.modal', $.proxy(function (e) {
+        if (e.target !== e.currentTarget) return
+        this.options.backdrop == 'static'
+          ? this.$element[0].focus.call(this.$element[0])
+          : this.hide.call(this)
+      }, this))
+      if (doAnimate) this.$backdrop[0].offsetWidth // force reflow
+      this.$backdrop.addClass('in')
+      if (!callback) return
+      doAnimate ?
+        this.$backdrop
+          .one($.support.transition.end, callback)
+          .emulateTransitionEnd(150) :
+        callback()
+    } else if (!this.isShown && this.$backdrop) {
+      this.$backdrop.removeClass('in')
+      $.support.transition && this.$element.hasClass('fade') ?
+        this.$backdrop
+          .one($.support.transition.end, callback)
+          .emulateTransitionEnd(150) :
+        callback()
+    } else if (callback) {
+      callback()
+    }
+  }
+  // MODAL PLUGIN DEFINITION
+  // =======================
+  var old = $.fn.modal
+  $.fn.modal = function (option, _relatedTarget) {
+    return this.each(function () {
+      var $this   = $(this)
+      var data    = $this.data('bs.modal')
+      var options = $.extend({}, Modal.DEFAULTS, $this.data(), typeof option == 'object' && option)
+      if (!data) $this.data('bs.modal', (data = new Modal(this, options)))
+      if (typeof option == 'string') data[option](_relatedTarget)
+      else if (options.show) data.show(_relatedTarget)
+    })
+  }
+  $.fn.modal.Constructor = Modal
+  // MODAL NO CONFLICT
+  // =================
+  $.fn.modal.noConflict = function () {
+    $.fn.modal = old
+    return this
+  }
+  // MODAL DATA-API
+  // ==============
+  $(document).on('click.bs.modal.data-api', '[data-toggle="modal"]', function (e) {
+    var $this   = $(this)
+    var href    = $this.attr('href')
+    var $target = $($this.attr('data-target') || (href && href.replace(/.*(?=#[^\s]+$)/, ''))) //strip for ie7
+    var option  = $target.data('bs.modal') ? 'toggle' : $.extend({ remote: !/#/.test(href) && href }, $target.data(), $this.data())
+    if ($this.is('a')) e.preventDefault()
+    $target
+      .modal(option, this)
+      .one('hide', function () {
+        $this.is(':visible') && $this.focus()
+      })
+  })
+  // JM
+  //$(document)
+  //  .on('show.bs.modal', '.modal', function () { $(document.body).addClass('modal-open') })
+  //  .on('hidden.bs.modal', '.modal', function () { $(document.body).removeClass('modal-open') })
+}(jQuery);
+    ;
+
         Polymer('cwn-app-layout', {
             initd : false,
             attached : function(){
@@ -12545,7 +12785,6 @@ Polymer('cwn-icon');;
                     this.filters[key.replace(' ','_').replace('-','_')] = true;
                     this.legendArr.push({
                         name : key,
-                        color : this.legend[key].color,
                         checked : true
                     });
                 }
@@ -12596,15 +12835,27 @@ Polymer('cwn-icon');;
     ;
 
         Polymer('cwn-datastore', {
-            loading: true,
+            loading : true,
             
+            network : 'default',
+
             data : {
-                nodesLoaded : false,
-                linksLoaded : false,
+                nodes : [],
                 links : [],
-                nodes : []
+                default : {
+                    links : [],
+                    nodes : []
+                },
+                custom : {
+                    links : [],
+                    nodes : []
+                }
             },
+            // look up any node or terminal by prmname
             lookupMap : {},
+            // look up any link origin name
+            originLookupMap : {},
+            terminalLookupMap : {},
 
             loadingCharts : true,
             chartLoadHandlers : [],
@@ -12623,132 +12874,80 @@ Polymer('cwn-icon');;
                         }
                     }.bind(this)
                 });
+
+                this.init();
             },
 
-            reload : function(query, callback) {
+            init : function(callback) {
                 this.reset();
-                this.init(query, callback);
-            },
-
-            init : function(query, callback) {
-                if( !query || typeof query == 'function' ) {
-                    this.callback = query;
-                    this.loadDefaultGraph();
-                } else {
-                    this.callback = callback;
-                    this.loadCustomGraph(query);
-                }
+                this.callback = callback;
+                this.reload();
             },
 
             reset : function() {
                 this.loading = true;
                 this.data = {
-                    nodesLoaded : false,
-                    linksLoaded : false,
+                    nodes : [],
                     links : [],
-                    nodes : []
-                };
-                lookupMap = {};
-            },
-
-            loadDefaultGraph : function() {
-                this._loadNodes();
-                this._loadLinks();
-            },
-
-            loadCustomGraph : function(query) {
-                //var query = 'MATCH (n {prmname: "C59"})-[r]->(m) RETURN n.geojson, r.geojson, m.geojson';
-
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : query
+                    default : {
+                        links : [],
+                        nodes : []
                     },
-                    success : function(resp) {
-                        this._processCustomResponse(resp, query);
-                    }.bind(this),
-                    error : function(resp) {
-                        this.loading = false;
-                        if( this.callback ) this.callback(true);
-                        alert('Error loading custom cypher: '+query);
-                    }.bind(this)
-                });
-            },
-
-            _processCustomResponse : function(resp, query) {
-                if( !resp ) {
-                    this.data.nodesLoaded = true;
-                    this.data.linksLoaded = true;
-                    this._checkLoaded();
-                    return alert('Error loading custom cypher: '+query);
-                }
-                if( !resp.data ) {
-                    this.data.nodesLoaded = true;
-                    this.data.linksLoaded = true;
-                    this._checkLoaded();
-                    return alert('Error loading custom cypher: '+query);
-                }
-
-                var counts = {
-                    query : query,
-                    links : 0,
-                    nodes : 0
-                }
-
-                for( var i = 0; i < resp.data.length; i++ ) {
-                    var row = resp.data[i];
-
-                    for( var j = 0; j < row.length; j++ ) {
-                        try {
-                            json = JSON.parse(row[j]);
-
-                            if( json && json.properties ) {
-                                if( json.properties.type == 'Diversion' || json.properties.type == 'Return Flow' ) {
-                                    this._processLink(json);
-                                    counts.links++;
-                                } else {
-                                    this._processNode(json);
-                                    counts.nodes++;
-                                }
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
+                    custom : {
+                        links : [],
+                        nodes : []
                     }
-                }
-                this.data.nodesLoaded = true;
-                this.data.linksLoaded = true;
-                this._checkLoaded(counts);
+                };
+                this.lookupMap = {};
+                this.originLookupMap = {};
+                this.terminalLookupMap = {};
             },
 
-            _loadNodes : function() {
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : 'MATCH n RETURN n.geojson',
-                    },
-                    success : function(resp) {
-                        var d;
-                        for( var i = 0; i < resp.data.length; i++ ) {
-                            
-                            // crappy sanity checking
-                            try {
-                                d = JSON.parse(resp.data[i][0]);
-                            } catch (e) {
-                                continue;
-                            }
+            reload : function() {
+                this.loadNetwork(this.network, function(err){
+                    this.loading = false;
+                    this.fire('loaded');
+                    if( this.callback ) this.callback(err);
+                }.bind(this));
+            },
 
-                            this._processNode(d);
+            loadNetwork : function(network, callback) {
+                var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
+                url += '?network='+network;
+
+                $.ajax({
+                    url : url,
+                    success : function(resp) {
+                        for( var i = 0; i < resp.nodes.length; i++ ) {
+                            try {
+                                d = JSON.parse(resp.nodes[i]);
+                                this._processNode(d);
+                            } catch (e) {
+                                debugger;
+                            }
                         }
-                        this.data.nodesLoaded = true;
-                        this._checkLoaded();
+                        for( var i = 0; i < resp.links.length; i++ ) {
+                            try {
+                                d = JSON.parse(resp.links[i]);
+                                this._processLink(d);
+                            } catch (e) {
+                                debugger;
+                            }
+                        }
+
+                        // we don't care about the custom network
+                        if( this.network == 'default') {
+                            callback();
+                        } else {
+                            // we want to load the default network
+                            if( network == 'default' ) this.loadNetwork('default');
+                            // we loaded the default network
+                            else callback();
+                        }
                     }.bind(this),
                     error : function(resp) {
-                        this.loading = false;
-                        if( this.callback ) this.callback(true);
-                        alert('Error retrieving data from: '+this.settings.neo4jUrl+'/cypher');
+                        alert('Error retrieving data from network: '+network);
+                        callback(true);
                     }.bind(this)
                 });
             },
@@ -12759,8 +12958,18 @@ Polymer('cwn-icon');;
                 if( !node.properties.prmname ) return;
 
                 this._markCalibrationNode(node);
+                
+                if( !this.lookupMap[node.properties.prmname] ) {
+                    this.data.nodes.push(node);
+                }
+
                 this.lookupMap[node.properties.prmname] = node;
-                this.data.nodes.push(node);
+
+                if( node.properties.network == 'default') {
+                    this.data.default.nodes.push(node);
+                } else {
+                    this.data.custom.nodes.push(node);
+                }
             },
 
             _processLink : function(link) {
@@ -12768,50 +12977,88 @@ Polymer('cwn-icon');;
                 if( !link.properties ) return;
                 if( !link.properties.prmname ) return;
 
+                // mark if this node is a calibration or not
                 this._markCalibrationNode(link);
-                this.data.links.push(link);
+
+                // 
+                this._markLinkTypes(link);
+
+                if( !this.lookupMap[link.properties.prmname] ) {
+                    this.data.links.push(link);
+                }
+
                 this.lookupMap[link.properties.prmname] = link;
-            },
 
-            _loadLinks : function() {
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : 'start r=rel(*) return r.geojson',
-                        params : {}
-                    },
-                    success : function(resp) {
-                        var d;
-                        for( var i = 0; i < resp.data.length; i++ ) {
-                            
-                            // crappy sanity checking
-                            try {
-                                d = JSON.parse(resp.data[i][0]);
-                            } catch (e) {
-                                continue;
-                            }
-                            this._processLink(d);
-                        }
+                // set the origin lookup map
+                if( !this.originLookupMap[link.properties.origin] ) {
+                    this.originLookupMap[link.properties.origin] = [link];
+                } else {
+                    this.originLookupMap[link.properties.origin].push(link);
+                }
 
-                        this.data.linksLoaded = true;
-                        this._checkLoaded();
-                    }.bind(this),
-                    error : function(resp) {
-                        // fail silently for now
-                    }.bind(this)
-                });
-            },
+                // set the terminal lookup map
+                if( !this.terminalLookupMap[link.properties.terminus] ) {
+                    this.terminalLookupMap[link.properties.terminus] = [link];
+                } else {
+                    this.terminalLookupMap[link.properties.terminus].push(link);
+                }
 
-            _checkLoaded : function(info) {
-                if( this.data.nodesLoaded && this.data.linksLoaded ) {                    
-                    this.fire('loaded');
-                    this.loading = false;
-                    if( this.callback ) this.callback(null, info);
+
+                if( link.properties.network == 'default') {
+                    this.data.default.links.push(link);
+                } else {
+                    this.data.custom.links.push(link);
                 }
             },
 
-             _markCalibrationNode : function(node) {
+            _markLinkTypes : function(link) {
+                link.properties.renderInfo = {
+                    cost : link.properties.hasCosts ? true : false,
+                    amplitude : link.properties.amplitude ? true : false,
+                    // TODO: parser needs to sheet shortcut for contraint type
+                    // data will still need to be loaded on second call
+                    constraints : link.properties.hasConstraints ? true : false,
+                    environmental : link.properties.hasClimate ? true : false
+                };
+
+                // Flow to a sink
+                if( this.lookupMap[link.properties.terminus] && 
+                    this.lookupMap[link.properties.terminus].properties.type == 'Sink' ) {
+                    link.properties.renderInfo.type = 'flowToSink';
+                
+                } else if( link.properties.type == 'Return Flow' ) {
+                    link.properties.renderInfo.type = 'returnFlowFromDemand';
+
+                } else if ( this._isGWToDemand(link) ) {
+                    link.properties.renderInfo.type = 'gwToDemand';
+
+                } else if( this.lookupMap[link.properties.origin] && 
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'both' ) {
+
+                    link.properties.renderInfo.type = 'artificalRecharge';
+                } else {
+
+                    link.properties.renderInfo.type = 'unknown';
+                }
+
+            },
+
+            _isGWToDemand : function(link) {
+                var origin = this.lookupMap[link.properties.origin];
+                var terminal = this.lookupMap[link.properties.terminal];
+
+                if( !origin || !terminal ) return false;
+
+                if( origin.properties.type != 'Groundwater Storage' ) return false;
+                if( terminal.properties.type == 'Non-Standard Demand' || 
+                    terminal.properties.type == 'Agricultural Demand' ||
+                    terminal.properties.type == 'Urban Demand' ) return true;
+
+                return false;
+            },
+
+            _markCalibrationNode : function(node) {
                 if( node.properties.prmname.indexOf('_') > -1 ) {
                     var parts = node.properties.prmname.split('_');
                     if( !(parts[0].match(/^CN.*/) || parts[1].match(/^CN.*/)) ) {
@@ -12820,8 +13067,6 @@ Polymer('cwn-icon');;
                 } else if( !node.properties.prmname.match(/^CN.*/) ) {
                     return;
                 }
-
-                
 
                 var hasIn = false;
                 var hasOut = false;
@@ -12849,7 +13094,7 @@ Polymer('cwn-icon');;
                 if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
                 else if ( hasIn ) node.properties.calibrationMode = 'in';
                 else if ( hasOut ) node.properties.calibrationMode = 'out';
-            },
+            }
         })
     ;
 
@@ -13044,7 +13289,7 @@ Polymer('cwn-icon');;
               setTimeout(this._updateSize.bind(this), 100);
             },
 
-            loadClimateData : function() {
+            /*loadClimateData : function() {
               if( !this.feature.properties.hasClimate ) return;
               this.climateLoading = true;
               this.inflows = [];
@@ -13068,6 +13313,38 @@ Polymer('cwn-icon');;
                     if( resp.data.length == 0 ) return this.climateLoadError = true;
 
                     this.renderClimateData(JSON.parse(resp.data[0][0]));
+                    this.async(function(){
+                      this.$.dateslider.resize();
+                    });
+                  }.bind(this),
+                  error : function(resp) {
+                    this.climateLoadError = true;
+                  }.bind(this)
+              });
+            },*/
+
+            loadClimateData : function() {
+              if( !this.feature.properties.hasClimate ) return;
+              this.climateLoading = true;
+              this.inflows = [];
+
+              var type;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                type = 'link';
+              } else {
+                type = 'node';
+              }
+
+              var params = '?prmname='+ this.feature.properties.prmname +
+                '&type=' + type + '&attribute=climate'
+
+              $.ajax({
+                  url : '/rest/getAttribute'+params,
+                  success : function(resp) {
+                    this.climateLoading = false;
+                    if( !resp.climate ) return this.climateLoadError = true;
+
+                    this.renderClimateData(JSON.parse(resp.climate));
                     this.async(function(){
                       this.$.dateslider.resize();
                     });
@@ -13129,7 +13406,7 @@ Polymer('cwn-icon');;
 
             },
 
-            loadCostData : function() {
+            /*loadCostData : function() {
               if( !this.feature.properties.hasCosts ) return;
               this.costLoading = true;
               this.costLoadError = false;
@@ -13153,6 +13430,35 @@ Polymer('cwn-icon');;
                     if( resp.data.length == 0 ) return this.costLoadError = true;
 
                     this.renderCostData(JSON.parse(resp.data[0][0]));
+                  }.bind(this),
+                  error : function(resp) {
+                    this.costLoadError = true;
+                  }.bind(this)
+              });
+            },*/
+
+            loadCostData : function() {
+              if( !this.feature.properties.hasCosts ) return;
+              this.costLoading = true;
+              this.costLoadError = false;
+
+              var type;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                type = 'link';
+              } else {
+                type = 'node';
+              }
+
+              var params = '?prmname='+ this.feature.properties.prmname +
+                '&type=' + type + '&attribute=costs'
+
+              $.ajax({
+                  url : '/rest/getAttribute'+params,
+                  success : function(resp) {
+                    this.costLoading = false;
+                    if( !resp.costs ) return this.costLoadError = true;
+
+                    this.renderCostData(JSON.parse(resp.costs));
                   }.bind(this),
                   error : function(resp) {
                     this.costLoadError = true;
@@ -13354,6 +13660,10 @@ Polymer('cwn-icon');;
                 var pts = this.feature.geometry.coordinates;
                 this.leaflet.setView([pts[1], pts[0]], 12);
               });
+            },
+
+            goToGraph : function() {
+              window.location.hash = 'graph/'+this.feature.properties.prmname;
             }
 
         });
@@ -13474,6 +13784,365 @@ Polymer('cwn-icon');;
         });
     ;
 
+        Polymer('cwn-graph', {
+            ds : null,
+            hack : '',
+
+            maxDepth : '6',
+            negativeDepth : '0',
+            graph : null,
+            graphJson : {},
+            updateTimer : -1,
+            prmname : '',
+            popupNode : {},
+
+            nodeLevels : {},
+            negativeLevels : {},
+            cnodes : [],
+
+            observe : {
+                ds : 'update',
+                'ds.data.nodes' : 'update',
+                'ds.data.links' : 'update',
+                'prmname' : 'update',
+                'maxDepth' : 'update',
+                'negativeDepth' : 'update'
+            },
+
+            ready : function() {
+                this.$.popup.target = this;
+                $(window).on('hashchange', this.changeNode.bind(this));
+                this.changeNode();
+            },
+
+            changeNode : function() {
+                var loc = window.location.hash.replace('#','').split('/');
+                if( loc[0] == 'graph' ) {
+                    this.async(function(){
+                        this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                    });
+
+                    // make sure it was drawn correctly
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 500);
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 1000);
+                }
+            },
+
+            update : function() {
+                if( !this.ds ) return;
+                if( this.prmname == '' ) return;
+                
+                this.reset();
+
+                var t1 = new Date().getTime();
+
+                this.walk(this.prmname, 0, 'forward');
+
+                var t2 = new Date().getTime();
+
+                // check max depth
+                if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                    if( 0 < parseInt(this.negativeDepth) ) {
+                        this.walk(this.prmname, 0, 'backward');
+                    }
+                }
+
+                var t3 = new Date().getTime();
+
+                // make sure all links for all node are in tree
+                this._addMissingLinks();
+
+                var t4 = new Date().getTime();
+                console.log('positive walk time: '+(t4-t1)+'ms');
+                console.log('negative walk time: '+(t4-t2)+'ms');
+                console.log('missing check time: '+(t4-t3)+'ms');
+
+
+                this.setPositions();
+            },
+
+            reset : function() {
+                this.graphJson = {
+                    nodes : [],
+                    edges : []
+                };
+                this.nodeLevels = {};
+                this.negativeLevels = {};
+                this.cnodes = [];
+            },
+
+            walk : function(prmname, level, direction) {
+                // has this node already been added to the graph?
+                //if( this.cnodes.indexOf(prmname) != -1 ) {
+                    // if we are walking backward, we need to process the first node again
+                //    if( direction == 'forward' || level != 0 ) return;
+                //}
+
+                // does the node actually exist?
+                if( !this.ds.lookupMap[prmname] ) return;
+
+                var node = this.ds.lookupMap[prmname];
+                // is the node hidden (ie been filtered out)
+                if( node.properties._render && !node.properties._render.show && level != 0 ) {
+                    return;
+                }
+
+                // add the node, unless this is level 0 and we are walking backward
+                if( (direction == 'forward' || level != 0) && this.cnodes.indexOf(prmname) == -1  ) {
+                    this._addNode(node, level, direction);
+                }
+
+                // find the links by using the datastores lookup indexes
+                var links;
+                if( direction == 'forward' ) {
+                    if( !this.ds.originLookupMap[prmname] ) return;
+                    links = this.ds.originLookupMap[prmname];
+                } else {
+                    if( !this.ds.terminalLookupMap[prmname] ) return;
+                    links = this.ds.terminalLookupMap[prmname];
+                }
+
+                // check max depth, quit if we have passed it
+                if( direction == 'forward' ) {
+                    if( this.maxDepth && this.maxDepth.length > 0 ) {
+                        if( level >= parseInt(this.maxDepth) ) {
+                            return;
+                        }
+                    }
+                } else {
+                    if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                        if( level >= parseInt(this.negativeDepth) ) {
+                            return;
+                        }
+                    }
+                }
+  
+
+                // increase the level
+                level++;
+                // add the links to the graph
+                for( var i = 0; i < links.length; i++ ) {
+                    this._addLink(links[i], level, direction);
+                }
+            },
+
+
+            _addNode : function(node, level, direction) {
+                if( this.cnodes.indexOf(node.properties.prmname) != -1 ) {
+                    console.log('found repeat: '+node.properties.prmname);
+                    return;
+                }
+
+                var gnode = {
+                    id : node.properties.prmname,
+                    calvin : node.properties,
+                    label : node.properties.prmname,
+                    type : node.properties.type,
+                    size : 8,
+                };
+
+                // set the graph node to the list at the current later
+                // this list will be used later on to render the nodes location
+                if( direction == 'forward' ) {
+                    if( !this.nodeLevels[level] ) {
+                        this.nodeLevels[level] = [gnode];
+                    } else {
+                        this.nodeLevels[level].push(gnode);
+                    }
+                } else {
+                    if( !this.negativeLevels[level] ) {
+                        this.negativeLevels[level] = [gnode];
+                    } else {
+                        this.negativeLevels[level].push(gnode);
+                    }
+                }
+
+                // add the nodes name to the list of nodes already in the graph
+                this.cnodes.push(node.properties.prmname);
+                // add the node to the graph
+                this.graphJson.nodes.push(gnode);
+            },
+
+            _addLink : function(link, level, direction) {
+                // get the links next node
+                var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
+                // make sure the next node exists
+                if( !tNode ) return;
+                
+                // make sure the next node is being shown
+                if( tNode.properties._render && !tNode.properties._render.show ) {
+                    this._followLink(link, level, direction);
+                    return;
+                }
+
+                // make sure the link hasn't already been added
+                if( this.cnodes.indexOf(link.properties.prmname) != -1 ) {
+                    this._followLink(link, level, direction);
+                    return;
+                }
+
+                var edge = this._createEdge(link);
+
+                // add the link to the graph
+                this.graphJson.edges.push(edge);
+
+                // add to the list of nodes/links already used
+                this.cnodes.push(link.properties.prmname);
+
+                this._followLink(link, level, direction);
+            },
+
+            _followLink : function(link, level, direction) {
+                // walk the next node in the graph
+                if( direction == 'forward' ) {
+                    this.walk(link.properties.terminus, level, direction);
+                } else {
+                    this.walk(link.properties.origin, level, direction);
+                }
+            },
+
+            _createEdge : function(link) {
+                return {
+                    id : link.properties.prmname,
+                    label : link.properties.prmname,
+                    calvin : link.properties,
+                    type : 'cwn',
+                    source : link.properties.origin,
+                    target : link.properties.terminus,
+                    color: 'blue'
+                };
+            },
+
+            // if we are at max depth (positive or negative) we still want add links for the
+            // node where the given node links back to nodes we have already added
+            _addMissingLinks : function() {
+                var i, n, link;
+                for( i = 0; i < this.graphJson.nodes.length; i++ ) {
+                    n = this.graphJson.nodes[i];
+
+                    links = this.ds.originLookupMap[n.id] || [];
+                    for( var j = 0; j < links.length; j++ ) {
+                        this._addLinkIfMissing(links[j]);
+                    }
+                    links = this.ds.terminalLookupMap[n.id] || [];
+                    for( var j = 0; j < links.length; j++ ) {
+                        this._addLinkIfMissing(links[j]);
+                    }
+                }
+            },
+
+            _addLinkIfMissing : function(link) {
+                if( this.cnodes.indexOf(link.properties.origin) != -1 &&
+                    this.cnodes.indexOf(link.properties.terminus) != -1 &&
+                    this.cnodes.indexOf(link.properties.prmname) == -1 ) {
+
+                    var edge = this._createEdge(link);
+
+                    // add the link to the graph
+                    this.graphJson.edges.push(edge);
+
+                    // add to the list of nodes/links already used
+                    this.cnodes.push(edge.id);
+                }
+            },
+
+            // set the position for all nodes in the graph
+            setPositions : function() {
+                var nLevelCount = Object.keys(this.negativeLevels).length;
+                var w = $(this.$.sigma).width();
+                var top = nLevelCount * 75;
+
+                for( var level in this.negativeLevels ) {
+                    var row = this.negativeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top-75;
+                        left += width;
+                    }
+
+                    top -= 75;
+                }
+ 
+                top = nLevelCount * 75;
+
+                for( var level in this.nodeLevels ) {
+                    var row = this.nodeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top;
+                        left += width;
+                    }
+
+                    top += 75;
+                }
+
+                //console.log(this.prmname);
+                //console.log(this.negativeLevels);
+                //console.log(this.nodeLevels);
+                console.log(this.graphJson);
+
+                this.render();
+            },
+
+            render : function() {
+                if( !this.graph ) {
+                    this.graph = new sigma({ 
+                        graph: this.graphJson,
+                        renderer : {
+                            container: this.$.sigma,
+                            type : 'canvas'
+                        },
+                        settings: {
+                            defaultNodeColor: '#ec5148',
+                            minArrowSize : 6,
+                            minNodeSize: 10
+                        }
+                    });
+                    this.graph.bind('clickNode', function(e){
+                        //window.location.hash = 'graph/'+e.data.node.id;
+                        this.popupNode = this.ds.lookupMap[e.data.node.id];
+                        this.$.popup.show();
+                    }.bind(this));
+                } else {
+      
+                    this.graph.graph.clear();
+                    this.graph.graph.read(this.graphJson);
+                    // Refresh the display:
+                    this.graph.refresh();
+                }
+                // ForceAtlas Layout
+                //this.graph.startForceAtlas2();
+            },
+
+            goTo : function() {
+                window.location.hash = 'map';
+                setTimeout(function() {
+                    var pts = this.popupNode.geometry.coordinates;
+                    var ele =document.querySelector('html /deep/ cwn-map')
+                    ele.map.setView([pts[1], pts[0]], 12);
+                    this.$.popup.hide();
+                }.bind(this), 500);
+            },
+
+            hide : function() {
+                this.$.popup.hide();
+            }
+
+        });
+    ;
+
         Polymer('cwn-map', {
             ds : null,
 
@@ -13482,7 +14151,7 @@ Polymer('cwn-icon');;
 
             observe : {
                 'ds.loading' : 'update',
-                '$.leaflet.map' : 'update',
+                'map' : 'update',
                 'filters.calibrationMode' : 'update',
                 'filters.oneStepMode' : 'update',
                 'filters.Junction' : 'update',
@@ -13502,16 +14171,23 @@ Polymer('cwn-icon');;
 
             map : null,
 
+            ready : function() {
+                this._process();
+            },
+
             domReady : function() {
                 this.async(function(){
                     this.map = L.map(this.$.leaflet).setView([40, -121], 5);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 18
                     }).addTo(this.map);
+
+                    this.map.on('zoomend', this._onZoomEnd.bind(this));
                 });
             },
 
             _process : function() {
+                if( !this.ds ) return;
                 if( this.ds.loading || !this.map ) return;
 
                 this.edges = [];
@@ -13622,7 +14298,8 @@ Polymer('cwn-icon');;
                     }
 
                     this.updating = false;
-                }.bind(this), 200);
+                    this.fire('filtering-complete');
+                }.bind(this), 250);
                 
             },
 
@@ -13704,7 +14381,6 @@ Polymer('cwn-icon');;
                         d.properties._render.show = false;
                     }
                 }
-
             },
 
             _isTextMatch : function(re, props) {
@@ -13715,56 +14391,56 @@ Polymer('cwn-icon');;
                 return false;
             },
 
+            _onZoomEnd : function() {
+                if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
+
+                this.markerLayer = L.geoJson(this.ds.data.nodes, {
+                    pointToLayer: function(feature, ll) {
+                        return this._getMarker(feature, ll);
+                    }.bind(this),
+                    filter: function(feature, layer) {
+                        return feature.properties._render.show || 
+                                (feature.properties._render.oneStep && this.filters.oneStepMode);
+                    }.bind(this)
+                }).addTo(this.map);
+                this.markerLayer.on('click', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
+                for( var key in this.markerLayer._layers ) {
+                    this._hackTouchEvent(this.markerLayer._layers[key]);
+                }
+            },
+
             _getMarker : function(feature, ll) {
                 var render = feature.properties._render || {};
                 var type = feature.properties.type;
 
+                if( this.map.getZoom() < 10 ) {
+                    s = this.map.getZoom() * 3;
+                } else {
+                    s = this.map.getZoom() * 4;
+                }
+
                 var options = {
-                    radius : 20,
-                    color : '#333',
-                    fillColor : this.legend[feature.properties.type] ? 
-                                    this.legend[feature.properties.type].color : '#000000',
-                    opacity: render.oneStep ? .3 : .9,
-                    fillOpacity : render.oneStep ? .1 : .7
+                    iconSize : new L.Point(s, s),
+                    type : type
                 };
 
-                if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
+                /*if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
                     options.radius = 30,
                     options.weight = 7;
                     if( feature.properties.calibrationMode == 'both' ) options.color = 'red';
                     else if( feature.properties.calibrationMode == 'in' ) options.color = 'yellow';
                     else if( feature.properties.calibrationMode == 'out' ) options.color = 'blue';
-                }
-                
+                }*/
 
-                if( type == 'Junction' || type == 'Pump Plant' || type == 'Power Plant' ) {
+                var m = new L.Marker(ll, {
+                    icon: new L.Icon.Canvas(options), 
+                    opacity: render.oneStep ? .1 : .7
+                });
 
-                    return L.circleMarker(ll, options);
-
-                } else if ( type == 'Water Treatment' ) {
-
-                    options.sides = 6;
-                    return L.myMarker(ll, options);
-                
-                } else if ( type == 'Surface Storage' || type == 'Groundwater Storage' ) {
-
-                    options.sides = 3;
-                    options.rotate = 90;
-                    return L.myMarker(ll, options);
-
-                } else if ( type == 'Agricultural Demand' || type == 'Urban Demand' ) {
-
-                    options.sides = 5;
-                    options.rotate = 18;
-                    return L.myMarker(ll, options);
-
-                } else {
-
-                    options.sides = 4;
-                    options.rotate = 45;
-                    return L.myMarker(ll, options);
-
-                }
+                return m;
             },
 
             // hack so we know if the map is moving for touch events
@@ -13795,49 +14471,31 @@ Polymer('cwn-icon');;
             },
 
             initMarker : function() {
-                // add custom marker
-                L.MyMarker = L.CircleMarker.extend({
-
-                    initialize: function (latlng, options) {
-                        L.Circle.prototype.initialize.call(this, latlng, null, options);
-                        this._radius = this.options.radius;
-                        this._sides = this.options.sides ? this.options.sides : 6;
-                        this._rotate = this.options.rotate ? this.options.rotate : 0;
+                // can we pass in type and then just use
+                L.Icon.Canvas = L.Icon.extend({
+                    options: {
+                        iconSize: new L.Point(20, 20), // Have to be supplied
+                        className: 'leaflet-canvas-icon'
                     },
 
-
-                    getPathString: function () {
-                        var p = this._point;
-                        if (this._checkIfEmpty()) {
-                            return '';
-                        }
-
-                        if (L.Browser.svg) {
-                            return this.polygon(p.x, p.y, this._radius, this._sides, this._rotate);
-                        } else {
-                            console.error("MyMarker not using svg!!!");
-                        }
+                    createIcon: function () {
+                        var e = document.createElement('canvas');
+                        this._setIconStyles(e, 'icon');
+                        var s = this.options.iconSize;
+                        e.width = s.x;
+                        e.height = s.y;
+                        this.draw(e.getContext('2d'), s.x, s.y);
+                        return e;
                     },
 
-                    polygon : function(x, y, radius, sides, startAngle) {
-                      if (sides < 3) return;
-                      var a = ((Math.PI * 2)/sides);
-                      var r = startAngle * (Math.PI / 180);
+                    createShadow: function () {
+                        return null;
+                    },
 
-                      // think you need to adjust by x, y
-                      var p = "M";
-                      for (var i = 0; i < sides; i++) {
-                         p += (x+(radius*Math.cos(a*i-r)))+","+(y+(radius*Math.sin(a*i-r)))+" ";
-                      }
-                      p +=" z";
-                      return p;
+                    draw: function(ctx, width, height) {
+                        CWN.render[this.options.type](ctx, 2, 2, width-4, height-4);
                     }
-
                 });
-
-                L.myMarker = function (latlng, options) {
-                    return new L.MyMarker(latlng, options);
-                };
             }
         });
     ;
@@ -13845,7 +14503,8 @@ Polymer('cwn-icon');;
         Polymer('cwn-app', {
             PAGES : {
               MAP : 0,
-              INFO : 1
+              INFO : 1,
+              GRAPH : 2
             },
             selectedPage : 0,
 
@@ -13921,6 +14580,8 @@ Polymer('cwn-icon');;
                 } else {
                   this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
                 }
+              } else if ( loc == 'graph' ) {
+                this.selectedPage = this.PAGES.GRAPH;
               }
             },
 
@@ -13935,16 +14596,15 @@ Polymer('cwn-icon');;
               for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
                 this.dataLoadHandlers[i]();
               }
+              this.dataLoadHandlers = [];
             },
 
             showFilters : function() {
-                this.$.settings.hide();
                 this.$.filters.toggle();
             },
 
-            showSettings : function() {
-                this.$.filters.hide();
-                this.$.settings.toggle();
+            updateGraph : function() {
+              this.$.graph.update();
             },
 
             onFeatureSelected : function(e) {

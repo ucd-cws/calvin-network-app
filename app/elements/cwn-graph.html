@@ -1,0 +1,430 @@
+<polymer-element name="cwn-graph" attributes="ds settings">
+    <template>
+        <style>
+            #sigma {
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+            .maxDepth {
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                z-index: 100;
+                background-color: rgba(220,220,220,.85);
+                color: #888;
+                padding: 5px;
+                border-radius: 0 3px 0 0;
+                box-shadow: 0 0 5px #333;
+            }
+            .maxDepth input {
+                width: 60px !important;
+            }
+            table td {
+                padding: 3px !important;
+            }
+        </style>
+        <div id="sigma"></div>
+        <div class="maxDepth">
+            <table>
+                <tr>
+                    <td>Max Depth: </td>
+                    <td><input type="number" value="{{maxDepth}}" class="form-control" /></td>
+                </tr>
+                <tr>
+                    <td>Negative Depth: </td>
+                    <td><input type="number" value="{{negativeDepth}}" class="form-control" /></td>
+                </td>
+                <tr>
+                    <td><a href="{{hack}}#map">Back to Map</a></td>
+                    <td></td>
+                </td>
+            </table>
+        </div>
+
+        <cwn-popup id="popup" label="{{popupNode.properties.prmname}}" noFooter="{{true}}">
+            <div class="popup-body">
+                <div layout horizontal>
+                    <div>
+                        <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
+                    </div>
+                    <div flex>
+                        <div style="padding-left:25px">
+                            <div>{{popupNode.properties.description}}</div>
+                            <h4 style="margin-top: 30px">Actions</h4>
+                            <ul>
+                                <li><a 
+                                        class="btn btn-link" 
+                                        href="#graph/{{popupNode.properties.prmname}}"
+                                        on-click="{{hide}}">
+                                        Set as Graph Root</a>
+                                </li>
+                                <li><a class="btn btn-link" href="#info/{{popupNode.properties.prmname}}" on-click="{{hide}}">View Info</a></li>
+                                <li><a class="btn btn-link" on-click="{{goTo}}">View on Map</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+        </cwn-popup>
+    </template>
+    <script>
+        Polymer('cwn-graph', {
+            ds : null,
+            hack : '',
+
+            maxDepth : '6',
+            negativeDepth : '0',
+            graph : null,
+            graphJson : {},
+            updateTimer : -1,
+            prmname : '',
+            popupNode : {},
+
+            nodeLevels : {},
+            negativeLevels : {},
+            cnodes : [],
+
+            observe : {
+                ds : 'update',
+                'ds.data.nodes' : 'update',
+                'ds.data.links' : 'update',
+                'prmname' : 'update',
+                'maxDepth' : 'update',
+                'negativeDepth' : 'update'
+            },
+
+            ready : function() {
+                this.$.popup.target = this;
+                $(window).on('hashchange', this.changeNode.bind(this));
+                this.changeNode();
+            },
+
+            changeNode : function() {
+                var loc = window.location.hash.replace('#','').split('/');
+                if( loc[0] == 'graph' ) {
+                    this.async(function(){
+                        this.prmname = loc.length == 1 ? this.ds.data.nodes[0] : loc[1];
+                    });
+
+                    // make sure it was drawn correctly
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 500);
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 1000);
+                }
+            },
+
+            update : function() {
+                if( !this.ds ) return;
+                if( this.prmname == '' ) return;
+                
+                this.reset();
+
+                var t1 = new Date().getTime();
+
+                this.walk(this.prmname, 0, 'forward');
+
+                var t2 = new Date().getTime();
+
+                // check max depth
+                if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                    if( 0 < parseInt(this.negativeDepth) ) {
+                        this.walk(this.prmname, 0, 'backward');
+                    }
+                }
+
+                var t3 = new Date().getTime();
+
+                // make sure all links for all node are in tree
+                this._addMissingLinks();
+
+                var t4 = new Date().getTime();
+                console.log('positive walk time: '+(t4-t1)+'ms');
+                console.log('negative walk time: '+(t4-t2)+'ms');
+                console.log('missing check time: '+(t4-t3)+'ms');
+
+
+                this.setPositions();
+            },
+
+            reset : function() {
+                this.graphJson = {
+                    nodes : [],
+                    edges : []
+                };
+                this.nodeLevels = {};
+                this.negativeLevels = {};
+                this.cnodes = [];
+            },
+
+            walk : function(prmname, level, direction) {
+                // has this node already been added to the graph?
+                //if( this.cnodes.indexOf(prmname) != -1 ) {
+                    // if we are walking backward, we need to process the first node again
+                //    if( direction == 'forward' || level != 0 ) return;
+                //}
+
+                // does the node actually exist?
+                if( !this.ds.lookupMap[prmname] ) return;
+
+                var node = this.ds.lookupMap[prmname];
+                // is the node hidden (ie been filtered out)
+                if( node.properties._render && !node.properties._render.show && level != 0 ) {
+                    return;
+                }
+
+                // add the node, unless this is level 0 and we are walking backward
+                if( (direction == 'forward' || level != 0) && this.cnodes.indexOf(prmname) == -1  ) {
+                    this._addNode(node, level, direction);
+                }
+
+                // find the links by using the datastores lookup indexes
+                var links;
+                if( direction == 'forward' ) {
+                    if( !this.ds.originLookupMap[prmname] ) return;
+                    links = this.ds.originLookupMap[prmname];
+                } else {
+                    if( !this.ds.terminalLookupMap[prmname] ) return;
+                    links = this.ds.terminalLookupMap[prmname];
+                }
+
+                // check max depth, quit if we have passed it
+                if( direction == 'forward' ) {
+                    if( this.maxDepth && this.maxDepth.length > 0 ) {
+                        if( level >= parseInt(this.maxDepth) ) {
+                            return;
+                        }
+                    }
+                } else {
+                    if( this.negativeDepth && this.negativeDepth.length > 0 ) {
+                        if( level >= parseInt(this.negativeDepth) ) {
+                            return;
+                        }
+                    }
+                }
+  
+
+                // increase the level
+                level++;
+                // add the links to the graph
+                for( var i = 0; i < links.length; i++ ) {
+                    this._addLink(links[i], level, direction);
+                }
+            },
+
+
+            _addNode : function(node, level, direction) {
+                if( this.cnodes.indexOf(node.properties.prmname) != -1 ) {
+                    console.log('found repeat: '+node.properties.prmname);
+                    return;
+                }
+
+                var gnode = {
+                    id : node.properties.prmname,
+                    calvin : node.properties,
+                    label : node.properties.prmname,
+                    type : node.properties.type,
+                    size : 8,
+                };
+
+                // set the graph node to the list at the current later
+                // this list will be used later on to render the nodes location
+                if( direction == 'forward' ) {
+                    if( !this.nodeLevels[level] ) {
+                        this.nodeLevels[level] = [gnode];
+                    } else {
+                        this.nodeLevels[level].push(gnode);
+                    }
+                } else {
+                    if( !this.negativeLevels[level] ) {
+                        this.negativeLevels[level] = [gnode];
+                    } else {
+                        this.negativeLevels[level].push(gnode);
+                    }
+                }
+
+                // add the nodes name to the list of nodes already in the graph
+                this.cnodes.push(node.properties.prmname);
+                // add the node to the graph
+                this.graphJson.nodes.push(gnode);
+            },
+
+            _addLink : function(link, level, direction) {
+                // get the links next node
+                var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
+                // make sure the next node exists
+                if( !tNode ) return;
+                
+                // make sure the next node is being shown
+                if( tNode.properties._render && !tNode.properties._render.show ) {
+                    this._followLink(link, level, direction);
+                    return;
+                }
+
+                // make sure the link hasn't already been added
+                if( this.cnodes.indexOf(link.properties.prmname) != -1 ) {
+                    this._followLink(link, level, direction);
+                    return;
+                }
+
+                var edge = this._createEdge(link);
+
+                // add the link to the graph
+                this.graphJson.edges.push(edge);
+
+                // add to the list of nodes/links already used
+                this.cnodes.push(link.properties.prmname);
+
+                this._followLink(link, level, direction);
+            },
+
+            _followLink : function(link, level, direction) {
+                // walk the next node in the graph
+                if( direction == 'forward' ) {
+                    this.walk(link.properties.terminus, level, direction);
+                } else {
+                    this.walk(link.properties.origin, level, direction);
+                }
+            },
+
+            _createEdge : function(link) {
+                return {
+                    id : link.properties.prmname,
+                    label : link.properties.prmname,
+                    calvin : link.properties,
+                    type : 'cwn',
+                    source : link.properties.origin,
+                    target : link.properties.terminus,
+                    color: 'blue'
+                };
+            },
+
+            // if we are at max depth (positive or negative) we still want add links for the
+            // node where the given node links back to nodes we have already added
+            _addMissingLinks : function() {
+                var i, n, link;
+                for( i = 0; i < this.graphJson.nodes.length; i++ ) {
+                    n = this.graphJson.nodes[i];
+
+                    links = this.ds.originLookupMap[n.id] || [];
+                    for( var j = 0; j < links.length; j++ ) {
+                        this._addLinkIfMissing(links[j]);
+                    }
+                    links = this.ds.terminalLookupMap[n.id] || [];
+                    for( var j = 0; j < links.length; j++ ) {
+                        this._addLinkIfMissing(links[j]);
+                    }
+                }
+            },
+
+            _addLinkIfMissing : function(link) {
+                if( this.cnodes.indexOf(link.properties.origin) != -1 &&
+                    this.cnodes.indexOf(link.properties.terminus) != -1 &&
+                    this.cnodes.indexOf(link.properties.prmname) == -1 ) {
+
+                    var edge = this._createEdge(link);
+
+                    // add the link to the graph
+                    this.graphJson.edges.push(edge);
+
+                    // add to the list of nodes/links already used
+                    this.cnodes.push(edge.id);
+                }
+            },
+
+            // set the position for all nodes in the graph
+            setPositions : function() {
+                var nLevelCount = Object.keys(this.negativeLevels).length;
+                var w = $(this.$.sigma).width();
+                var top = nLevelCount * 75;
+
+                for( var level in this.negativeLevels ) {
+                    var row = this.negativeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top-75;
+                        left += width;
+                    }
+
+                    top -= 75;
+                }
+ 
+                top = nLevelCount * 75;
+
+                for( var level in this.nodeLevels ) {
+                    var row = this.nodeLevels[level];
+                    var width = w / row.length;
+                    var left = width / 2;
+                    if( level > 0 ) left -= Math.random() * 30;
+
+                    for( var i = 0; i < row.length; i++ ) {
+                        row[i].x = left;
+                        row[i].y = top;
+                        left += width;
+                    }
+
+                    top += 75;
+                }
+
+                //console.log(this.prmname);
+                //console.log(this.negativeLevels);
+                //console.log(this.nodeLevels);
+                console.log(this.graphJson);
+
+                this.render();
+            },
+
+            render : function() {
+                if( !this.graph ) {
+                    this.graph = new sigma({ 
+                        graph: this.graphJson,
+                        renderer : {
+                            container: this.$.sigma,
+                            type : 'canvas'
+                        },
+                        settings: {
+                            defaultNodeColor: '#ec5148',
+                            minArrowSize : 6,
+                            minNodeSize: 10
+                        }
+                    });
+                    this.graph.bind('clickNode', function(e){
+                        //window.location.hash = 'graph/'+e.data.node.id;
+                        this.popupNode = this.ds.lookupMap[e.data.node.id];
+                        this.$.popup.show();
+                    }.bind(this));
+                } else {
+      
+                    this.graph.graph.clear();
+                    this.graph.graph.read(this.graphJson);
+                    // Refresh the display:
+                    this.graph.refresh();
+                }
+                // ForceAtlas Layout
+                //this.graph.startForceAtlas2();
+            },
+
+            goTo : function() {
+                window.location.hash = 'map';
+                setTimeout(function() {
+                    var pts = this.popupNode.geometry.coordinates;
+                    var ele =document.querySelector('html /deep/ cwn-map')
+                    ele.map.setView([pts[1], pts[0]], 12);
+                    this.$.popup.hide();
+                }.bind(this), 500);
+            },
+
+            hide : function() {
+                this.$.popup.hide();
+            }
+
+        });
+    </script>
+<polymer-element>

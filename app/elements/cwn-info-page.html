@@ -106,6 +106,7 @@
                   {{feature.properties.description}}
                 </div>
                 <div hidden?="{{feature.properties.type == 'Diversion'}}">
+                  <a class="btn btn-link" on-click="{{goToGraph}}"><cwn-icon icon="fa-code-fork"></cwn-icon> View Network Graph</a> <br />
                   <a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a>
                 </div>
               </div>
@@ -459,7 +460,7 @@
               setTimeout(this._updateSize.bind(this), 100);
             },
 
-            loadClimateData : function() {
+            /*loadClimateData : function() {
               if( !this.feature.properties.hasClimate ) return;
               this.climateLoading = true;
               this.inflows = [];
@@ -483,6 +484,38 @@
                     if( resp.data.length == 0 ) return this.climateLoadError = true;
 
                     this.renderClimateData(JSON.parse(resp.data[0][0]));
+                    this.async(function(){
+                      this.$.dateslider.resize();
+                    });
+                  }.bind(this),
+                  error : function(resp) {
+                    this.climateLoadError = true;
+                  }.bind(this)
+              });
+            },*/
+
+            loadClimateData : function() {
+              if( !this.feature.properties.hasClimate ) return;
+              this.climateLoading = true;
+              this.inflows = [];
+
+              var type;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                type = 'link';
+              } else {
+                type = 'node';
+              }
+
+              var params = '?prmname='+ this.feature.properties.prmname +
+                '&type=' + type + '&attribute=climate'
+
+              $.ajax({
+                  url : '/rest/getAttribute'+params,
+                  success : function(resp) {
+                    this.climateLoading = false;
+                    if( !resp.climate ) return this.climateLoadError = true;
+
+                    this.renderClimateData(JSON.parse(resp.climate));
                     this.async(function(){
                       this.$.dateslider.resize();
                     });
@@ -544,7 +577,7 @@
 
             },
 
-            loadCostData : function() {
+            /*loadCostData : function() {
               if( !this.feature.properties.hasCosts ) return;
               this.costLoading = true;
               this.costLoadError = false;
@@ -568,6 +601,35 @@
                     if( resp.data.length == 0 ) return this.costLoadError = true;
 
                     this.renderCostData(JSON.parse(resp.data[0][0]));
+                  }.bind(this),
+                  error : function(resp) {
+                    this.costLoadError = true;
+                  }.bind(this)
+              });
+            },*/
+
+            loadCostData : function() {
+              if( !this.feature.properties.hasCosts ) return;
+              this.costLoading = true;
+              this.costLoadError = false;
+
+              var type;
+              if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+                type = 'link';
+              } else {
+                type = 'node';
+              }
+
+              var params = '?prmname='+ this.feature.properties.prmname +
+                '&type=' + type + '&attribute=costs'
+
+              $.ajax({
+                  url : '/rest/getAttribute'+params,
+                  success : function(resp) {
+                    this.costLoading = false;
+                    if( !resp.costs ) return this.costLoadError = true;
+
+                    this.renderCostData(JSON.parse(resp.costs));
                   }.bind(this),
                   error : function(resp) {
                     this.costLoadError = true;
@@ -769,6 +831,10 @@
                 var pts = this.feature.geometry.coordinates;
                 this.leaflet.setView([pts[1], pts[0]], 12);
               });
+            },
+
+            goToGraph : function() {
+              window.location.hash = 'graph/'+this.feature.properties.prmname;
             }
 
         });

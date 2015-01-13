@@ -44,7 +44,7 @@
 
             observe : {
                 'ds.loading' : 'update',
-                '$.leaflet.map' : 'update',
+                'map' : 'update',
                 'filters.calibrationMode' : 'update',
                 'filters.oneStepMode' : 'update',
                 'filters.Junction' : 'update',
@@ -64,16 +64,23 @@
 
             map : null,
 
+            ready : function() {
+                this._process();
+            },
+
             domReady : function() {
                 this.async(function(){
                     this.map = L.map(this.$.leaflet).setView([40, -121], 5);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 18
                     }).addTo(this.map);
+
+                    this.map.on('zoomend', this._onZoomEnd.bind(this));
                 });
             },
 
             _process : function() {
+                if( !this.ds ) return;
                 if( this.ds.loading || !this.map ) return;
 
                 this.edges = [];
@@ -184,7 +191,8 @@
                     }
 
                     this.updating = false;
-                }.bind(this), 200);
+                    this.fire('filtering-complete');
+                }.bind(this), 250);
                 
             },
 
@@ -266,7 +274,6 @@
                         d.properties._render.show = false;
                     }
                 }
-
             },
 
             _isTextMatch : function(re, props) {
@@ -277,56 +284,56 @@
                 return false;
             },
 
+            _onZoomEnd : function() {
+                if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
+
+                this.markerLayer = L.geoJson(this.ds.data.nodes, {
+                    pointToLayer: function(feature, ll) {
+                        return this._getMarker(feature, ll);
+                    }.bind(this),
+                    filter: function(feature, layer) {
+                        return feature.properties._render.show || 
+                                (feature.properties._render.oneStep && this.filters.oneStepMode);
+                    }.bind(this)
+                }).addTo(this.map);
+                this.markerLayer.on('click', function(e){
+                    this.fire('selected', e.layer.feature);
+                }.bind(this));
+
+                for( var key in this.markerLayer._layers ) {
+                    this._hackTouchEvent(this.markerLayer._layers[key]);
+                }
+            },
+
             _getMarker : function(feature, ll) {
                 var render = feature.properties._render || {};
                 var type = feature.properties.type;
 
+                if( this.map.getZoom() < 10 ) {
+                    s = this.map.getZoom() * 3;
+                } else {
+                    s = this.map.getZoom() * 4;
+                }
+
                 var options = {
-                    radius : 20,
-                    color : '#333',
-                    fillColor : this.legend[feature.properties.type] ? 
-                                    this.legend[feature.properties.type].color : '#000000',
-                    opacity: render.oneStep ? .3 : .9,
-                    fillOpacity : render.oneStep ? .1 : .7
+                    iconSize : new L.Point(s, s),
+                    type : type
                 };
 
-                if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
+                /*if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
                     options.radius = 30,
                     options.weight = 7;
                     if( feature.properties.calibrationMode == 'both' ) options.color = 'red';
                     else if( feature.properties.calibrationMode == 'in' ) options.color = 'yellow';
                     else if( feature.properties.calibrationMode == 'out' ) options.color = 'blue';
-                }
-                
+                }*/
 
-                if( type == 'Junction' || type == 'Pump Plant' || type == 'Power Plant' ) {
+                var m = new L.Marker(ll, {
+                    icon: new L.Icon.Canvas(options), 
+                    opacity: render.oneStep ? .1 : .7
+                });
 
-                    return L.circleMarker(ll, options);
-
-                } else if ( type == 'Water Treatment' ) {
-
-                    options.sides = 6;
-                    return L.myMarker(ll, options);
-                
-                } else if ( type == 'Surface Storage' || type == 'Groundwater Storage' ) {
-
-                    options.sides = 3;
-                    options.rotate = 90;
-                    return L.myMarker(ll, options);
-
-                } else if ( type == 'Agricultural Demand' || type == 'Urban Demand' ) {
-
-                    options.sides = 5;
-                    options.rotate = 18;
-                    return L.myMarker(ll, options);
-
-                } else {
-
-                    options.sides = 4;
-                    options.rotate = 45;
-                    return L.myMarker(ll, options);
-
-                }
+                return m;
             },
 
             // hack so we know if the map is moving for touch events
@@ -357,49 +364,31 @@
             },
 
             initMarker : function() {
-                // add custom marker
-                L.MyMarker = L.CircleMarker.extend({
-
-                    initialize: function (latlng, options) {
-                        L.Circle.prototype.initialize.call(this, latlng, null, options);
-                        this._radius = this.options.radius;
-                        this._sides = this.options.sides ? this.options.sides : 6;
-                        this._rotate = this.options.rotate ? this.options.rotate : 0;
+                // can we pass in type and then just use
+                L.Icon.Canvas = L.Icon.extend({
+                    options: {
+                        iconSize: new L.Point(20, 20), // Have to be supplied
+                        className: 'leaflet-canvas-icon'
                     },
 
-
-                    getPathString: function () {
-                        var p = this._point;
-                        if (this._checkIfEmpty()) {
-                            return '';
-                        }
-
-                        if (L.Browser.svg) {
-                            return this.polygon(p.x, p.y, this._radius, this._sides, this._rotate);
-                        } else {
-                            console.error("MyMarker not using svg!!!");
-                        }
+                    createIcon: function () {
+                        var e = document.createElement('canvas');
+                        this._setIconStyles(e, 'icon');
+                        var s = this.options.iconSize;
+                        e.width = s.x;
+                        e.height = s.y;
+                        this.draw(e.getContext('2d'), s.x, s.y);
+                        return e;
                     },
 
-                    polygon : function(x, y, radius, sides, startAngle) {
-                      if (sides < 3) return;
-                      var a = ((Math.PI * 2)/sides);
-                      var r = startAngle * (Math.PI / 180);
+                    createShadow: function () {
+                        return null;
+                    },
 
-                      // think you need to adjust by x, y
-                      var p = "M";
-                      for (var i = 0; i < sides; i++) {
-                         p += (x+(radius*Math.cos(a*i-r)))+","+(y+(radius*Math.sin(a*i-r)))+" ";
-                      }
-                      p +=" z";
-                      return p;
+                    draw: function(ctx, width, height) {
+                        CWN.render[this.options.type](ctx, 2, 2, width-4, height-4);
                     }
-
                 });
-
-                L.myMarker = function (latlng, options) {
-                    return new L.MyMarker(latlng, options);
-                };
             }
         });
     </script>

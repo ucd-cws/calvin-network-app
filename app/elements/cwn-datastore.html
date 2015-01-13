@@ -2,15 +2,27 @@
     <template></template>
     <script>
         Polymer('cwn-datastore', {
-            loading: true,
+            loading : true,
             
+            network : 'default',
+
             data : {
-                nodesLoaded : false,
-                linksLoaded : false,
+                nodes : [],
                 links : [],
-                nodes : []
+                default : {
+                    links : [],
+                    nodes : []
+                },
+                custom : {
+                    links : [],
+                    nodes : []
+                }
             },
+            // look up any node or terminal by prmname
             lookupMap : {},
+            // look up any link origin name
+            originLookupMap : {},
+            terminalLookupMap : {},
 
             loadingCharts : true,
             chartLoadHandlers : [],
@@ -29,132 +41,80 @@
                         }
                     }.bind(this)
                 });
+
+                this.init();
             },
 
-            reload : function(query, callback) {
+            init : function(callback) {
                 this.reset();
-                this.init(query, callback);
-            },
-
-            init : function(query, callback) {
-                if( !query || typeof query == 'function' ) {
-                    this.callback = query;
-                    this.loadDefaultGraph();
-                } else {
-                    this.callback = callback;
-                    this.loadCustomGraph(query);
-                }
+                this.callback = callback;
+                this.reload();
             },
 
             reset : function() {
                 this.loading = true;
                 this.data = {
-                    nodesLoaded : false,
-                    linksLoaded : false,
+                    nodes : [],
                     links : [],
-                    nodes : []
-                };
-                lookupMap = {};
-            },
-
-            loadDefaultGraph : function() {
-                this._loadNodes();
-                this._loadLinks();
-            },
-
-            loadCustomGraph : function(query) {
-                //var query = 'MATCH (n {prmname: "C59"})-[r]->(m) RETURN n.geojson, r.geojson, m.geojson';
-
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : query
+                    default : {
+                        links : [],
+                        nodes : []
                     },
-                    success : function(resp) {
-                        this._processCustomResponse(resp, query);
-                    }.bind(this),
-                    error : function(resp) {
-                        this.loading = false;
-                        if( this.callback ) this.callback(true);
-                        alert('Error loading custom cypher: '+query);
-                    }.bind(this)
-                });
-            },
-
-            _processCustomResponse : function(resp, query) {
-                if( !resp ) {
-                    this.data.nodesLoaded = true;
-                    this.data.linksLoaded = true;
-                    this._checkLoaded();
-                    return alert('Error loading custom cypher: '+query);
-                }
-                if( !resp.data ) {
-                    this.data.nodesLoaded = true;
-                    this.data.linksLoaded = true;
-                    this._checkLoaded();
-                    return alert('Error loading custom cypher: '+query);
-                }
-
-                var counts = {
-                    query : query,
-                    links : 0,
-                    nodes : 0
-                }
-
-                for( var i = 0; i < resp.data.length; i++ ) {
-                    var row = resp.data[i];
-
-                    for( var j = 0; j < row.length; j++ ) {
-                        try {
-                            json = JSON.parse(row[j]);
-
-                            if( json && json.properties ) {
-                                if( json.properties.type == 'Diversion' || json.properties.type == 'Return Flow' ) {
-                                    this._processLink(json);
-                                    counts.links++;
-                                } else {
-                                    this._processNode(json);
-                                    counts.nodes++;
-                                }
-                            }
-                        } catch (e) {
-                            console.error(e);
-                        }
+                    custom : {
+                        links : [],
+                        nodes : []
                     }
-                }
-                this.data.nodesLoaded = true;
-                this.data.linksLoaded = true;
-                this._checkLoaded(counts);
+                };
+                this.lookupMap = {};
+                this.originLookupMap = {};
+                this.terminalLookupMap = {};
             },
 
-            _loadNodes : function() {
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : 'MATCH n RETURN n.geojson',
-                    },
-                    success : function(resp) {
-                        var d;
-                        for( var i = 0; i < resp.data.length; i++ ) {
-                            
-                            // crappy sanity checking
-                            try {
-                                d = JSON.parse(resp.data[i][0]);
-                            } catch (e) {
-                                continue;
-                            }
+            reload : function() {
+                this.loadNetwork(this.network, function(err){
+                    this.loading = false;
+                    this.fire('loaded');
+                    if( this.callback ) this.callback(err);
+                }.bind(this));
+            },
 
-                            this._processNode(d);
+            loadNetwork : function(network, callback) {
+                var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
+                url += '?network='+network;
+
+                $.ajax({
+                    url : url,
+                    success : function(resp) {
+                        for( var i = 0; i < resp.nodes.length; i++ ) {
+                            try {
+                                d = JSON.parse(resp.nodes[i]);
+                                this._processNode(d);
+                            } catch (e) {
+                                debugger;
+                            }
                         }
-                        this.data.nodesLoaded = true;
-                        this._checkLoaded();
+                        for( var i = 0; i < resp.links.length; i++ ) {
+                            try {
+                                d = JSON.parse(resp.links[i]);
+                                this._processLink(d);
+                            } catch (e) {
+                                debugger;
+                            }
+                        }
+
+                        // we don't care about the custom network
+                        if( this.network == 'default') {
+                            callback();
+                        } else {
+                            // we want to load the default network
+                            if( network == 'default' ) this.loadNetwork('default');
+                            // we loaded the default network
+                            else callback();
+                        }
                     }.bind(this),
                     error : function(resp) {
-                        this.loading = false;
-                        if( this.callback ) this.callback(true);
-                        alert('Error retrieving data from: '+this.settings.neo4jUrl+'/cypher');
+                        alert('Error retrieving data from network: '+network);
+                        callback(true);
                     }.bind(this)
                 });
             },
@@ -165,8 +125,18 @@
                 if( !node.properties.prmname ) return;
 
                 this._markCalibrationNode(node);
+                
+                if( !this.lookupMap[node.properties.prmname] ) {
+                    this.data.nodes.push(node);
+                }
+
                 this.lookupMap[node.properties.prmname] = node;
-                this.data.nodes.push(node);
+
+                if( node.properties.network == 'default') {
+                    this.data.default.nodes.push(node);
+                } else {
+                    this.data.custom.nodes.push(node);
+                }
             },
 
             _processLink : function(link) {
@@ -174,50 +144,88 @@
                 if( !link.properties ) return;
                 if( !link.properties.prmname ) return;
 
+                // mark if this node is a calibration or not
                 this._markCalibrationNode(link);
-                this.data.links.push(link);
+
+                // 
+                this._markLinkTypes(link);
+
+                if( !this.lookupMap[link.properties.prmname] ) {
+                    this.data.links.push(link);
+                }
+
                 this.lookupMap[link.properties.prmname] = link;
-            },
 
-            _loadLinks : function() {
-                $.ajax({
-                    type : 'POST',
-                    url : this.settings.neo4jUrl+'/cypher',
-                    data : {
-                        query : 'start r=rel(*) return r.geojson',
-                        params : {}
-                    },
-                    success : function(resp) {
-                        var d;
-                        for( var i = 0; i < resp.data.length; i++ ) {
-                            
-                            // crappy sanity checking
-                            try {
-                                d = JSON.parse(resp.data[i][0]);
-                            } catch (e) {
-                                continue;
-                            }
-                            this._processLink(d);
-                        }
+                // set the origin lookup map
+                if( !this.originLookupMap[link.properties.origin] ) {
+                    this.originLookupMap[link.properties.origin] = [link];
+                } else {
+                    this.originLookupMap[link.properties.origin].push(link);
+                }
 
-                        this.data.linksLoaded = true;
-                        this._checkLoaded();
-                    }.bind(this),
-                    error : function(resp) {
-                        // fail silently for now
-                    }.bind(this)
-                });
-            },
+                // set the terminal lookup map
+                if( !this.terminalLookupMap[link.properties.terminus] ) {
+                    this.terminalLookupMap[link.properties.terminus] = [link];
+                } else {
+                    this.terminalLookupMap[link.properties.terminus].push(link);
+                }
 
-            _checkLoaded : function(info) {
-                if( this.data.nodesLoaded && this.data.linksLoaded ) {                    
-                    this.fire('loaded');
-                    this.loading = false;
-                    if( this.callback ) this.callback(null, info);
+
+                if( link.properties.network == 'default') {
+                    this.data.default.links.push(link);
+                } else {
+                    this.data.custom.links.push(link);
                 }
             },
 
-             _markCalibrationNode : function(node) {
+            _markLinkTypes : function(link) {
+                link.properties.renderInfo = {
+                    cost : link.properties.hasCosts ? true : false,
+                    amplitude : link.properties.amplitude ? true : false,
+                    // TODO: parser needs to sheet shortcut for contraint type
+                    // data will still need to be loaded on second call
+                    constraints : link.properties.hasConstraints ? true : false,
+                    environmental : link.properties.hasClimate ? true : false
+                };
+
+                // Flow to a sink
+                if( this.lookupMap[link.properties.terminus] && 
+                    this.lookupMap[link.properties.terminus].properties.type == 'Sink' ) {
+                    link.properties.renderInfo.type = 'flowToSink';
+                
+                } else if( link.properties.type == 'Return Flow' ) {
+                    link.properties.renderInfo.type = 'returnFlowFromDemand';
+
+                } else if ( this._isGWToDemand(link) ) {
+                    link.properties.renderInfo.type = 'gwToDemand';
+
+                } else if( this.lookupMap[link.properties.origin] && 
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
+                    this.lookupMap[link.properties.origin].properties.calibrationMode == 'both' ) {
+
+                    link.properties.renderInfo.type = 'artificalRecharge';
+                } else {
+
+                    link.properties.renderInfo.type = 'unknown';
+                }
+
+            },
+
+            _isGWToDemand : function(link) {
+                var origin = this.lookupMap[link.properties.origin];
+                var terminal = this.lookupMap[link.properties.terminal];
+
+                if( !origin || !terminal ) return false;
+
+                if( origin.properties.type != 'Groundwater Storage' ) return false;
+                if( terminal.properties.type == 'Non-Standard Demand' || 
+                    terminal.properties.type == 'Agricultural Demand' ||
+                    terminal.properties.type == 'Urban Demand' ) return true;
+
+                return false;
+            },
+
+            _markCalibrationNode : function(node) {
                 if( node.properties.prmname.indexOf('_') > -1 ) {
                     var parts = node.properties.prmname.split('_');
                     if( !(parts[0].match(/^CN.*/) || parts[1].match(/^CN.*/)) ) {
@@ -226,8 +234,6 @@
                 } else if( !node.properties.prmname.match(/^CN.*/) ) {
                     return;
                 }
-
-                
 
                 var hasIn = false;
                 var hasOut = false;
@@ -255,7 +261,7 @@
                 if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
                 else if ( hasIn ) node.properties.calibrationMode = 'in';
                 else if ( hasOut ) node.properties.calibrationMode = 'out';
-            },
+            }
         })
     </script>
 </polymer-element>

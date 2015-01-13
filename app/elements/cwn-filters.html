@@ -77,8 +77,8 @@
                             <template repeat="{{item in legendArr}}">
                                 <label class="checkbox-inline">
                                     <input type="checkbox" name="{{item.name}}" checked="{{item.checked}}" on-change="{{_updateCheckbox}}" />
-                                    <div class="cb-border" style="border: 2px solid {{item.color}}">
-                                        <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}" fillStyle="{{item.color}}"></cwn-app-icon>
+                                    <div class="cb-border">
+                                        <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}"></cwn-app-icon>
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">{{item.name}}</div>
                                     </div>
                                 </label>
@@ -119,7 +119,6 @@
                     this.filters[key.replace(' ','_').replace('-','_')] = true;
                     this.legendArr.push({
                         name : key,
-                        color : this.legend[key].color,
                         checked : true
                     });
                 }

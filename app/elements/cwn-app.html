@@ -32,35 +32,36 @@
         <cwn-datastore id="ds" loading="{{loading}}" settings="{{$.settings.settings}}" on-loaded="{{onDataLoad}}"></cwn-datastore>
 
         <cwn-app-layout loading="{{loading}}">
-            <a right-nav on-tap="{{showSettings}}">
-              <span class="hidden-xs"><cwn-icon icon="fa-cogs"></cwn-icon> Settings</span>
-              <span class="visible-xs"><cwn-icon icon="fa-cogs"></cwn-icon></span>
-            </a>
             <a right-nav on-tap="{{showFilters}}">
               <span class="hidden-xs"><cwn-icon icon="fa-filter"></cwn-icon> Filters</span>
               <span class="visible-xs"><cwn-icon icon="fa-filter"></cwn-icon></span>
             </a>
 
             <cwn-filters id="filters" content legend="{{legend}}"></cwn-filters>
-            <cwn-settings id="settings" ds="{{$.ds}}" content></cwn-settings>
 
-            <!--<core-animated-pages id="pages" content transitions="slide-from-right">-->
-              <cwn-map content
-                id="map"
-                legend="{{legend}}" 
-                ds="{{$.ds}}" 
-                filters="{{$.filters.filters}}" 
-                on-selected="{{onFeatureSelected}}"
-                hidden?="{{selectedPage != PAGES.MAP}}">
-              </cwn-map>
-              <cwn-info-page content 
-                id="info" 
-                leaflet="{{$.map.map}}"
-                ds="{{$.ds}}" 
-                settings="{{$.settings.settings}}"
-                hidden?="{{selectedPage != PAGES.INFO}}">
-              </cwn-info-page>
-            <!--</core-animated-pages>-->
+            <cwn-map content
+              id="map"
+              legend="{{legend}}" 
+              ds="{{$.ds}}" 
+              filters="{{$.filters.filters}}" 
+              on-selected="{{onFeatureSelected}}"
+              on-filtering-complete="{{updateGraph}}"
+              hidden?="{{selectedPage != PAGES.MAP}}">
+            </cwn-map>
+            <cwn-info-page content 
+              id="info" 
+              leaflet="{{$.map.map}}"
+              ds="{{$.ds}}" 
+              settings="{{$.settings.settings}}"
+              hidden?="{{selectedPage != PAGES.INFO}}">
+            </cwn-info-page>
+            <cwn-graph content 
+              id="graph" 
+              ds="{{$.ds}}"
+              settings="{{$.settings.settings}}"
+              hidden?="{{selectedPage != PAGES.GRAPH}}">
+            </cwn-graph>
+
         </cwn-app-layout>
 
         
@@ -69,7 +70,8 @@
         Polymer('cwn-app', {
             PAGES : {
               MAP : 0,
-              INFO : 1
+              INFO : 1,
+              GRAPH : 2
             },
             selectedPage : 0,
 
@@ -145,6 +147,8 @@
                 } else {
                   this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
                 }
+              } else if ( loc == 'graph' ) {
+                this.selectedPage = this.PAGES.GRAPH;
               }
             },
 
@@ -159,16 +163,15 @@
               for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
                 this.dataLoadHandlers[i]();
               }
+              this.dataLoadHandlers = [];
             },
 
             showFilters : function() {
-                this.$.settings.hide();
                 this.$.filters.toggle();
             },
 
-            showSettings : function() {
-                this.$.filters.hide();
-                this.$.settings.toggle();
+            updateGraph : function() {
+              this.$.graph.update();
             },
 
             onFeatureSelected : function(e) {
