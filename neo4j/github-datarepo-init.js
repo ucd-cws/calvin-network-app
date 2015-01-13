@@ -116,6 +116,7 @@ function processNode(node, callback) {
         }
     }
 
+    geojson.features.push(overview);
     callback();
 
     /*if( csvFiles.length == 0) {
