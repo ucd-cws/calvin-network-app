@@ -1,8 +1,9 @@
-<polymer-element name="cwn-datastore" attributes="settings">
+<polymer-element name="cwn-datastore" attributes="settings islocal">
     <template></template>
     <script>
         Polymer('cwn-datastore', {
             loading : true,
+            islocal : false,
             
             network : 'default',
 
@@ -42,7 +43,7 @@
                     }.bind(this)
                 });
 
-                this.init();
+                Polymer.whenPolymerReady(this.init.bind(this));
             },
 
             init : function(callback) {
@@ -79,6 +80,11 @@
             },
 
             loadNetwork : function(network, callback) {
+                if( this.islocal ) {
+                    this.loadFromFileSystem(callback);
+                    return;
+                }
+
                 var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
                 url += '?network='+network;
 
@@ -102,15 +108,16 @@
                             }
                         }
 
+                        callback();
                         // we don't care about the custom network
-                        if( this.network == 'default') {
+                        /*if( this.network == 'default') {
                             callback();
                         } else {
                             // we want to load the default network
                             if( network == 'default' ) this.loadNetwork('default');
                             // we loaded the default network
                             else callback();
-                        }
+                        }*/
                     }.bind(this),
                     error : function(resp) {
                         alert('Error retrieving data from network: '+network);
@@ -118,6 +125,19 @@
                     }.bind(this)
                 });
             },
+
+            // cwne-fs-network-loader will be injected by the node-webkit app
+            loadFromFileSystem : function(callback) {
+                document.querySelector('cwne-fs-network-loader').run(function(resp){
+                    for( var i = 0; i < resp.nodes.length; i++ ) {
+                        this._processNode(resp.nodes[i]);
+                    }
+                    for( var i = 0; i < resp.links.length; i++ ) {
+                        this._processLink(resp.links[i]);
+                    }
+                    callback();
+                }.bind(this));
+            },  
 
             _processNode : function(node) {
                 if( !node ) return;

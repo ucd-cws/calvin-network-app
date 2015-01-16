@@ -1,4 +1,4 @@
-<polymer-element name="cwn-app">
+<polymer-element name="cwn-app" attributes="islocal">
     <template>
         <style>
             leaflet-map, core-animated-pages {
@@ -29,7 +29,13 @@
           </div>
         </div>
 
-        <cwn-datastore id="ds" loading="{{loading}}" settings="{{$.settings.settings}}" on-loaded="{{onDataLoad}}"></cwn-datastore>
+        <cwn-datastore 
+          id="ds" 
+          loading="{{loading}}" 
+          settings="{{$.settings.settings}}" 
+          on-loaded="{{onDataLoad}}"
+          islocal?="{{islocal}}">
+        </cwn-datastore>
 
         <cwn-app-layout loading="{{loading}}">
             <a right-nav on-tap="{{showFilters}}">
@@ -53,7 +59,8 @@
               leaflet="{{$.map.map}}"
               ds="{{$.ds}}" 
               settings="{{$.settings.settings}}"
-              hidden?="{{selectedPage != PAGES.INFO}}">
+              hidden?="{{selectedPage != PAGES.INFO}}"
+              islocal?="{{islocal}}">
             </cwn-info-page>
             <cwn-graph content 
               id="graph" 
@@ -74,6 +81,8 @@
               GRAPH : 2
             },
             selectedPage : 0,
+
+            islocal : false,
 
             legend : {
               'Power Plant'         : {

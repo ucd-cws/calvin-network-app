@@ -1,4 +1,4 @@
-<polymer-element name="cwn-info-page" attributes="ds settings leaflet">
+<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">
     <template>
         <style>
           :host {
@@ -106,8 +106,11 @@
                   {{feature.properties.description}}
                 </div>
                 <div hidden?="{{feature.properties.type == 'Diversion'}}">
-                  <a class="btn btn-link" on-click="{{goToGraph}}"><cwn-icon icon="fa-code-fork"></cwn-icon> View Network Graph</a> <br />
-                  <a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a>
+                  <div><a class="btn btn-link" on-click="{{goToGraph}}"><cwn-icon icon="fa-code-fork"></cwn-icon> View Network Graph</a></div>
+                  <div><a class="btn btn-link" on-click="{{goTo}}"><cwn-icon icon="fa-map-marker"></cwn-icon> Show on Map</a></div>
+                  <template bind if="{{islocal}}">
+                    <div><a class="btn btn-link" href="{{hack}}#edit/{{feature.properties.prmname}}"><cwn-icon icon="fa-pencil"></cwn-icon> Edit</a></div>
+                  </template>
                 </div>
               </div>
             
@@ -273,6 +276,7 @@
             feature : {},
 
             hack : '',
+            islocal : false,
 
             tableProperties : ['prmname'],
 

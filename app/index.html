@@ -5,25 +5,12 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-        <!-- build:js scripts/app.js -->
+        <!-- build:js scripts/lib.js -->
         <script src="components/webcomponentsjs/webcomponents.js"></script>
-        <script src="components/jquery/dist/jquery.js"></script> 
-        <script src="components/leaflet/dist/leaflet.js"></script> 
-        <script src="components/leaflet-polylinedecorator/leaflet.polylineDecorator.js"></script> 
-        <script src="components/sigma.js/sigma.min.js"></script>
-        <script src="components/sigma.js/plugins/sigma.renderers.customEdgeShapes.min.js"></script>
-        <script src="components/sigma.js/plugins/sigma.parsers.json.min.js"></script>
-        <script src="scripts/cwn.js"></script>
-        <script src="scripts/sigma-cwn-plugin.js"></script>
+        <script src="components/jquery/dist/jquery.js"></script>
         <!-- endbuild -->
 
         <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-        
-        <link rel="stylesheet" href="styles/deep.css" shim-shadowdom>
-        
-        <!-- build:css styles/app.css -->
-        <link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
-        <!-- endbuild -->
 
         <link rel="import" href="require.html">
 
@@ -32,27 +19,6 @@
                 height: 100%;
                 overflow-x: hidden;
             }
-
-            html /deep/ core-toolbar {
-                background-color: #f8f8f8;
-                border-color: #e7e7e7;
-                position: relative;
-
-                border: 1px solid transparent;
-                box-shadow: 0 0 5px #333;
-                color: #333;
-            }
-            html /deep/ paper-ripple#ink {
-                color: #5bc0de;
-            }
-            html /deep/ paper-tabs /deep/ #selectionBar {
-                background-color: #46b8da;
-            }
-            html /deep/ paper-tab.core-selected {
-                background-color: #eee;
-            }
-
-
         </style>
     </head>
     <body>

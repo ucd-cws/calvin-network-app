@@ -1,0 +1,18 @@
+html /deep/ core-toolbar {
+    background-color: #f8f8f8;
+    border-color: #e7e7e7;
+    position: relative;
+
+    border: 1px solid transparent;
+    box-shadow: 0 0 5px #333;
+    color: #333;
+}
+html /deep/ paper-ripple#ink {
+    color: #5bc0de;
+}
+html /deep/ paper-tabs /deep/ #selectionBar {
+    background-color: #46b8da;
+}
+html /deep/ paper-tab.core-selected {
+    background-color: #eee;
+}
