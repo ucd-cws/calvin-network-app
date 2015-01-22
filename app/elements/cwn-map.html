@@ -182,7 +182,7 @@
                         }.bind(this),
                         filter: function(feature, layer) {
                             return feature.properties._render.show;
-                        }
+                        }.bind(this)
                     }).addTo(map);
 
                     this.edgeLayer.on('click', function(e){
@@ -231,11 +231,13 @@
                     y2 = (y2 + coord[1][1]) / 2;
 
                     markers.push(link);
-                    markers.push({
+                    var m = {
                         type: "Point", 
                         coordinates : [x2, y2],
-                        properties : link.properties
-                    });
+                        properties : $.extend(true, {}, link.properties)
+                    };
+                    m.properties.isCanvasMarker = true;
+                    markers.push(m);
                 }
 
                 return markers;
@@ -330,6 +332,7 @@
             },
 
             _onZoomEnd : function() {
+/* WHY AGAIN
                 if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
 
                 this.markerLayer = L.geoJson(this.ds.data.nodes, {
@@ -337,16 +340,27 @@
                         return this._getMarker(feature, ll);
                     }.bind(this),
                     filter: function(feature, layer) {
+                        if( !feature ) return false;
                         return feature.properties._render.show || 
                                 (feature.properties._render.oneStep && this.filters.oneStepMode);
                     }.bind(this)
                 }).addTo(this.map);
+
                 this.markerLayer.on('click', function(e){
                     this.fire('selected', e.layer.feature);
                 }.bind(this));
 
+                
                 for( var key in this.markerLayer._layers ) {
                     this._hackTouchEvent(this.markerLayer._layers[key]);
+                }
+*/
+
+
+                if( this.map.getZoom() < 10 ) {
+                    $('html /deep/ .LineCanvas').hide();
+                } else {
+                    $('html /deep/ .LineCanvas').show();
                 }
             },
 
@@ -382,15 +396,19 @@
             },
 
             _getLineMarker : function(feature, ll) {
+                var hide = false;
+
                 if( this.map.getZoom() < 10 ) {
                     s = this.map.getZoom() * 3;
+                    hide = true;
                 } else {
                     s = this.map.getZoom() * 4;
                 }
 
                 var options = {
                     iconSize : new L.Point(s, s),
-                    renderInfo : feature.properties.renderInfo || {}
+                    renderInfo : feature.properties.renderInfo || {},
+                    hide : hide
                 };
 
                 var m = new L.Marker(ll, {
@@ -457,7 +475,7 @@
                 L.Icon.LineCanvas = L.Icon.extend({
                     options: {
                         iconSize: new L.Point(20, 20), // Have to be supplied
-                        className: 'leaflet-canvas-icon'
+                        className: 'LineCanvas'
                     },
                     _transformProps : ['webkitTransform', 'MozTransform', 'msTransform', 'transform'],
 
@@ -479,7 +497,7 @@
                         for( var i = 0; i < this._transformProps.length; i++ ) {
                             canvas.style[this._transformProps[i]] = 'rotate('+rotate+'deg)';
                         }
-
+                        if( this.options.hide ) icon.style.display = 'none';
                         return icon;
                     },
 
@@ -508,7 +526,7 @@
                             if( this.options.renderInfo[key] ) {
                               CWN.render.lineMarkers[key](ctx, mX, mY, 4, vX, vY);
                               mX += vX * 1.75;
-                              mY += vY * 1.75;
+                              //mY += vY * 1.75;
                             }
                           }
                         }

@@ -9,15 +9,15 @@
 
             data : {
                 nodes : [],
-                links : [],
-                default : {
+                links : []
+                /*default : {
                     links : [],
                     nodes : []
                 },
                 custom : {
                     links : [],
                     nodes : []
-                }
+                }*/
             },
             // look up any node or terminal by prmname
             lookupMap : {},
@@ -56,15 +56,15 @@
                 this.loading = true;
                 this.data = {
                     nodes : [],
-                    links : [],
-                    default : {
+                    links : []
+                    /*default : {
                         links : [],
                         nodes : []
                     },
                     custom : {
                         links : [],
                         nodes : []
-                    }
+                    }*/
                 };
                 this.lookupMap = {};
                 this.originLookupMap = {};
@@ -152,11 +152,12 @@
 
                 this.lookupMap[node.properties.prmname] = node;
 
-                if( node.properties.network == 'default') {
+                //this.data.nodes.push(node);
+                /*if( node.properties.network == 'default') {
                     this.data.default.nodes.push(node);
                 } else {
                     this.data.custom.nodes.push(node);
-                }
+                }*/
             },
 
             _processLink : function(link) {
@@ -191,11 +192,12 @@
                 }
 
 
-                if( link.properties.network == 'default') {
+                //this.data.links.push(link);
+                /*if( link.properties.network == 'default') {
                     this.data.default.links.push(link);
                 } else {
                     this.data.custom.links.push(link);
-                }
+                }*/
             },
 
             _markLinkTypes : function(link) {
