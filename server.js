@@ -114,7 +114,7 @@ app.get('/rest/getAttribute', function(req, resp){
     var query = '';
     if( type == 'link' ) {
         //query = 'MATCH (n)-[r { prmname: {name}, network: {networkName} }]->() RETURN r.'+attribute;
-        query = 'MATCH (n)-[r { prmname: {name}]->() RETURN r.'+attribute;
+        query = 'MATCH (n)-[r { prmname: {name}}]->() RETURN r.'+attribute;
     } else {
         //query ='MATCH (n { prmname: {name}, network: {networkName} }) RETURN n.'+attribute;
         query ='MATCH (n { prmname: {name} }) RETURN n.'+attribute;
