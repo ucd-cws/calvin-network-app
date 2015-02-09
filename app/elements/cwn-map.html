@@ -231,13 +231,13 @@
                     y2 = (y2 + coord[1][1]) / 2;
 
                     markers.push(link);
-                    var m = {
+                    /*var m = {
                         type: "Point", 
                         coordinates : [x2, y2],
                         properties : $.extend(true, {}, link.properties)
                     };
                     m.properties.isCanvasMarker = true;
-                    markers.push(m);
+                    markers.push(m);*/
                 }
 
                 return markers;
@@ -332,7 +332,7 @@
             },
 
             _onZoomEnd : function() {
-/* WHY AGAIN
+/* WHY AGAIN */
                 if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
 
                 this.markerLayer = L.geoJson(this.ds.data.nodes, {
@@ -354,7 +354,7 @@
                 for( var key in this.markerLayer._layers ) {
                     this._hackTouchEvent(this.markerLayer._layers[key]);
                 }
-*/
+/**/
 
 
                 if( this.map.getZoom() < 10 ) {

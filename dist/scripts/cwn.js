@@ -1,20 +1,22 @@
 /* global render functions for svg and canvas icons */
 
-var CWN = {
-    colors : {
-        base : '#ffffca',
-        lightGrey : '#7b7b79',
-        green : '#8fd248',
-        salmon : '#ffcd96',
-        lightBlue : '#91cbdd',
-        red : '#ff0800',
-        blue : '#4f7fbf',
-        purple : '#7228a2',
-        black : '#000000'
-    },
-    // reneder an icon on a canvas
-    render : {},
+if( !window.CWN ) window.CWN = {};
+
+CWN.colors = {
+  base : '#ffffca',
+  lightGrey : '#7b7b79',
+  green : '#8fd248',
+  salmon : '#ffcd96',
+  lightBlue : '#91cbdd',
+  red : '#ff0800',
+  blue : '#4f7fbf',
+  purple : '#7228a2',
+  black : '#000000'
 };
+
+// reneder an icon on a canvas
+CWN.render = {};
+
 
 // create an icon on a canvas
 CWN.icon = function(type, width, height) {
