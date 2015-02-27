@@ -80,7 +80,7 @@
                                 <label class="checkbox-inline">
                                     <input type="checkbox" name="{{item.name}}" checked="{{item.checked}}" on-change="_updateCheckbox" />
                                     <div class="cb-border">
-                                        <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}"></cwn-app-icon>
+                                        <cwn-app-icon width="{{item.iconSize}}" height="{{item.iconSize}}" type="{{item.name}}"></cwn-app-icon>
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">{{item.name}}</div>
                                     </div>
                                 </label>
@@ -127,6 +127,7 @@
             for( var key in this.legend ) {
                 this.filters[key.replace(' ','_').replace('-','_')] = true;
                 this.legendArr.push({
+                    iconSize : this.iconSize,
                     name : key,
                     checked : true
                 });

@@ -53,12 +53,12 @@
             <cwn-info-page content 
               id="info">
             </cwn-info-page>
-<!--
-            <cwn-graph content 
-              id="graph" 
-              ds="{{$.ds}}">
+
+            <cwn-graph content
+              class="fit" 
+              id="graph">
             </cwn-graph>
--->
+
         </cwn-app-layout>
     </template>
 </dom-module>
@@ -66,12 +66,6 @@
 <script>
     Polymer({
         is : 'cwn-app',
-
-        //mixins : ['Legend'],
-
-        //bind : {
-        //  '$.ds.loading' : 'onLoadingChange'
-        //},
 
         published : {
           islocal : {

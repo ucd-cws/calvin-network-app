@@ -219,18 +219,6 @@ Polymer({
 
     _setCostMonth : function(e) {
       this.$.costInfo.setMonth(parseInt(e.currentTarget.getAttribute('index')));
-    },
-
-    goTo : function() {
-      window.location.hash = 'map';
-      this.async(function() {
-        var pts = this.feature.geometry.coordinates;
-        this.leaflet.setView([pts[1], pts[0]], 12);
-      });
-    },
-
-    goToGraph : function() {
-      window.location.hash = 'graph/'+this.feature.properties.prmname;
     }
 
 });

@@ -190,6 +190,8 @@
                 }
             }
 
+            console.log(this.origins)
+
             if( this.feature && this.feature.properties.terminals ) {
                 for( var i = 0; i < this.feature.properties.terminals.length; i++ ) {
                   link = this._lookupLink(this.feature.properties.prmname, this.feature.properties.terminals[i]);
@@ -280,6 +282,18 @@
 
 
           this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
+        },
+
+        goTo : function() {
+          window.location.hash = 'map';
+          this.async(function() {
+            var pts = this.feature.geometry.coordinates;
+            this.leaflet.setView([pts[1], pts[0]], 12);
+          });
+        },
+
+        goToGraph : function() {
+          window.location.hash = 'graph/'+this.feature.properties.prmname;
         }
     });
 </script>
