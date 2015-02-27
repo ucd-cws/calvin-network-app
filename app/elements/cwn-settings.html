@@ -15,7 +15,7 @@
             overflow-x: hidden;
             height: 100%;
         }
-        #root {
+        .settings-root {
             padding: 10px;
             background-color: rgba(255,255,255, .9);
             box-shadow: 0 0 10px;
@@ -47,7 +47,7 @@
 
         <core-localstorage id="storage" name="settings" value="{{settings}}" on-core-localstorage-load="{{onLocalStorageLoad}}" ></core-localstorage>
 
-        <div id="root" class="showControls">
+        <div id="root" class="showControls settings-root">
             <h2 style="margin-top:5px;text-align:center" class="page-header">Neo4j Settings</h2>
 
             <div class="row">

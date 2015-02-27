@@ -1,127 +1,156 @@
-
 <!--
     data should be format [[date,value],[date,value]...]
+    <polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols type">
 -->
-<polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols type">
+<dom-module id="cwn-linechart">
+    <style>
+        cwn-linechart {
+            display: block;
+        }
+    </style>
     <template>
-        <style>
-            :host {
-                display: block;
-            }
-        </style>
-        <div id="root" style="height:{{height}}px"></div>
+        <div id="root"></div>
     </template>
-    <script>
-        Polymer('cwn-linechart',{
-            dt : null,
-            chart : null,
-            height : 400,
-            animate : false,
+</dom-module>
 
-            updateTimer : -1,
+<script>
+    Polymer({
+        is : 'cwn-linechart',
 
-            observe : {
-                label : 'redraw',
-                xlabel : 'redraw',
-                ylabel : 'redraw',
-                height : 'redraw',
-                data  : 'update',
-                start : 'update',
-                stop  : 'update',
-                options : 'update'
-            },
+        published : {
+            label : String,
+            xlabel : String,
+            ylabel : String,
+            data : Object,
+            height : Number,
+            animate : Boolean,
+            options : Object,
+            cols : Object,
+            type : String
+        },
 
-            onLoadHandlerSet : false,
+        bind : {
+            label : 'redraw',
+            xlabel : 'redraw',
+            ylabel : 'redraw',
+            height : 'setHeight',
+            data  : 'update',
+            start : 'update',
+            stop  : 'update',
+            options : 'update'
+        },
 
-            options : null,
-            cols : null,
-
-            ready : function() {
-                $(window).on('resize', function(){
-                    this.redraw();
-                }.bind(this));
-            },
-
-            setOnloadHandler : function() {
-                if( this.onLoadHandlerSet ) return;
-
-                // put in global scope by cwn-datastore
-                chartLoadHandlers.push(function(){
-                    this.update();
-                }.bind(this));
-            },
-            
-
-            update : function() {
-                if( !window.google.visualization ) return this.setOnloadHandler();
-                if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
-
-                if( !this.chart ) {
-                    if( this.type ) {
-                        this.chart = new google.visualization[this.type](this.$.root);
-                    } else {
-                        this.chart = new google.visualization.LineChart(this.$.root);
-                    }
-                }
-
-                if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
-                this.updateTimer = setTimeout(function() {
-                    this.updateTimer = -1;
-                    this._update();
-                }.bind(this), 500);
-            },
-
-            _update : function() {
-                if( this.cols ) {
-                    this.dt = new google.visualization.DataTable();
-                    for( var i = 0; i < this.cols.length; i++ ) {
-                        this.dt.addColumn(this.cols[i]);
-                    }
-                    this.dt.addRows(this.data);
-                } else {
-                    this.dt = google.visualization.arrayToDataTable(this.data);
-                }
-                
-                this.redraw();
-            },
-
-            redraw : function() {
-                if( !this.chart || !this.dt ) return;
-
-                var options = {
-                    legend : {
-                        position : 'none'
-                    }
-                };
-
-                if( !this.options ) {
-                    options.vAxis = {};
-                    options.hAxis = {};
-
-                    if( this.label && this.label != '' ) {
-                        options.title = this.label;
-                    }
-                    if( this.xlabel && this.xlabel != '' ) {
-                        options.hAxis.title = this.xlabel;
-                    }
-                    if( this.ylabel && this.ylabel != '' ) {
-                        options.vAxis.title = this.ylabel;
-                    }
-                } else {
-                    for( var key in this.options ) {
-                        options[key] = this.options[key];
-                    }
-                }
-
-                if( this.animate ) {
-                    options.animation = {
-                        duration : 750,
-                        easing : 'out'
-                    }
-                }
-
-                this.chart.draw(this.dt, options);
+        configure : function() {
+            return {
+                onLoadHandlerSet : false,
+                dt : null,
+                chart : null,
+                height : 400,
+                animate : false,
+                updateTimer : -1,
+                options : {},
+                cols : [],
+                data : []
             }
-        });
-    </script>
-</polymer-element>
+        },
+
+        ready : function() {
+            $(window).on('resize', function(){
+                this.redraw();
+            }.bind(this));
+
+            this.async(function(){
+                this.redraw();
+            });
+        },
+        
+        setHeight : function() {
+            if( !this.$ ) return;
+
+            this.$.root.style.height = this.height+'px';
+            this.redraw();
+        },
+
+        setOnloadHandler : function() {
+            if( this.onLoadHandlerSet ) return;
+
+            // put in global scope by cwn-datastore
+            chartLoadHandlers.push(function(){
+                this.update();
+            }.bind(this));
+        },
+        
+
+        update : function() {
+            if( !window.google.visualization ) return this.setOnloadHandler();
+            if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
+            if( !this.$ || !this.data ) return;
+
+            if( !this.chart ) {
+                if( this.type ) {
+                    this.chart = new google.visualization[this.type](this.$.root);
+                } else {
+                    this.chart = new google.visualization.LineChart(this.$.root);
+                }
+            }
+
+            if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
+            this.updateTimer = setTimeout(function() {
+                this.updateTimer = -1;
+                this._update();
+            }.bind(this), 500);
+        },
+
+        _update : function() {
+            if( this.cols ) {
+                this.dt = new google.visualization.DataTable();
+                for( var i = 0; i < this.cols.length; i++ ) {
+                    this.dt.addColumn(this.cols[i]);
+                }
+                this.dt.addRows(this.data);
+            } else {
+                this.dt = google.visualization.arrayToDataTable(this.data);
+            }
+            
+            this.redraw();
+        },
+
+        redraw : function() {
+            if( !this.chart || !this.dt ) return;
+
+            var options = {
+                legend : {
+                    position : 'none'
+                }
+            };
+
+            if( !this.options ) {
+                options.vAxis = {};
+                options.hAxis = {};
+
+                if( this.label && this.label != '' ) {
+                    options.title = this.label;
+                }
+                if( this.xlabel && this.xlabel != '' ) {
+                    options.hAxis.title = this.xlabel;
+                }
+                if( this.ylabel && this.ylabel != '' ) {
+                    options.vAxis.title = this.ylabel;
+                }
+            } else {
+                for( var key in this.options ) {
+                    options[key] = this.options[key];
+                }
+            }
+
+            if( this.animate ) {
+                options.animation = {
+                    duration : 750,
+                    easing : 'out'
+                }
+            }
+
+            this.chart.draw(this.dt, options);
+        }
+    });
+</script>

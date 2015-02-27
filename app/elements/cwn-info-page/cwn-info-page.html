@@ -1,5 +1,6 @@
 <!--<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">-->
 <link rel="import" href="cwn-node-info.html" />
+<link rel="import" href="cwn-cost-info.html" />
 
 <dom-module id="cwn-info-page">
     <style>
@@ -57,7 +58,7 @@
         </div>
       </div>
 
-      <div class="row" hidden$="{{ds.loading}}">
+      <div class="row" hidden$="{{loading}}">
         <div class="col-md-6">
 
           <!-- Start Climate -->
@@ -84,9 +85,7 @@
                 <cwn-date-linechart 
                   label="{{item.label}}" 
                   ylabel="Flow (kaf)" 
-                  data="{{item.data}}" 
-                  start="{{filters.start}}" 
-                  stop="{{filters.stop}}">
+                  data="{{item.data}}">
                 </cwn-date-linechart>
               </template>
 
@@ -94,10 +93,10 @@
               <template id="eacChart" is="x-template">
                 <h4>Elevation / Area / Capacity</h4>
                 <cwn-linechart
-                  data="{{eacChart.data}}"
-                  cols="{{eacChart.cols}}"
-                  options="{{eacChart.options}}"
-                  type="{{eacChart.type}}">
+                  data="{{data}}"
+                  cols="{{cols}}"
+                  options="{{options}}"
+                  type="{{type}}">
                 </cwn-linechart>
               </template>
   
@@ -110,69 +109,7 @@
 
           <!-- Start Costs -->
           <div class="card">
-            <h2 class="page-header">Costs</h2>
-
-            <div class="alert alert-info" hidden$="{{feature.properties.hasCosts}}">
-              This node has no cost data associated with it.
-            </div>
-            <div class="alert alert-error" hidden$="{{!costLoadError}}">
-              Error loading cost data.
-            </div>
-            <div hidden$="{{!costLoading}}" style="color:#888">
-              Loading cost data...
-            </div>
-
-            <div hidden$="{{!showCostData}}">
-              <div hidden$="{{!showMonthlyVariableCost}}">
-
-                <div class="btn-group">
-                  <template is="x-repeat" items="{{costsMonths}}">
-                    <a class="btn btn-xs btn-primary" 
-                      index="{{item.index}}" 
-                      on-click="_setCostMonth">{{item.label}}</a>
-                  </template>
-                </div>
-
-                <cwn-linechart 
-                  label="{{costChartLabel}}" 
-                  xlabel="Capacity (kAF)" 
-                  ylabel="Cost ($/kAF)" 
-                  data="{{costChartData}}" animate>
-                </cwn-linechart>
-              </div>
-
-              <div hidden$="{{showConstantCost}}">
-                <h5>Constant: $<span>{{costs.cost}}</span></h5>
-              </div>
-
-            </div>
-
-            <h4 hidden$="{{!showConstraints}}">Constraints</h4>
-
-            <h5 hidden$="{{showConstantConstraints}}">
-              Constant: $<span>{{constraintChart.constant}}</span>
-            </h5>
-
-
-            <div id="constraintChart"></div>
-            <template is="x-template" id="constraintChartTimeSeries">
-              <cwn-date-linechart
-                data="{{constraintChart.data}}"
-                cols="{{constraintChart.cols}}"
-                options="{{constraintChart.options}}"
-                start="{{filters.start}}" 
-                stop="{{filters.stop}}">
-              </cwn-date-linechart>
-            </template>
-
-            <template is="x-template" id="constraintChart">
-              <cwn-linechart
-                data="{{constraintChart.data}}"
-                cols="{{constraintChart.cols}}"
-                options="{{constraintChart.options}}">
-              </cwn-linechart>
-            </template>
-
+            <cwn-cost-info feature="{{feature}}" hasTimeSeries="{{hasTimeSeries}}"></cwn-cost-info>
           </div>
           <!-- End Costs -->
 

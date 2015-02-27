@@ -1,267 +1,286 @@
-<polymer-element name="cwn-dateslider" attributes="start stop">
+<!--<polymer-element name="cwn-dateslider" attributes="start stop">-->
+
+<dom-module id="cwn-dateslider">
+    <style>
+        cwn-dateslider {
+            display: block;
+        }
+        .tabs {
+            margin-right: 100px;
+            height: 80px;
+            position: relative;
+        }
+        .tab {
+            height : 35px;
+            min-width : 35px;
+            border: 1px solid #ccc;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 4;
+
+            border-radius: 0 4px 4px 0 !important;
+            -webkit-border-radius: 0 4px 4px 0 !important;
+            -moz-border-radius: 0 4px 4px 0 !important;
+            -ms-border-radius: 0 4px 4px 0 !important;
+
+            -webkit-user-select: none;
+            -moz-user-select: none; 
+            -ms-user-select: none;
+            -o-user-select: none;
+            user-select: none;   
+        }
+        .line {
+            border-left: 1px dashed #428bca;
+            width: 1px;
+            z-index: 5;
+            position: absolute;
+        }
+        .progress {
+            position: relative !important;
+            margin-right: 100px;
+        }
+        .progress-bar {
+            position: absolute !important;
+            float: none !important;
+            width: auto !important;
+        }
+    </style>
+
     <template>
-        <style>
-            :host {
-                display: block;
-            }
-            .tabs {
-                margin-right: 100px;
-                height: 80px;
-                position: relative;
-            }
-            .tab {
-                height : 35px;
-                min-width : 35px;
-                border: 1px solid #ccc;
-                position: absolute;
-                top: 0;
-                left: 0;
-                z-index: 4;
-
-                border-radius: 0 4px 4px 0 !important;
-                -webkit-border-radius: 0 4px 4px 0 !important;
-                -moz-border-radius: 0 4px 4px 0 !important;
-                -ms-border-radius: 0 4px 4px 0 !important;
-
-                -webkit-user-select: none;
-                -moz-user-select: none; 
-                -ms-user-select: none;
-                -o-user-select: none;
-                user-select: none;   
-            }
-            .line {
-                border-left: 1px dashed #428bca;
-                width: 1px;
-                z-index: 5;
-                position: absolute;
-            }
-            .progress {
-                position: relative !important;
-                margin-right: 100px;
-            }
-            .progress-bar {
-                position: absolute !important;
-                float: none !important;
-                width: auto !important;
-            }
-        </style>
-
-        <div>
+        <div id="eventPanel">
             <div class="tabs">
-                <div id="startTab" class="tab btn btn-default" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
+                <div id="startTab" class="tab btn btn-default" on-mousedown="startDrag" on-touchstart="startDrag"></div>
                 <div id="startLine" class="line" style="height:45px; top: 35px; border-left-color: #ccc"></div>
-                <div id="endTab" style="top:40px" class="tab btn btn-primary" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
+                <div id="endTab" style="top:40px" class="tab btn btn-primary" on-mousedown="startDrag" on-touchstart="startDrag"></div>
                 <div id="endLine" class="line" style="height:5px; top: 75px"></div>
             </div>
             <div class="progress">
-              <div class="progress-bar" id="slider" style="left:0;right:0" on-mousedown="{{startDrag}}" on-touchstart="{{startDrag}}"></div>
+              <div class="progress-bar" id="slider" style="left:0;right:0" on-mousedown="startDrag" on-touchstart="startDrag"></div>
             </div>
             </div>
         </div>
     </template>
-    <script>
-        Polymer('cwn-dateslider', {
-            numDays : 0,
+</dom-module>
 
-            startDate : new Date(),
-            endDate : new Date(),
+<script>
+    Polymer({
+        is : 'cwn-dateslider',
 
-            current : {
-                start : new Date(),
-                end : new Date()
+        published : {
+            start : {
+                type : String
             },
-
-            dragging : null,
-            dragStartX : 0,
-            dragStartLeft : 0,
-            otherStartLeft : 0,
-
-            cWidth : 0,
-            cBarWidth : 0,
-
-            ready : function() {
-                this.reset();
-
-                $(this).on('mouseup mouseout touchend touchcancel', function(e){
-                    this.endDrag(e.originalEvent);
-                }.bind(this));
-                $(this).on('mousemove touchmove', function(e){
-                    this.onDrag(e.originalEvent);
-                }.bind(this));
-
-                $(window).on('resize', function() {
-                    this.resize();
-                }.bind(this));
-
-                setTimeout(function(){
-                    this.resize();
-                }.bind(this),500);
-            },
-
-            reset : function() {
-                this.startDate = this.start ? new Date(this.start) : new Date();
-                this.stopDate = this.stop ? new Date(this.stop) : new Date();
-
-                this.numDays = (this.stopDate - this.startDate)/(1000*60*60*24);
-
-                this.current.start = this.startDate;
-                this.current.end = this.endDate;
-            },
-
-            domReady : function() {
-                setTimeout(function(){
-                    this.resize();
-                }.bind(this),1000);
-            },
-
-            resize : function() {
-                if( this.numDays == 0 ) return;
-
-                this.cWidth = this.shadowRoot.querySelector('.tabs').offsetWidth;
-
-                var days = (this.current.start - this.startDate)/(1000*60*60*24);
-                var leftPos = this.cWidth * (days / this.numDays);
-
-                days = (this.current.end - this.startDate)/(1000*60*60*24);
-                var rightPos = this.cWidth * (days / this.numDays);
-                
-                this.setLeftPos(leftPos);
-                this.setRightPos(rightPos);
-
-                this.$.startTab.innerHTML = this.current.start.toISOString().split('T')[0];
-                this.$.endTab.innerHTML = this.current.end.toISOString().split('T')[0];
-            },
-
-            startDrag : function(e) {
-                if( this.dragging ) return;
-
-                this.cWidth = this.shadowRoot.querySelector('.tabs').offsetWidth;
-                this.cBarWidth = this.$.slider.offsetWidth;
-
-                this.dragging = e.currentTarget;
-                this.dragStartLeft = parseInt(e.currentTarget.style.left || 0);
-                this.dragStartX = this.getX(e);
-
-                if( this.dragging.id == 'startTab' ) {
-                    this.otherStartLeft = parseInt(this.$.endTab.style.left || 0 );
-                } else if( this.dragging.id == 'endTab' ) {
-                    this.otherStartLeft = parseInt(this.$.startTab.style.left || 0 );
-                }
-                console.log('Drag start: '+this.dragging.id);
-            },
-
-            onDrag : function(e) {
-                if( this.dragging == null ) return;
-                if( this.dragging.id == 'slider' ) return this.onSliderDrag(e);
-
-                var pos = this.getPosition(e);
-
-                var cDay = Math.floor(this.numDays * (pos / this.cWidth));
-                var result = new Date(this.startDate);
-                result.setDate(this.startDate.getDate() + cDay);
-
-                this.dragging.innerHTML = result.toISOString().split('T')[0];
-
-                if( this.dragging.id == 'startTab' ) {
-                    this.setLeftPos(pos);
-                } else if( this.dragging.id == 'endTab' ) {
-                    this.setRightPos(pos);
-                }
-            },
-
-            onSliderDrag : function(e) {
-                var frontPos = this.getPosition(e);
-                var backPos = this.cBarWidth + frontPos;
-
-                if( backPos > this.cWidth ) return;
-
-                //this.dragging.style.left = frontPos + 'px';
-                //this.dragging.style.right = this.cWidth - backPos + 'px';
-
-                this.setLeftPos(frontPos);
-                this.setRightPos(backPos);
-
-                //this.$.startTab.style.left = frontPos+'px';
-                var cDay = Math.floor(this.numDays * (frontPos / this.cWidth));
-                var result = new Date(this.startDate);
-                result.setDate(this.startDate.getDate() + cDay);
-                this.$.startTab.innerHTML = result.toISOString().split('T')[0];
-                this.current.start = result;
-
-                //this.$.endTab.style.left = backPos+'px';
-                cDay = Math.floor(this.numDays * (backPos / this.cWidth));
-                result = new Date(this.startDate);
-                result.setDate(this.startDate.getDate() + cDay);
-                this.$.endTab.innerHTML = result.toISOString().split('T')[0];
-                this.current.end = result;
-            },
-
-            endDrag : function(e) {
-                if( this.dragging == null ) return;
-                console.log('Drag end: '+this.dragging.id);
-
-                var pos = this.getPosition(e);
-                var cDay = Math.floor(this.numDays * (pos / this.cWidth));
-
-                var result = new Date(this.startDate);
-                result.setDate(this.startDate.getDate() + cDay);
-                
-                if( this.dragging.id == 'startTab' ) this.current.start = result;
-                else if( this.dragging.id == 'endTab' ) this.current.end = result;
-
-                if( this.dragging.id != 'slider' ) {
-                    this.dragging.innerHTML = result.toISOString().split('T')[0];
-                }
-                
-                this.dragging = null;
-
-                this.fire('values-changed', this.current);
-            },
-
-            setLeftPos : function(pos) {
-                this.$.startTab.style.left = pos + 'px';
-                this.$.startLine.style.left = pos + 'px';
-                this.$.slider.style.left = pos + 'px';
-            },
-
-            setRightPos : function(pos) {
-                this.$.endTab.style.left = pos + 'px';
-                this.$.endLine.style.left = pos + 'px';
-
-                pos = this.cWidth - pos;
-                this.$.slider.style.right = pos + 'px';
-            },
-
-            getPosition : function(e) {
-                var pos = this.dragStartLeft + (this.getX(e) - this.dragStartX);
-
-                if( pos < 0 ) pos = 0;
-                if( pos > this.cWidth ) pos = this.cWidth;
-
-                if( this.dragging.id == 'startTab' && pos > this.otherStartLeft ) {
-                    pos = this.otherStartLeft;
-                } else if( this.dragging.id == 'endTab' && pos < this.otherStartLeft ) {
-                    pos = this.otherStartLeft;
-                } 
-
-                return pos;
-            },
-
-            // keep track of last touch for trouch end
-            lastTouchX : 0,
-            getX : function(e) {
-                if( e.x !== undefined ) return e.x;
-                if( e.touches !== undefined ) {
-                    if( e.touches.length > 0 ) {
-                        this.lastTouchX = e.touches[0].screenX;
-                        return e.touches[0].screenX;
-                    } else {
-                        // touchend... I hope
-                        return this.lastTouchX;
-                    }
-                }                
-                return 0; // bad
+            end : {
+                type : String
             }
-        });
-    </script>
-</polymer-element>
+        },
+
+        configure : function() {
+            return {
+                numDays : 0,
+
+                startDate : new Date(),
+                endDate : new Date(),
+
+                current : {
+                    start : new Date(),
+                    end : new Date()
+                },
+
+                dragging : null,
+                dragStartX : 0,
+                dragStartLeft : 0,
+                otherStartLeft : 0,
+
+                cWidth : 0,
+                cBarWidth : 0
+            }
+        },
+        
+        ready : function() {
+            this.reset();
+
+            $(this.$.eventPanel).on('mouseup mouseout touchend touchcancel', function(e){
+                this.endDrag(e.originalEvent);
+            }.bind(this));
+    
+            $(this.$.eventPanel).on('mousemove touchmove', function(e){
+                this.onDrag(e.originalEvent);
+            }.bind(this));
+
+            $(window).on('resize', function() {
+                this.resize();
+            }.bind(this));
+
+            setTimeout(function(){
+                this.resize();
+            }.bind(this),500);
+        },
+
+        reset : function() {
+            this.startDate = this.start ? new Date(this.start) : new Date();
+            this.stopDate = this.stop ? new Date(this.stop) : new Date();
+
+            this.numDays = (this.stopDate - this.startDate)/(1000*60*60*24);
+
+            this.current.start = this.startDate;
+            this.current.end = this.endDate;
+        },
+
+        domReady : function() {
+            setTimeout(function(){
+                this.resize();
+            }.bind(this),1000);
+        },
+
+        resize : function() {
+            if( this.numDays == 0 ) return;
+
+            this.cWidth = this.querySelector('.tabs').offsetWidth;
+
+            var days = (this.current.start - this.startDate)/(1000*60*60*24);
+            var leftPos = this.cWidth * (days / this.numDays);
+
+            days = (this.current.end - this.startDate)/(1000*60*60*24);
+            var rightPos = this.cWidth * (days / this.numDays);
+            
+            this.setLeftPos(leftPos);
+            this.setRightPos(rightPos);
+
+            this.$.startTab.innerHTML = this.current.start.toISOString().split('T')[0];
+            this.$.endTab.innerHTML = this.current.end.toISOString().split('T')[0];
+        },
+
+        startDrag : function(e) {
+            if( this.dragging ) return;
+
+            this.cWidth = this.querySelector('.tabs').offsetWidth;
+            this.cBarWidth = this.$.slider.offsetWidth;
+
+            this.dragging = e.currentTarget;
+            this.dragStartLeft = parseInt(e.currentTarget.style.left || 0);
+            this.dragStartX = this.getX(e);
+
+            if( this.dragging.id == 'startTab' ) {
+                this.otherStartLeft = parseInt(this.$.endTab.style.left || 0 );
+            } else if( this.dragging.id == 'endTab' ) {
+                this.otherStartLeft = parseInt(this.$.startTab.style.left || 0 );
+            }
+            //console.log('Drag start: '+this.dragging.id);
+        },
+
+        onDrag : function(e) {
+            if( this.dragging == null ) return;
+            if( this.dragging.id == 'slider' ) return this.onSliderDrag(e);
+
+            var pos = this.getPosition(e);
+
+            var cDay = Math.floor(this.numDays * (pos / this.cWidth));
+            var result = new Date(this.startDate);
+            result.setDate(this.startDate.getDate() + cDay);
+
+            this.dragging.innerHTML = result.toISOString().split('T')[0];
+
+            if( this.dragging.id == 'startTab' ) {
+                this.setLeftPos(pos);
+            } else if( this.dragging.id == 'endTab' ) {
+                this.setRightPos(pos);
+            }
+        },
+
+        onSliderDrag : function(e) {
+            var frontPos = this.getPosition(e);
+            var backPos = this.cBarWidth + frontPos;
+
+            if( backPos > this.cWidth ) return;
+
+            //this.dragging.style.left = frontPos + 'px';
+            //this.dragging.style.right = this.cWidth - backPos + 'px';
+
+            this.setLeftPos(frontPos);
+            this.setRightPos(backPos);
+
+            //this.$.startTab.style.left = frontPos+'px';
+            var cDay = Math.floor(this.numDays * (frontPos / this.cWidth));
+            var result = new Date(this.startDate);
+            result.setDate(this.startDate.getDate() + cDay);
+            this.$.startTab.innerHTML = result.toISOString().split('T')[0];
+            this.current.start = result;
+
+            //this.$.endTab.style.left = backPos+'px';
+            cDay = Math.floor(this.numDays * (backPos / this.cWidth));
+            result = new Date(this.startDate);
+            result.setDate(this.startDate.getDate() + cDay);
+            this.$.endTab.innerHTML = result.toISOString().split('T')[0];
+            this.current.end = result;
+        },
+
+        endDrag : function(e) {
+            if( this.dragging == null ) return;
+            console.log('Drag end: '+this.dragging.id);
+
+            var pos = this.getPosition(e);
+            var cDay = Math.floor(this.numDays * (pos / this.cWidth));
+
+            var result = new Date(this.startDate);
+            result.setDate(this.startDate.getDate() + cDay);
+            
+            if( this.dragging.id == 'startTab' ) this.current.start = result;
+            else if( this.dragging.id == 'endTab' ) this.current.end = result;
+
+            if( this.dragging.id != 'slider' ) {
+                this.dragging.innerHTML = result.toISOString().split('T')[0];
+            }
+            
+            this.dragging = null;
+
+            this.fire('values-changed', this.current);
+        },
+
+        setLeftPos : function(pos) {
+            this.$.startTab.style.left = pos + 'px';
+            this.$.startLine.style.left = pos + 'px';
+            this.$.slider.style.left = pos + 'px';
+        },
+
+        setRightPos : function(pos) {
+            this.$.endTab.style.left = pos + 'px';
+            this.$.endLine.style.left = pos + 'px';
+
+            pos = this.cWidth - pos;
+            this.$.slider.style.right = pos + 'px';
+        },
+
+        getPosition : function(e) {
+            var pos = this.dragStartLeft + (this.getX(e) - this.dragStartX);
+
+            if( pos < 0 ) pos = 0;
+            if( pos > this.cWidth ) pos = this.cWidth;
+
+            if( this.dragging.id == 'startTab' && pos > this.otherStartLeft ) {
+                pos = this.otherStartLeft;
+            } else if( this.dragging.id == 'endTab' && pos < this.otherStartLeft ) {
+                pos = this.otherStartLeft;
+            } 
+
+            return pos;
+        },
+
+        // keep track of last touch for trouch end
+        lastTouchX : 0,
+        getX : function(e) {
+            if( e.x !== undefined ) return e.x;
+            if( e.touches !== undefined ) {
+                if( e.touches.length > 0 ) {
+                    this.lastTouchX = e.touches[0].screenX;
+                    return e.touches[0].screenX;
+                } else {
+                    // touchend... I hope
+                    return this.lastTouchX;
+                }
+            }                
+            return 0; // bad
+        }
+    });
+</script>
