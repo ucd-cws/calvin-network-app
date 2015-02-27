@@ -29,15 +29,15 @@
         <div class="maxDepth">
             <table>
                 <tr>
-                    <td>Max Depth: </td>
-                    <td><input type="number" value="{{maxDepth}}" class="form-control" on-change="update" /></td>
+                    <td>Max Depth:</td>
+                    <td><input type="number" value$="{{maxDepth}}" class="form-control" on-change="maxUpdate" /></td>
                 </tr>
                 <tr>
                     <td>Negative Depth: </td>
-                    <td><input type="number" value="{{negativeDepth}}" class="form-control" on-change="update" /></td>
+                    <td><input type="number" value$="{{negativeDepth}}" class="form-control" on-change="minUpdate" /></td>
                 </td>
                 <tr>
-                    <td><a href="#map">Back to Map</a></td>
+                    <td><a href="{{mapLink}}">Back to Map</a></td>
                     <td></td>
                 </td>
             </table>
@@ -91,7 +91,8 @@
                 negativeLevels : {},
                 cnodes : [],
                 graphLink : '',
-                infoLink : ''
+                infoLink : '',
+                mapLink : '#map'
             }
         },
 
@@ -448,6 +449,16 @@
 
         hide : function() {
             this.$.popup.hide();
+        },
+
+        maxUpdate : function(e) {
+            this.maxDepth = e.currentTarget.value;
+            this.update();
+        },
+
+        minUpdate : function(e) {
+            this.negativeDepth = e.currentTarget.value;
+            this.update();
         }
 
     });

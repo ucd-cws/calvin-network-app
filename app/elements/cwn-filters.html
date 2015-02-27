@@ -138,6 +138,8 @@
             var name = e.currentTarget.getAttribute('name');
             var value = $(e.currentTarget).is(':checked');
             this.filters[name.replace(' ','_').replace('-','_')] = value;
+
+            this.fire('update');
         },
 
         show : function() {

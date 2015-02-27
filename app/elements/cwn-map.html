@@ -47,26 +47,13 @@
 
         bind : {
             'ds.loading' : 'update',
-            'map' : 'update',
-            'filters.calibrationMode' : 'update',
-            'filters.oneStepMode' : 'update',
-            'filters.Junction' : 'update',
-            'filters.Power_Plant'  : 'update',
-            'filters.Agricultural_Demand'  : 'update',
-            'filters.Pump_Plant' : 'update',
-            'filters.Water_Treatment' : 'update',
-            'filters.Surface_Storage' : 'update',
-            'filters.Urban_Demand' : 'update',
-            'filters.Sink'  : 'update',
-            'filters.Groundwater_Storage' : 'update',
-            'filters.Non_Standard_Demand' : 'update',
-            'filters.text' : 'update'
+            'map' : 'update'
         },
 
         configure : function() {
             return {
                 updating: false,
-
+                filters : {},
                 map : null,
                 ds : null,
 
@@ -75,21 +62,21 @@
             }
         },
 
-        init : function(ds, filters, legend) {
+        init : function(ds, legend, filters) {
             this.ds = ds;
             this.filters = filters;
             this.legend = legend;
 
             this._process();
 
-            setTimeout(function(){
-                this.map = L.map(this.$.leaflet).setView([40, -121], 5);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 18
-                }).addTo(this.map);
 
-                this.map.on('zoomend', this._onZoomEnd.bind(this));
-            }.bind(this), 300);
+            this.map = L.map(this.$.leaflet).setView([40, -121], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18
+            }).addTo(this.map);
+
+            this.map.on('zoomend', this._onZoomEnd.bind(this));
+ 
         },
 
         _process : function() {
@@ -207,6 +194,7 @@
                     this._hackTouchEvent(this.edgeLayer._layers[key]);
                 }
 
+
                 this.markerLayer = L.geoJson(this.ds.data.nodes, {
                     pointToLayer: function(feature, ll) {
                         return this._getMarker(feature, ll);
@@ -271,7 +259,7 @@
 
             for( i = 0; i < this.ds.data.nodes.length; i++ ) {
                 d = this.ds.data.nodes[i];
-                
+
                 if( !d.properties._render ) {
                     d.properties._render = {
                         filter_id : d.properties.type.replace(' ','_').replace('-','_')

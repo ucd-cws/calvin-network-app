@@ -26,6 +26,8 @@ Polymer({
         // render data.  Data in a format ready to draw above
         inflows : [],
 
+        map : {},
+
         // Elevation / Area / Capacity charts
         eacChart : {
           type : 'ComboChart',
@@ -102,8 +104,6 @@ Polymer({
     update : function() {
       if( !this.ds ) return;
       if( this.feature == null ) return alert('Feature not found');
-
-      
 
       this.climateLoadError = false;
       this.climateLoading = false;
