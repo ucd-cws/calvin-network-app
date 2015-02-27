@@ -1,3 +1,225 @@
+<dom-module id="cwn-app">
+    <style>
+        leaflet-map, core-animated-pages {
+            height: 100%
+        }
+        .splash-screen {
+          position: fixed;
+          top: 100px;
+          width: 100%;
+          text-align: center;
+           z-index: 20000;
+        }
+        .splash-screen-text {
+          display: inline-block;
+          background-color: rgba(0,0,0,.7);
+          border-radius: 6px;
+          box-shadow: 0 0 5px black;
+          padding: 25px;
+          font-size: 50px;
+          color: white;
+        }
+    </style>
+
+    <template>
+        <div class="splash-screen" hidden$="{{!loading}}">
+          <div class="splash-screen-text">
+            Loading Network...<br />
+          </div>
+        </div>
+
+        <cwn-datastore 
+          id="ds" 
+          loading="{{loading}}" 
+          on-loaded="onDataLoad"
+          islocal$="{{islocal}}"
+          >
+        </cwn-datastore>
+
+        <cwn-app-layout loading="{{loading}}">
+            <a right-nav on-click="showFilters">
+              <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
+              <span class="visible-xs"><i class="fa fa-filter"></i></span>
+            </a>
+
+            <cwn-filters id="filters" content legend="{{legend}}"></cwn-filters>
+
+            <cwn-map content
+              id="map" 
+              on-selected="onFeatureSelected"
+              on-filtering-complete="updateGraph">
+            </cwn-map>
+
+            <cwn-info-page content 
+              id="info">
+            </cwn-info-page>
+<!--
+            <cwn-graph content 
+              id="graph" 
+              ds="{{$.ds}}">
+            </cwn-graph>
+-->
+        </cwn-app-layout>
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is : 'cwn-app',
+
+        //mixins : ['Legend'],
+
+        //bind : {
+        //  '$.ds.loading' : 'onLoadingChange'
+        //},
+
+        published : {
+          islocal : {
+            type : Boolean,
+            notify: true
+          }
+        },
+
+        configure : function() {
+          return {
+            PAGES : {
+              map : 0,
+              info : 1,
+              graph : 2
+            },
+
+            selectedPage : 0,
+
+            islocal : false,
+
+            loading : true,
+
+            dataLoaded : false,
+            dataLoadHandlers : [],
+
+            legend : {
+            'Power Plant'         : {
+              color : '#3366cc',
+              google : 'small_red'
+            },
+            'Agricultural Demand' : {
+                color : '#ff9900',
+                google : 'small_yellow'
+            },
+            'Junction'            : {
+                color : '#109618',
+                google : 'small_green'
+            },
+            'Pump Plant'          : {
+                color : '#990099',
+                google : 'small_blue'
+            },
+            'Water Treatment'     : {
+                color : '#0099c6',
+                google : 'small_purple'
+            },
+            'Surface Storage'     : {
+                color : '#dd4477',
+                google : 'measle_brown',
+            },
+            'Urban Demand'        : {
+                color : '#66aa00',
+                google : 'measle_grey'
+            },
+            'Sink'                : {
+                color : '#b82e2e',
+                google : 'measle_white'
+            },
+            'Groundwater Storage' : {
+                color : '#316395',
+                google : 'measle_turquoise'
+            },
+            'Non-Standard Demand' : {
+                color : '#22aa99',
+                google : 'shaded_dot'
+            }
+          }
+          }
+        },
+
+        ready : function() {
+          $(window).on('hashchange', function(){
+            this.setLocation();
+          }.bind(this));
+        
+          this.$.map.init(this.$.ds, this.legend, this.$.filters.filters);
+          this.$.info.init(this.$.map.map, this.$.ds, this.islocal);
+
+          this.setLocation();
+        },
+
+        onLoadingChange : function() {
+          this.loading = this.$.ds.loading;
+        },
+
+        setLocation : function() {
+          var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
+          if( loc == '') loc = 'map';
+
+          if( loc == 'map' ) {
+            //this.$.pages.selected = this.PAGES.MAP;
+            this.selectedPage = this.PAGES.map;
+            this.async(function(){
+              var ele = this.querySelector('cwn-map');
+              if( ele && ele.map ) ele.map.invalidateSize();
+            });
+          } else if ( loc == 'info' ) {
+            //this.$.pages.selected = this.PAGES.INFO;
+            this.selectedPage = this.PAGES.info;
+            if( this.dataLoaded ) {
+              this.setInfoFeature();
+            } else {
+              this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
+            }
+          } else if ( loc == 'graph' ) {
+            this.selectedPage = this.PAGES.graph;
+          }
+          this.setPage();
+        },
+
+        setPage : function() {
+          for( var key in this.PAGES ) {
+            if( this.selectedPage == this.PAGES[key] ) $(this.$[key]).show();
+            else $(this.$[key]).hide();
+          }
+        },
+
+        setInfoFeature : function() {
+          var name = window.location.hash.replace('#','').split('/')[1];
+          name = decodeURIComponent(name);
+          this.$.info.feature = this.$.ds.lookupMap[name];
+        },
+       
+        onDataLoad : function() {
+          this.dataLoaded = true;
+          for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
+            this.dataLoadHandlers[i]();
+          }
+          this.dataLoadHandlers = [];
+        },
+
+        showFilters : function() {
+            this.$.filters.toggle();
+        },
+
+        updateGraph : function() {
+          this.$.graph.update();
+        },
+
+        onFeatureSelected : function(e) {
+          //this.$.pages.selected = this.PAGES.INFO;
+          this.selectedPage = this.PAGES.info;
+          window.location.hash = 'info/'+e.detail.properties.prmname;
+        }
+    });
+</script>
+
+<!--
 <polymer-element name="cwn-app" attributes="islocal">
     <template>
         <style>
@@ -191,3 +413,4 @@
         });
     </script>
 </polymer-element>
+-->

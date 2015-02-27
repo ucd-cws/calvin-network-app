@@ -1,24 +1,67 @@
-<polymer-element name="cwn-info-link" attributes="name ds">
+<!--<polymer-element name="cwn-info-link" attributes="name ds">-->
+
+<dom-module id="cwn-info-link">
+    <style>
+        span {
+            color: #888;
+            font-style: italic;
+        }
+        a {
+            vertical-align: top;
+        }
+        cwn-info-link {
+            white-space: nowrap;
+            display: inline-block;
+        }
+    </style>
     <template>
-        <style>
-            span {
-                color: #888;
-                font-style: italic;
-            }
-            a {
-                vertical-align: top;
-            }
-            :host {
-                white-space: nowrap;
-            }
-        </style>
-        <template bind if="{{ds.lookupMap[name] != null}}"><cwn-app-icon type="{{ds.lookupMap[name].properties.type}}" width="22" height="22" fillFromType="true"></cwn-app-icon> <a href="{{hack}}#info/{{name}}">{{name}}</a></template>
-        <template bind if="{{ds.lookupMap[name] == null}}"><span style="vertical-align:super">{{name}}</span></template>
+        <span hidden$="{{!valid}}">
+            <cwn-app-icon type="{{type}}" width="22" height="22" fillFromType="true"></cwn-app-icon> 
+            <a href="{{link}}">{{name}}</a>
+        </span>
+
+        <span style="vertical-align:super" hidden$="{{valid}}">{{name}}</span>
     </template>
-    <script>
-        Polymer('cwn-info-link', {
-            // leave blank for stupid hack polymer team won't fix
-            hack : '',
-        });
-    </script>
-</polymer-element>
+</dom-module>
+
+
+<script>
+    Polymer({
+        is : 'cwn-info-link',
+        
+        published : {
+            name : String
+        },
+
+        configure : function() {
+            return {
+                link : '',
+                type : '',
+                valid : false,
+            }
+        },
+
+        bind : {
+            name : 'onNameChanged',
+            name : 'onNameChanged'
+        },
+
+        ready : function() {
+            this.ds = document.querySelector('cwn-datastore');
+        },
+
+        onNameChanged : function() {
+            if( !this.ds ) return;
+
+            if( !this.ds.lookupMap[this.name] ) {
+                this.valid = false;
+                return;
+            }
+
+            this.valid = true;
+            this.type = this.ds.lookupMap[this.name].properties.type;
+            this.link = '#info/'+ this.name;
+        }
+
+    });
+</script>

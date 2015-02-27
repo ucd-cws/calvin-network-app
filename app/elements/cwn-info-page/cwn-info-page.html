@@ -1,0 +1,187 @@
+<!--<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">-->
+<link rel="import" href="cwn-node-info.html" />
+
+<dom-module id="cwn-info-page">
+    <style>
+      cwn-info-page {
+        display: block;
+        overflow-x: hidden;
+      }
+      .card {
+        margin: 10px 10px 10px 10px;
+        box-shadow: 0 0 5px #888;
+        padding: 15px;
+      }
+
+      .back-btn {
+        display: inline-block;
+
+        color: #333 !important;
+        background-color: #ccc;
+        border-radius: 50px;
+        font-size: 40px;
+        padding: 0px 12px;
+        margin: 10px;
+        z-index: 100;
+        cursor: pointer;
+      }
+      .description {
+        font-size: 12px;
+        color: #888;
+      }
+      .border {
+        padding: 5px;
+        display: inline-block;
+        border-radius: 6px;
+        border: 1px solid #eee;
+        margin-top: 25px;
+      }
+    </style>
+
+    <template>
+      <a class="back-btn" on-click="back"><i class="fa fa-arrow-left"></i></a>
+
+      <div class="card" hidden$="{{loading}}">
+        <cwn-node-info feature="{{feature}}" ds="{{ds}}"></cwn-node-info>
+      </div>
+      <!-- End Header Card -->
+
+      <div hidden$="{{!showDateRangeSlider}}">
+        <div style="padding:20px 50px 5px 50px">
+          <h4>Date Range</h4>
+          <cwn-dateslider 
+            id="dateslider" 
+            start="1920-01-01" 
+            on-values-changed="updateDateFilters">
+          </cwn-dateslider>
+        </div>
+      </div>
+
+      <div class="row" hidden$="{{ds.loading}}">
+        <div class="col-md-6">
+
+          <!-- Start Climate -->
+          <div class="card">
+            <h2 class="page-header">Climate</h2>
+
+            <div class="alert alert-info" hidden$="{{feature.properties.hasClimate}}">
+              This node has no climate data associated with it.
+            </div>
+            <div class="alert alert-error" hidden$="{{!climateLoadError}}">
+              Error loading climate data.
+            </div>
+            <div hidden$="{{!climateLoading}}" style="color:#888">
+              Loading climate data...
+            </div>
+
+            <div hidden$="{{!showClimateData}}">
+
+              <div hidden$="{{!inflows.length}}">
+                <h4>Inflows</h4>
+              </div>
+
+              <template is="x-repeat" items="{{inflows}}">
+                <cwn-date-linechart 
+                  label="{{item.label}}" 
+                  ylabel="Flow (kaf)" 
+                  data="{{item.data}}" 
+                  start="{{filters.start}}" 
+                  stop="{{filters.stop}}">
+                </cwn-date-linechart>
+              </template>
+
+              <div id="eacChartRoot"></div>
+              <template id="eacChart" is="x-template">
+                <h4>Elevation / Area / Capacity</h4>
+                <cwn-linechart
+                  data="{{eacChart.data}}"
+                  cols="{{eacChart.cols}}"
+                  options="{{eacChart.options}}"
+                  type="{{eacChart.type}}">
+                </cwn-linechart>
+              </template>
+  
+            </div>
+          </div>
+          <!-- End Climate -->
+
+        </div>
+        <div class="col-md-6">
+
+          <!-- Start Costs -->
+          <div class="card">
+            <h2 class="page-header">Costs</h2>
+
+            <div class="alert alert-info" hidden$="{{feature.properties.hasCosts}}">
+              This node has no cost data associated with it.
+            </div>
+            <div class="alert alert-error" hidden$="{{!costLoadError}}">
+              Error loading cost data.
+            </div>
+            <div hidden$="{{!costLoading}}" style="color:#888">
+              Loading cost data...
+            </div>
+
+            <div hidden$="{{!showCostData}}">
+              <div hidden$="{{!showMonthlyVariableCost}}">
+
+                <div class="btn-group">
+                  <template is="x-repeat" items="{{costsMonths}}">
+                    <a class="btn btn-xs btn-primary" 
+                      index="{{item.index}}" 
+                      on-click="_setCostMonth">{{item.label}}</a>
+                  </template>
+                </div>
+
+                <cwn-linechart 
+                  label="{{costChartLabel}}" 
+                  xlabel="Capacity (kAF)" 
+                  ylabel="Cost ($/kAF)" 
+                  data="{{costChartData}}" animate>
+                </cwn-linechart>
+              </div>
+
+              <div hidden$="{{showConstantCost}}">
+                <h5>Constant: $<span>{{costs.cost}}</span></h5>
+              </div>
+
+            </div>
+
+            <h4 hidden$="{{!showConstraints}}">Constraints</h4>
+
+            <h5 hidden$="{{showConstantConstraints}}">
+              Constant: $<span>{{constraintChart.constant}}</span>
+            </h5>
+
+
+            <div id="constraintChart"></div>
+            <template is="x-template" id="constraintChartTimeSeries">
+              <cwn-date-linechart
+                data="{{constraintChart.data}}"
+                cols="{{constraintChart.cols}}"
+                options="{{constraintChart.options}}"
+                start="{{filters.start}}" 
+                stop="{{filters.stop}}">
+              </cwn-date-linechart>
+            </template>
+
+            <template is="x-template" id="constraintChart">
+              <cwn-linechart
+                data="{{constraintChart.data}}"
+                cols="{{constraintChart.cols}}"
+                options="{{constraintChart.options}}">
+              </cwn-linechart>
+            </template>
+
+          </div>
+          <!-- End Costs -->
+
+        </div>
+      </div>
+ 
+      
+    </template>
+</dom-module>
+
+<script src="DomController.js"></script>
+<script src="controller.js"></script>

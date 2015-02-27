@@ -1,25 +1,30 @@
 <!-- build:js scripts/app.js -->
-<script src="components/leaflet/dist/leaflet.js"></script> 
-<script src="components/leaflet-polylinedecorator/leaflet.polylineDecorator.js"></script> 
-<script src="components/sigma.js/sigma.min.js"></script>
-<script src="components/sigma.js/plugins/sigma.renderers.customEdgeShapes.min.js"></script>
-<script src="components/sigma.js/plugins/sigma.parsers.json.min.js"></script>
+<script src="bower_components/leaflet/dist/leaflet.js"></script> 
+<script src="bower_components/leaflet-polylinedecorator/leaflet.polylineDecorator.js"></script> 
+<script src="bower_components/sigma.js/sigma.min.js"></script>
+<script src="bower_components/sigma.js/plugins/sigma.renderers.customEdgeShapes.min.js"></script>
+<script src="bower_components/sigma.js/plugins/sigma.parsers.json.min.js"></script>
 <script src="scripts/cwn.js"></script>
 <script src="scripts/sigma-cwn-plugin.js"></script>
 <!-- endbuild -->
 
 <!-- build:css styles/app.css -->
-<link rel="stylesheet" href="components/font-awesome/css/font-awesome.min.css">
-<link rel="stylesheet" href="styles/deep.css" shim-shadowdom>
+<link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
+<link rel="stylesheet" href="bower_components/animate-css/animate.css">
+<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css">
 <link rel="stylesheet" href="styles/style.css">
 <!-- endbuild -->
 
+<link rel="import" href="polymer/polymer/polymer.html">
+<link rel="import" href="polymer/components/layout/layout.html">
+
+<!-- v0.5
 <link rel="import" href="components/polymer/polymer.html">
 <link rel="import" href="components/core-localstorage/core-localstorage.html">
+-->
 
 <link rel="import" href="elements/widgets/cwn-info-link.html">
 <link rel="import" href="elements/widgets/cwn-dateslider.html">
-<link rel="import" href="elements/widgets/cwn-icon.html">
 <link rel="import" href="elements/widgets/cwn-app-icon.html">
 <link rel="import" href="elements/widgets/cwn-date-linechart.html">
 <link rel="import" href="elements/widgets/cwn-linechart.html">
@@ -28,7 +33,7 @@
 <link rel="import" href="elements/cwn-app-layout.html">
 <link rel="import" href="elements/cwn-filters.html">
 <link rel="import" href="elements/cwn-datastore.html">
-<link rel="import" href="elements/cwn-info-page.html">
+<link rel="import" href="elements/cwn-info-page/cwn-info-page.html">
 <link rel="import" href="elements/cwn-settings.html">
 <link rel="import" href="elements/cwn-graph.html">
 <link rel="import" href="elements/cwn-map.html">

@@ -1,124 +1,85 @@
-<polymer-element name="cwn-app-icon" attributes="type width height fillStyle fillFromType">
+<!--<polymer-element name="cwn-app-icon" attributes="type width height fillStyle fillFromType">-->
+<dom-module id="cwn-app-icon">
+    <style>
+        cwn-app-icon {
+            display: inline-block;
+        }
+    </style>
+
     <template>
-        <style>
-            :host {
-                display: inline-block;
-            }
-        </style>
-        <canvas id="canvas" width="{{width}}" height="{{height}}" hidden?="{{type == 'Diversion' || type == 'Return Flow'}}"></canvas>
-        <cwn-icon icon="fa-code-fork" style="font-size:{{fontSize}}px;vertical-align:super" hidden?="{{type != 'Diversion' && type != 'Return Flow'}}"></cwn-icon>
+        <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
+        <i id="icon" class="fa fa-code-fork" style="vertical-align:super"></cwn-icon>
     </template>
-    <script>
-        Polymer('cwn-app-icon', {
-            fillStyle : '#fffff',
-            fillFromType : false,
-            fontSize : 14,
+</dom-module>
 
-            styles : {
-              'Power Plant' : '#3366cc',
-              'Agricultural Demand' : '#ff9900',
-              'Junction' : '#109618',
-              'Pump Plant' : '#990099',
-              'Water Treatment' : '#0099c6',
-              'Surface Storage' : '#dd4477',
-              'Urban Demand' : '#66aa00',
-              'Sink' : '#b82e2e',
-              'Groundwater Storage' : '#316395',
-              'Non-Standard Demand' : '#22aa99'
-            },
 
-            observe : {
-                height : 'redraw',
-                width : 'redraw',
-                type : 'redraw'
-            },
+<script>
+    Polymer('cwn-app-icon', {
 
-            attached : function() {
-                this.redraw();
-            },
+        publish : {
+            type : String,
+            width : String,
+            height : String,
+            fillStyle : String,
+            fillFromType : Boolean
+        },
 
-            redraw : function() {
-                this.fontSize = this.width-15;
-                if( this.fontSize < 14 ) this.fontSize = 14;
+        configure : function() {
+            return {
+                fillStyle : '#fffff',
+                fillFromType : false,
+                fontSize : 14,
 
-                var ctx = this.$.canvas.getContext('2d');
-                ctx.clearRect(0, 0, this.width, this.height);
-
-                if( !CWN.render[this.type] ) return;
-                CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
-            },
-
-            /*redraw : function() {
-                this.fontSize = this.width-15;
-                if( this.fontSize < 14 ) this.fontSize = 14;
-
-                var c2 = this.$.canvas.getContext('2d');
-                c2.clearRect(0, 0, this.width, this.height);
-
-                var width = this.width - 4;
-                var height = this.height - 4;
-
-                var x = width / 2;
-                var y = height / 2;
-                var r = x;
-                if( y < r ) r = y;
-                  
-                if( this.type == 'Junction' || this.type == 'Pump Plant' || this.type == 'Power Plant' ) {
-                    this._circle(c2, x+2, y+2, r);
-                } else if ( this.type == 'Water Treatment' ) {
-                    this._polygon(c2, x+2, y+2, r, 6, 0);    
-                } else if ( this.type == 'Surface Storage' || this.type == 'Groundwater Storage' ) {
-                    this._polygon(c2, x+2, y+2, r, 3, 90);
-                } else if ( this.type == 'Agricultural Demand' || this.type == 'Urban Demand' ) {
-                    this._polygon(c2, x+2, y+2, r, 5, 18);    
-                } else {
-                    this._polygon(c2, x+2, y+2, r, 4, 45);
+                styles : {
+                  'Power Plant' : '#3366cc',
+                  'Agricultural Demand' : '#ff9900',
+                  'Junction' : '#109618',
+                  'Pump Plant' : '#990099',
+                  'Water Treatment' : '#0099c6',
+                  'Surface Storage' : '#dd4477',
+                  'Urban Demand' : '#66aa00',
+                  'Sink' : '#b82e2e',
+                  'Groundwater Storage' : '#316395',
+                  'Non-Standard Demand' : '#22aa99'
                 }
-            },
+            }
+        },
 
-            _polygon : function(cxt, x, y, radius, sides, startAngle) {
-                if (sides < 3) return;
-                var a = (Math.PI * 2)/sides;
-                var r = startAngle * (Math.PI / 180);
-                cxt.beginPath();
+        bind : {
+            height : 'redraw',
+            width : 'redraw',
+            type : 'onTypeChange',
+            fontSize : 'onFontSizeChange'
+        },
 
-                for (var i = 0; i <= sides; i++ ) {
-                    if( i == 0 ) cxt.lineTo(x+radius*Math.cos(i*a-r), y + radius*Math.sin(i*a-r));
-                    else cxt.lineTo(x+radius*Math.cos(i*a-r), y+radius*Math.sin(i*a-r));
-                }
-                cxt.closePath();
+        attached : function() {
+            this.redraw();
+        },
 
-                if( this.fillFromType ) {
-                    cxt.fillStyle = this.styles[this.type] || '#ffffff';
-                } else {
-                    cxt.fillStyle = this.fillStyle;
-                }
-                
-                cxt.fill();
+        onFontSizeChange : function() {
+            this.$.icon.style.fontSize = this.fontSize+'px';
+        },
 
-                cxt.strokeStyle = "#333";
-                cxt.lineWidth = 1;
-                cxt.stroke();
-            },
+        onTypeChange : function() {
+            if( this.type == 'Diversion' || this.type == 'Return Flow' ) {
+                $(this.$.canvas).hide();
+                $(this.$.icon).show();
+            } else {
+                $(this.$.icon).hide();
+                $(this.$.show).show();
+            }
+            redraw();
+        },
 
-            _circle : function(cxt, x, y, r) {
-                cxt.beginPath();
-                cxt.arc(x,y,r-2,0,2*Math.PI);
-                cxt.closePath();
+        redraw : function() {
+            this.fontSize = this.width-15;
+            if( this.fontSize < 14 ) this.fontSize = 14;
 
-                if( this.fillFromType ) {
-                    cxt.fillStyle = this.styles[this.type] || '#ffffff';
-                } else {
-                    cxt.fillStyle = this.fillStyle;
-                }
+            var ctx = this.$.canvas.getContext('2d');
+            ctx.clearRect(0, 0, this.width, this.height);
 
-                cxt.fill();
-
-                cxt.strokeStyle = "#333";
-                cxt.lineWidth = 1;
-                cxt.stroke();
-            }*/
-
-        }); 
-    </script>
-</polymer-element>
+            if( !CWN.render[this.type] ) return;
+            CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
+        }
+    }); 
+</script>

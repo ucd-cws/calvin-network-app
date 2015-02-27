@@ -1,43 +1,45 @@
-<polymer-element name="cwn-filters" attributes="legend filters">
+<!-- <polymer-element name="cwn-filters" attributes="legend filters"> -->
+<dom-template id="cwn-filters">
+    <style>
+        cwn-filters {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            z-index: 5000;
+            background-color: rgba(0,0,0,.5);
+        }
+        cwn-filters.open {
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: 100%;
+        }
+        #root {
+            padding: 10px;
+            background-color: rgba(255,255,255, .9);
+            box-shadow: 0 0 10px;
+            display: none;
+        }
+        #root.open {
+            display: block;
+        }
+        .cb-border {
+            display:inline-block;
+            padding:2px 2px 0 2px;
+            border-radius:4px;
+        }
+        .showControls {
+            -webkit-transform: translate3d(0, -1000px, 0);
+            transform: translate3d(0, -1000px, 0);
+            transition: all 250ms;
+        }
+        .showControls.show {
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+        }
+    </style>
+
     <template>
-        <style>
-            :host {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                z-index: 5000;
-                background-color: rgba(0,0,0,.5);
-            }
-            :host(.open) {
-                overflow-y: auto;
-                overflow-x: hidden;
-                height: 100%;
-            }
-            #root {
-                padding: 10px;
-                background-color: rgba(255,255,255, .9);
-                box-shadow: 0 0 10px;
-                display: none;
-            }
-            #root.open {
-                display: block;
-            }
-            .cb-border {
-                display:inline-block;
-                padding:2px 2px 0 2px;
-                border-radius:4px;
-            }
-            .showControls {
-                -webkit-transform: translate3d(0, -1000px, 0);
-                transform: translate3d(0, -1000px, 0);
-                transition: all 250ms;
-            }
-            .showControls.show {
-                -webkit-transform: translate3d(0, 0, 0);
-                transform: translate3d(0, 0, 0);
-            }
-        </style>
         <div id="root" class="showControls">
             <div class="row" >
                 <div class="col-md-10 col-md-offset-1">
@@ -74,9 +76,9 @@
                     <div class="form-group">
                         <label for="filter-types" class="col-sm-2 control-label">Types</label>
                         <div class="col-sm-10" id="filter-types">
-                            <template repeat="{{item in legendArr}}">
+                            <template is="x-repeat" items="{{legendArr}}">
                                 <label class="checkbox-inline">
-                                    <input type="checkbox" name="{{item.name}}" checked="{{item.checked}}" on-change="{{_updateCheckbox}}" />
+                                    <input type="checkbox" name="{{item.name}}" checked="{{item.checked}}" on-change="_updateCheckbox" />
                                     <div class="cb-border">
                                         <cwn-app-icon width="{{iconSize}}" height="{{iconSize}}" type="{{item.name}}"></cwn-app-icon>
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">{{item.name}}</div>
@@ -91,80 +93,86 @@
             </div>
 
             <div style="text-align:center">
-                <a class="btn btn-link" on-click="{{hide}}">Close</a>
+                <a class="btn btn-link" on-click="hide">Close</a>
             </div>
         </div>
     </template>
-    <script>
-        Polymer('cwn-filters', {
 
-            filterText : '',
-            textTimer : -1,
 
-            legendArr : [],
-            iconSize : 22,
+<script>
+    Polymer({
+        is : 'cwn-filters',
 
-            filters : {
-                calibrationMode : true,
-                oneStepMode : true,
-                text : '',
-            },
+        configure : function() {
+            return {
+                filterText : '',
+                textTimer : -1,
 
-            observe : {
-                filterText : 'setTextTimer'
-            },
+                legendArr : [],
+                iconSize : 22,
 
-            ready : function() {
-                for( var key in this.legend ) {
-                    this.filters[key.replace(' ','_').replace('-','_')] = true;
-                    this.legendArr.push({
-                        name : key,
-                        checked : true
-                    });
+                filters : {
+                    calibrationMode : true,
+                    oneStepMode : true,
+                    text : '',
                 }
-            },
+            }
+        },
 
-            _updateCheckbox : function(e) {
-                var name = e.currentTarget.getAttribute('name');
-                var value = $(e.currentTarget).is(':checked');
-                this.filters[name.replace(' ','_').replace('-','_')] = value;
-            },
+        bind : {
+            filterText : 'setTextTimer'
+        },
 
-            show : function() {
+        ready : function() {
+            for( var key in this.legend ) {
+                this.filters[key.replace(' ','_').replace('-','_')] = true;
+                this.legendArr.push({
+                    name : key,
+                    checked : true
+                });
+            }
+        },
+
+        _updateCheckbox : function(e) {
+            var name = e.currentTarget.getAttribute('name');
+            var value = $(e.currentTarget).is(':checked');
+            this.filters[name.replace(' ','_').replace('-','_')] = value;
+        },
+
+        show : function() {
+            setTimeout(function(){
+                this.$.root.classList.add('show');
+            }.bind(this), 50);
+
+            this.$.root.classList.add('open');
+            this.classList.add('open');
+            $('html, body').animate({ scrollTop: '0px' });
+        },
+        hide : function() {
+            this.$.root.classList.remove('show');
+            this.$.root.classList.remove('open');
+            this.classList.remove('open');
+        },
+        toggle : function() {
+            this.$.root.classList.toggle('open');
+            this.classList.toggle('open');
+            if( this.classList.contains('open') ) {
+                $('html, body').animate({ scrollTop: '0px' });
                 setTimeout(function(){
                     this.$.root.classList.add('show');
                 }.bind(this), 50);
-
-                this.$.root.classList.add('open');
-                this.classList.add('open');
-                $('html, body').animate({ scrollTop: '0px' });
-            },
-            hide : function() {
+            } else {
                 this.$.root.classList.remove('show');
-                this.$.root.classList.remove('open');
-                this.classList.remove('open');
-            },
-            toggle : function() {
-                this.$.root.classList.toggle('open');
-                this.classList.toggle('open');
-                if( this.classList.contains('open') ) {
-                    $('html, body').animate({ scrollTop: '0px' });
-                    setTimeout(function(){
-                        this.$.root.classList.add('show');
-                    }.bind(this), 50);
-                } else {
-                    this.$.root.classList.remove('show');
-                }
-            },
-
-            setTextTimer : function() {
-                if( this.textTimer != -1 ) clearTimeout(this.textTimer);
-
-                this.textTimer = setTimeout(function(){
-                    this.textTimer = -1;
-                    this.filters.text = this.filterText;
-                }.bind(this), 1000);
             }
-        });
-    </script>
-</polymer-element>
+        },
+
+        setTextTimer : function() {
+            if( this.textTimer != -1 ) clearTimeout(this.textTimer);
+
+            this.textTimer = setTimeout(function(){
+                this.textTimer = -1;
+                this.filters.text = this.filterText;
+            }.bind(this), 1000);
+        }
+    });
+</script>
