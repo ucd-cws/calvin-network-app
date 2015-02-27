@@ -8,15 +8,16 @@
 
     <template>
         <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
-        <i id="icon" class="fa fa-code-fork" style="vertical-align:super"></cwn-icon>
+        <i id="icon" class="fa fa-code-fork" style="vertical-align:super"></i>
     </template>
 </dom-module>
 
 
 <script>
-    Polymer('cwn-app-icon', {
+    Polymer({
+        is: 'cwn-app-icon',
 
-        publish : {
+        published : {
             type : String,
             width : String,
             height : String,
@@ -57,6 +58,8 @@
         },
 
         onFontSizeChange : function() {
+            if( !this.$.icon ) return;
+
             this.$.icon.style.fontSize = this.fontSize+'px';
         },
 
@@ -68,10 +71,12 @@
                 $(this.$.icon).hide();
                 $(this.$.show).show();
             }
-            redraw();
+            this.redraw();
         },
 
         redraw : function() {
+            if( !this.$.canvas ) return;
+
             this.fontSize = this.width-15;
             if( this.fontSize < 14 ) this.fontSize = 14;
 
