@@ -18,16 +18,17 @@
             <div class="btn-group">
               <template is="x-repeat" items="{{costsMonths}}">
                 <a class="btn btn-xs btn-primary" 
-                  index="{{item.index}}" 
-                  on-click="_setCostMonth">{{item.label}}</a>
+                  index$="{{item.index}}" 
+                  on-click="_setMonth">{{item.label}}</a>
               </template>
             </div>
 
             <cwn-linechart 
+              id="lineChart"
               label="{{costChartLabel}}" 
               xlabel="Capacity (kAF)" 
               ylabel="Cost ($/kAF)" 
-              data="{{costChartData}}" animate>
+              animate>
             </cwn-linechart>
           </div>
 
@@ -39,27 +40,26 @@
 
         <h4 hidden$="{{!showConstraints}}">Constraints</h4>
 
-        <h5 hidden$="{{showConstantConstraints}}">
+        <h5 hidden$="{{!showConstantConstraints}}">
           Constant: $<span>{{constraintChart.constant}}</span>
         </h5>
 
 
-        <div id="constraintChart"></div>
+        <div id="constraintChartAnchor"></div>
         <template is="x-template" id="constraintChartTimeSeries">
           <cwn-date-linechart
-            data="{{constraintChart.data}}"
-            cols="{{constraintChart.cols}}"
-            options="{{constraintChart.options}}"
-            start="{{filters.start}}" 
-            stop="{{filters.stop}}">
+            data="{{data}}"
+            cols="{{cols}}"
+            options="{{options}}"
+            start="{{start}}" 
+            stop="{{stop}}">
           </cwn-date-linechart>
         </template>
 
         <template is="x-template" id="constraintChart">
           <cwn-linechart
-            data="{{constraintChart.data}}"
-            cols="{{constraintChart.cols}}"
-            options="{{constraintChart.options}}">
+            cols="{{cols}}"
+            options="{{options}}">
           </cwn-linechart>
         </template>
     </template>
@@ -149,6 +149,7 @@
           this.showCostData = false;
           this.showMonthlyVariableCost = false;
           this.showConstantCost = false;
+          this.showConstantConstraints = false;
 
           if( !this.feature.properties.hasCosts ) return;
           this.costLoading = true;
@@ -220,10 +221,11 @@
               return 0;
             });
             this.costs.data[label].splice(0,0, ['Capacity','Cost']);
-          }
+          };
+          this._setMonth(0);
 
           if( this.costs.label == 'Monthly Variable' ) this.showMonthlyVariableCost = true;
-          if( costs.label == 'Constant' ) this.showConstantCost = true;
+          if( this.costs.label == 'Constant' ) this.showConstantCost = true;
         },
 
         renderConstraints : function(constraints) {
@@ -366,30 +368,41 @@
         },
 
         _setMonth : function(index) {
-          this.costs.selected = index;
+          this.costs.selected = (typeof index == 'object') ? parseInt(index.currentTarget.getAttribute('index')) : index;
 
           this.costChartLabel = this.costs.label+' - '+this.costsMonths[this.costs.selected].label;
-          this.costChartData = this.costs.data[this.costsMonths[this.costs.selected]];
+          this.costChartData = this.costs.data[this.costsMonths[this.costs.selected].label];
+
+          this.$.lineChart.update(this.costChartData);
         },
 
         updateConstraintUi : function() {
             if( this.constraintChart.data.length != 0 && this.constraintChart.constant != -1 ) {
                 this.showConstraints = true;
             }
-            if( constraintChart.constant != -1 ) {
+
+            if( this.constraintChart.constant != -1 ) {
                 this.showConstantConstraints = true;
             }
             
-            this.$.constraintChart.innerHTML = '';
+            this.$.constraintChartAnchor.innerHTML = '';
             this.charts.constraintChart = null;
-            if( this.constraintChart.data.length == 0 ) {
+
+
+            if( this.constraintChart.data.length != 0 ) {
+                var isline = false;
                 if( constraintChart.isTimeSeries ) {
-                    this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp();
+                    this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
                 } else {
-                    this.charts.constraintChart = this.$.constraintChart.stamp();
+                    isline = true;
+                    this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
                 }
 
-                this.$.constraintChart.append(this.charts.constraintChart.root);
+                this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
+
+                if( isline ) {
+                  this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
+                }
             }
         }
 

@@ -2,11 +2,12 @@
 
 <dom-module id="cwn-info-link">
     <style>
-        span {
+        cwn-info-link span.invalid {
             color: #888;
             font-style: italic;
+            vertical-align:super;
         }
-        a {
+        cwn-info-link a {
             vertical-align: top;
         }
         cwn-info-link {
@@ -20,7 +21,7 @@
             <a href="{{link}}">{{name}}</a>
         </span>
 
-        <span style="vertical-align:super" hidden$="{{valid}}">{{name}}</span>
+        <span class="invalid" hidden$="{{valid}}">{{name}}</span>
     </template>
 </dom-module>
 

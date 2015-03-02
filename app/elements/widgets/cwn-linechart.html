@@ -9,7 +9,7 @@
         }
     </style>
     <template>
-        <div id="root"></div>
+        <div id="root" style="height:400px"></div>
     </template>
 </dom-module>
 
@@ -21,7 +21,6 @@
             label : String,
             xlabel : String,
             ylabel : String,
-            data : Object,
             height : Number,
             animate : Boolean,
             options : Object,
@@ -29,7 +28,7 @@
             type : String
         },
 
-        bind : {
+        /*bind : {
             label : 'redraw',
             xlabel : 'redraw',
             ylabel : 'redraw',
@@ -38,6 +37,10 @@
             start : 'update',
             stop  : 'update',
             options : 'update'
+        },*/
+
+        bind : {
+            height: 'setHeight'
         },
 
         configure : function() {
@@ -49,7 +52,7 @@
                 animate : false,
                 updateTimer : -1,
                 options : {},
-                cols : [],
+                cols : null,
                 data : []
             }
         },
@@ -76,15 +79,15 @@
 
             // put in global scope by cwn-datastore
             chartLoadHandlers.push(function(){
-                this.update();
+                this.update(this.data);
             }.bind(this));
         },
         
 
-        update : function() {
+        update : function(data) {
+            this.data = data;
             if( !window.google.visualization ) return this.setOnloadHandler();
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
-            if( !this.$ || !this.data ) return;
 
             if( !this.chart ) {
                 if( this.type ) {
@@ -97,19 +100,19 @@
             if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
             this.updateTimer = setTimeout(function() {
                 this.updateTimer = -1;
-                this._update();
+                this._update(this.data);
             }.bind(this), 500);
         },
 
-        _update : function() {
+        _update : function(data) {
             if( this.cols ) {
                 this.dt = new google.visualization.DataTable();
                 for( var i = 0; i < this.cols.length; i++ ) {
                     this.dt.addColumn(this.cols[i]);
                 }
-                this.dt.addRows(this.data);
+                this.dt.addRows(data);
             } else {
-                this.dt = google.visualization.arrayToDataTable(this.data);
+                this.dt = google.visualization.arrayToDataTable(data);
             }
             
             this.redraw();

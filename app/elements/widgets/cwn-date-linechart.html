@@ -8,9 +8,10 @@
         cwn-date-linechart {
             display: block;
         }
+
     </style>
     <template>
-        <div id="root"></div>
+        <div id="root" style="height:400px"></div>
     </template>
 </dom-module>
 
@@ -68,7 +69,6 @@
         },
 
         onStop : function() {
-            debugger;
             this.update();
         },
 
@@ -103,7 +103,11 @@
 
             if( !this.cols ) {
                 if( !this.data ) this.data = ['date', 'value'];
-                if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
+                try {
+                    if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
+                } catch(e) {
+                    debugger;
+                }
             }
             
 

@@ -7,7 +7,7 @@
     </style>
 
     <template>
-        <canvas id="canvas" width="{{width}}" height="{{height}}"></canvas>
+        <canvas id="canvas"></canvas>
         <i id="icon" class="fa fa-code-fork" style="vertical-align:super"></i>
     </template>
 </dom-module>
@@ -79,6 +79,9 @@
 
             this.fontSize = this.width-15;
             if( this.fontSize < 14 ) this.fontSize = 14;
+
+            this.$.canvas.setAttribute('height', this.height);
+            this.$.canvas.setAttribute('width', this.width);
 
             var ctx = this.$.canvas.getContext('2d');
             ctx.clearRect(0, 0, this.width, this.height);
