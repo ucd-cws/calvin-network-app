@@ -4,6 +4,7 @@
 modulate('InfoPageDomControllers', function() {
     return {
         updateDateSliderVisibility : function() {
+            debugger;
             this.showDateRangeSlider = this.inflows.length > 0 || this.hasTimeSeries
         },
 

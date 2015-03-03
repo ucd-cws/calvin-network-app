@@ -3,6 +3,13 @@ Polymer({
 
     mixins : ['InfoPageDomControllers'],
 
+    published : {
+      hasTimeSeries : {
+        type : Boolean,
+        notify : true
+      }
+    },
+
     configure : function() {
       return {
         feature : null,
