@@ -150,6 +150,7 @@
           this.showMonthlyVariableCost = false;
           this.showConstantCost = false;
           this.showConstantConstraints = false;
+          this.$.constraintChartAnchor.innerHTML = '';
 
           if( !this.feature.properties.hasCosts ) return;
           this.costLoading = true;

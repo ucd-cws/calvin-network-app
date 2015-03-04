@@ -91,22 +91,26 @@ Polymer({
       this.ds = ds;
       this.islocal = islocal;
 
-      this.ds.addEventListener('load', function(e){
-        this.loading = e.detail;
-        if( !this.loading ) this.onLoad();
-      }.bind(this));
+      if( this.ds.loading ) {
+        this.ds.addEventListener('load', function(e){
+          this.loading = e.detail;
+          if( !this.loading ) this.onLoad();
+        }.bind(this));
+      } else {
+        this.onLoad();
+      }
     },
 
     onLoad : function() {
-      if( this.loading ) return;
-
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
-        this.feature = this.ds.lookupMap[loc[1]];
+        if( this.feature = this.ds.lookupMap[loc[1]] ) {
+          this.update();
+        } else {
+          this.feature = this.ds.lookupMap[loc[1]];
+        }
       }
-
     },
-
 
     update : function() {
       if( !this.ds ) return;
@@ -169,6 +173,8 @@ Polymer({
           }
           this.inflows.push(inflow);
         }
+
+        console.log(this.inflows);
       }
 
       this.eacChart.data = [];

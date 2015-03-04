@@ -29,7 +29,8 @@
             cols: Object,
             startDate : Date,
             stopDate : Date,
-            type: String
+            type: String,
+            animate : Boolean
         },
         
         bind : {
@@ -51,6 +52,7 @@
                 data : [],
                 startDate : null,
                 stopDate : null,
+                animate : false,
 
                 updateTimer : -1,
 
@@ -58,10 +60,8 @@
             }
         },
 
-        ready : function() {
-            $(window).on('resize', function(){
-                this.redraw();
-            }.bind(this));
+        attached : function() {
+            $(window).on('resize', this.redraw.bind(this));
 
             this.async(function(){
                 this.redraw();
@@ -191,6 +191,14 @@
             } else {
                 for( var key in this.options ) {
                     options[key] = this.options[key];
+                }
+            }
+
+            
+            if( this.animate ) {
+                options.animation = {
+                    duration : 750,
+                    easing : 'out'
                 }
             }
 

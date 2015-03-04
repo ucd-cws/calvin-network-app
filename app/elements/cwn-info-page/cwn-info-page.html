@@ -82,10 +82,12 @@
               </div>
 
               <template is="x-repeat" items="{{inflows}}">
+                <div>Chart <span>{{item.label}}</span></div>
                 <cwn-date-linechart 
                   label="{{item.label}}" 
                   ylabel="Flow (kaf)" 
-                  data="{{item.data}}">
+                  data="{{item.data}}"
+                  animate>
                 </cwn-date-linechart>
               </template>
 
@@ -111,7 +113,7 @@
           <div class="card">
             <cwn-cost-info 
               feature="{{feature}}" 
-              hasTimeSeries$="{{hasTimeSeries}}">
+              has-time-series="{{hasTimeSeries}}">
             </cwn-cost-info>
           </div>
           <!-- End Costs -->

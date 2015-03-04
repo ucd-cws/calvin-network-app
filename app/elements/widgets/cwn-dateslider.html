@@ -5,12 +5,12 @@
         cwn-dateslider {
             display: block;
         }
-        .tabs {
+        .slider-tabs {
             margin-right: 100px;
             height: 80px;
             position: relative;
         }
-        .tab {
+        .slider-tab {
             height : 35px;
             min-width : 35px;
             border: 1px solid #ccc;
@@ -48,17 +48,14 @@
     </style>
 
     <template>
-        <div id="eventPanel">
-            <div class="tabs">
-                <div id="startTab" class="tab btn btn-default" on-mousedown="startDrag" on-touchstart="startDrag"></div>
-                <div id="startLine" class="line" style="height:45px; top: 35px; border-left-color: #ccc"></div>
-                <div id="endTab" style="top:40px" class="tab btn btn-primary" on-mousedown="startDrag" on-touchstart="startDrag"></div>
-                <div id="endLine" class="line" style="height:5px; top: 75px"></div>
-            </div>
-            <div class="progress">
-              <div class="progress-bar" id="slider" style="left:0;right:0" on-mousedown="startDrag" on-touchstart="startDrag"></div>
-            </div>
-            </div>
+        <div class="slider-tabs">
+            <div id="startTab" class="slider-tab btn btn-default"></div>
+            <div id="startLine" class="line" style="height:45px; top: 35px; border-left-color: #ccc"></div>
+            <div id="endTab" style="top:40px" class="slider-tab btn btn-primary"></div>
+            <div id="endLine" class="line" style="height:5px; top: 75px"></div>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" id="slider" style="left:0;right:0"></div>
         </div>
     </template>
 </dom-module>
@@ -75,6 +72,14 @@
                 type : String
             }
         },
+
+        listeners: {
+            mousedown : 'startDrag',
+            touchstart : 'startDrag',
+            mousemove : 'onDrag',
+            touchmove : 'onDrag'
+        },
+
 
         configure : function() {
             return {
@@ -101,17 +106,9 @@
         ready : function() {
             this.reset();
 
-            $(this.$.eventPanel).on('mouseup mouseout touchend touchcancel', function(e){
-                this.endDrag(e.originalEvent);
-            }.bind(this));
-    
-            $(this.$.eventPanel).on('mousemove touchmove', function(e){
-                this.onDrag(e.originalEvent);
-            }.bind(this));
-
-            $(window).on('resize', function() {
-                this.resize();
-            }.bind(this));
+            $(window)
+                .on('resize', this.resize.bind(this))
+                .on('mouseup touchend touchcancel', this.endDrag.bind(this));
 
             setTimeout(function(){
                 this.resize();
@@ -137,7 +134,7 @@
         resize : function() {
             if( this.numDays == 0 ) return;
 
-            this.cWidth = this.querySelector('.tabs').offsetWidth;
+            this.cWidth = this.querySelector('.slider-tabs').offsetWidth;
 
             var days = (this.current.start - this.startDate)/(1000*60*60*24);
             var leftPos = this.cWidth * (days / this.numDays);
@@ -155,11 +152,15 @@
         startDrag : function(e) {
             if( this.dragging ) return;
 
-            this.cWidth = this.querySelector('.tabs').offsetWidth;
+            if( !e.target.classList.contains('slider-tab') && e.target.id != 'slider' ) {
+                return;
+            }
+
+            this.cWidth = this.querySelector('.slider-tabs').offsetWidth;
             this.cBarWidth = this.$.slider.offsetWidth;
 
-            this.dragging = e.currentTarget;
-            this.dragStartLeft = parseInt(e.currentTarget.style.left || 0);
+            this.dragging = e.target;
+            this.dragStartLeft = parseInt(e.target.style.left || 0);
             this.dragStartX = this.getX(e);
 
             if( this.dragging.id == 'startTab' ) {
@@ -218,6 +219,7 @@
 
         endDrag : function(e) {
             if( this.dragging == null ) return;
+            console.log(e);
             console.log('Drag end: '+this.dragging.id);
 
             var pos = this.getPosition(e);
