@@ -118,6 +118,7 @@ Polymer({
 
       this.climateLoadError = false;
       this.climateLoading = false;
+      this.showDateRangeSlider = false;
 
       this.eacChart.data = [];
 
@@ -173,8 +174,6 @@ Polymer({
           }
           this.inflows.push(inflow);
         }
-
-        console.log(this.inflows);
       }
 
       this.eacChart.data = [];

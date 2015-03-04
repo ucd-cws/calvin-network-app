@@ -34,16 +34,12 @@
         },
         
         bind : {
-            label : 'redraw',
-            xlabel : 'redraw',
-            ylabel : 'redraw',
-            height : 'setHeight',
-            data  : 'update'
+            height : 'setHeight'
         },
 
         configure : function() {
             return {
-                options : {},
+                options : null,
                 type : '',
                 cols : null,
                 dt : null,
@@ -63,9 +59,9 @@
         attached : function() {
             $(window).on('resize', this.redraw.bind(this));
 
-            this.async(function(){
-                this.redraw();
-            });
+            setTimeout(function(){
+                this.update();
+            }.bind(this), 50);
         },
 
         onStop : function() {
@@ -88,7 +84,9 @@
             }.bind(this));
         },
 
-        update : function() {
+        update : function(data) {
+            if( data ) this.data = data;
+
             if( !window.google.visualization ) return this.setOnloadHandler();
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
             if( !this.$ ) return;
@@ -103,6 +101,8 @@
 
             if( !this.cols ) {
                 if( !this.data ) this.data = ['date', 'value'];
+                //else if( !this.data.length == 0 ) this.data = ['date', 'value'];
+
                 try {
                     if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
                 } catch(e) {

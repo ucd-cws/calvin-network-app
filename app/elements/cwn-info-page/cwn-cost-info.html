@@ -151,6 +151,8 @@
           this.showConstantCost = false;
           this.showConstantConstraints = false;
           this.$.constraintChartAnchor.innerHTML = '';
+          this.showConstraints = false;
+          this.showConstantConstraints = false;
 
           if( !this.feature.properties.hasCosts ) return;
           this.costLoading = true;
@@ -230,8 +232,6 @@
         },
 
         renderConstraints : function(constraints) {
-          this.showConstraints = false;
-          this.showConstantConstraints = false;
 
           if( constraints.constraint_type == 'Bounded' ) {
             var length = this.getContraintsLength(constraints);
@@ -378,7 +378,7 @@
         },
 
         updateConstraintUi : function() {
-            if( this.constraintChart.data.length != 0 && this.constraintChart.constant != -1 ) {
+            if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
                 this.showConstraints = true;
             }
 
@@ -392,13 +392,15 @@
 
             if( this.constraintChart.data.length != 0 ) {
                 var isline = false;
+                
                 if( constraintChart.isTimeSeries ) {
+                    this.hasTimeSeries = true;
                     this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
                 } else {
                     isline = true;
                     this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
                 }
-                this.hasTimeSeries = true;
+
 
                 this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
 

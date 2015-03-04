@@ -34,7 +34,10 @@
                 terminalLookupMap : {},
 
                 loadingCharts : true,
-                chartLoadHandlers : []
+                chartLoadHandlers : [],
+
+                initialLoad : false,
+                initialLoadListeners : []
             }
         },
         
@@ -87,12 +90,27 @@
             this.terminalLookupMap = {};
         },
 
+        onLoad : function(listener) {
+            if( this.initialLoad ) {
+                listener();
+                return;
+            }
+            this.initialLoadListeners.push(listener);
+        },
+
         reload : function() {
             this.loadNetwork(this.network, function(err){
                 this.loading = false;
                 this.fire('load', this.loading);
                 this.fire('loaded');
                 if( this.callback ) this.callback(err);
+
+                if( !this.initialLoad ) {
+                    this.initialLoad = true;
+                    for( var i = 0; i < this.initialLoadListeners; i++ ) {
+                        this.initialLoadListeners[i]();
+                    }
+                }
             }.bind(this));
         },
 

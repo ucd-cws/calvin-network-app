@@ -34,9 +34,9 @@
               <template is="x-repeat" items="{{origins}}">
                 <div style="text-align:right;margin-bottom:20px">
                   <div>
-                    <cwn-info-link name="{{item.name}}" style="vertical-align:top"></cwn-info-link>&nbsp;&nbsp;&nbsp;
+                    <cwn-info-link name="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
 
-                    <a href="{{origin.link}}" hidden$="{{!item.hasLink}}">
+                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
                       <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
                     </a>
 
@@ -45,7 +45,7 @@
                     </span>
 
                   </div>
-                  <div class="description" hidden$="{{!origin.description}}" style="margin: -10px 55px 0 0">{{origin.description}}</div>
+                  <div class="description" hidden$="{{!item.description}}" style="margin-right: 55px">{{item.description}}</div>
                 </div>
               </template>
             </div>
@@ -86,9 +86,9 @@
 
             <div id="terminal">
               <div>
-                <cwn-info-link name="{{feature.properties.terminus}}" ds="{{ds}}"></cwn-info-link>
+                <cwn-info-link name="{{feature.properties.terminus}}"></cwn-info-link>
               </div>
-              <div hidden$="{{hasTerminalDescription}}">
+              <div hidden$="{{!hasTerminalDescription}}">
                 <div class="description">{{terminalDescription}}</div>
               </div>
             </div>
@@ -105,11 +105,11 @@
                       <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
                   </span>
 
-                  &nbsp;&nbsp;&nbsp;<cwn-info-link name="{{item.name}}" style="vertical-align:top"></cwn-info-link>
+                  &nbsp;&nbsp;&nbsp;<cwn-info-link name="{{item.name}}"></cwn-info-link>
 
                 </div>
                 <div hidden$="{{!item.description}}">
-                  <div class="description" style="margin: -10px 0 0 55px">{{item.description}}</div>
+                  <div class="description" style="margin-left: 55px">{{item.description}}</div>
                 </div>
               </div>
             </template>
@@ -140,9 +140,6 @@
         },
 
         bind : {
-            'feature.properties.origin' : 'onOriginUpdate',
-            'feature.properties.terminal' : 'onTerminalUpdate',
-            'feature.properties.type' : 'onTypeUpdate',
             'feature' : 'update',
             'ds' : 'update'
         },
@@ -220,7 +217,10 @@
             }
 
             $(window).on('resize', this.updateSize.bind(this));
+
             this.onTypeUpdate();
+            this.onOriginUpdate();
+            this.onTerminalUpdate();
         },
 
         onOriginUpdate : function() {
@@ -241,15 +241,15 @@
         onTerminalUpdate : function() {
             if( !this.ds ) return;
 
-            if( !this.feature.properties ) return this.$.terminal.style.display = 'none'; 
+            if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none'; 
             else this.$.terminal.style.display = 'block'; 
 
             this.hasTerminalDescription = false;
             this.terminalDescription = '';
 
-            if( this.ds.lookupMap[this.feature.properties.terminal] ) {
+            if( this.ds.lookupMap[this.feature.properties.terminus] ) {
                 this.hasTerminalDescription = true;
-                this.terminalDescription = this.ds.lookupMap[this.feature.properties.terminal].properties.description
+                this.terminalDescription = this.ds.lookupMap[this.feature.properties.terminus].properties.description
             }
         },
 

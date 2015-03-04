@@ -219,10 +219,12 @@
 
         endDrag : function(e) {
             if( this.dragging == null ) return;
-            console.log(e);
-            console.log('Drag end: '+this.dragging.id);
 
-            var pos = this.getPosition(e);
+            //console.log('Drag end: '+this.dragging.id);
+
+            var parentX = $(this).offset().left;
+            var pos = $(this.$[this.dragging.id]).offset().left - parentX;
+            
             var cDay = Math.floor(this.numDays * (pos / this.cWidth));
 
             var result = new Date(this.startDate);

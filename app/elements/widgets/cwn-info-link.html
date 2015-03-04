@@ -43,15 +43,17 @@
         },
 
         bind : {
-            name : 'onNameChanged'
+            name : 'update'
         },
 
-        ready : function() {
+        attached : function() {
             this.ds = document.querySelector('cwn-datastore');
+            this.ds.onLoad(this.update.bind(this));
         },
 
-        onNameChanged : function() {
+        update : function() {
             if( !this.ds ) return;
+            if( !this.name ) return;
 
             if( !this.ds.lookupMap[this.name] ) {
                 this.valid = false;
