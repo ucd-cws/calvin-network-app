@@ -6082,7 +6082,7 @@ modulate('Collection', ['Base', 'ArrayObserve', 'Debounce'], function(Base, Arra
 
                 if( !this.initialLoad ) {
                     this.initialLoad = true;
-                    for( var i = 0; i < this.initialLoadListeners; i++ ) {
+                    for( var i = 0; i < this.initialLoadListeners.length; i++ ) {
                         this.initialLoadListeners[i]();
                     }
                 }
