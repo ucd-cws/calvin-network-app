@@ -143,9 +143,10 @@ module.exports = function (grunt) {
                         'styles/*.css',
                         'scripts/*.js',
                         'fonts/{,*/}*.*',
-                        'components/**',
+                        'bower_components/**',
                         'other_components/**/*.*',
-                        'elements/**/*.*'
+                        'elements/**/*.*',
+                        'polymer/**/*.*'
                     ]
                 }]
             },
@@ -189,33 +190,6 @@ module.exports = function (grunt) {
         },
 
         shell: {
-            // this should be done prior to running normal dev server, generates the webcomponets base.css file
-            // also handles copying bower_components font-awesome /fonts dir
-            'generate-deep-css' : {
-                options: {
-                    stdout: true,
-                    stderr: true
-                },
-                command: 'rm -rf <%= yeoman.app %>/styles/deep.css <%= yeoman.app %>/styles/tmp.* && ' +
-                         'cp <%= yeoman.app %>/components/bootstrap/dist/css/bootstrap.css <%= yeoman.app %>/styles/tmp.bootstrap.css && '+
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/\\}\\(\\n *\\)\\([a-z\\.\\*]\\)/\\}\\1html \\/deep\\/ \\2/g\' <%= yeoman.app %>/styles/tmp.bootstrap.css &&' +
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/\\,\\(\\n *\\)\\([a-z\\.\\*]\\)/\\,\\1html \\/deep\\/ \\2/g\' <%= yeoman.app %>/styles/tmp.bootstrap.css &&' +
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/\\,\\( *\\)\\([a-z\\.]\\)/\\,\\1html \\/deep\\/ \\2/g\' <%= yeoman.app %>/styles/tmp.bootstrap.css &&' +
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/\\(@media[a-z0-9()-\\: ]*{\\n\\)/\\1 html \\/deep\\//g\' <%= yeoman.app %>/styles/tmp.bootstrap.css &&' +
-                         // fix the modal selector
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/html \\/deep\\/ \\.modal-open \\.modal/.modal-open \\/deep\\/ .modal/g\' <%= yeoman.app %>/styles/tmp.bootstrap.css &&' +
-
-                         // there is issue where the regex adds html /deep/ to a animate keyframe set, this cleans it
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/  html \\/deep\\/ to {/  to {/g\' <%= yeoman.app %>/styles/tmp.bootstrap.css &&' +
-                         'cp <%= yeoman.app %>/components/animate-css/animate.css <%= yeoman.app %>/styles/tmp.animate.css && '+
-                         'sed -i "" -e \':a\' -e \'N\' -e \'$!ba\' -e \'s/\\(\\n\\)\\(\\.[a-zA-Z]*\\)/\\1html \\/deep\\/ \\2/g\' <%= yeoman.app %>/styles/tmp.animate.css && ' +
-                         'cat '+
-                         '<%= yeoman.app %>/styles/tmp.bootstrap.css '+
-                         '<%= yeoman.app %>/styles/tmp.animate.css '+
-                         '>> <%= yeoman.app %>/styles/deep.css && '+
-                         'rm -rf <%= yeoman.app %>/styles/tmp.*'
-
-            },
             // the vulconizer imports all the custom elements everything we need
             // usemin compresses the css and js, makeing the components lib
             // unnecessary except the polymer script, only need to move over the font-awesome fontes
@@ -224,9 +198,10 @@ module.exports = function (grunt) {
                     stdout: true,
                     stderr: true
                 },
-                command: 'mv <%= yeoman.dist %>/components/font-awesome/fonts <%= yeoman.dist %>/ && '+
-                         'rm -rf <%= yeoman.dist %>/components && '+
-                         'rm -rf <%= yeoman.dist %>/elements'
+                command: 'mv <%= yeoman.dist %>/bower_components/font-awesome/fonts <%= yeoman.dist %>/ && '+
+                         'rm -rf <%= yeoman.dist %>/bower_components && '+
+                         'rm -rf <%= yeoman.dist %>/elements && '+
+                         'rm -rf <%= yeoman.dist %>/polymer'
 
             },
             'server' : {
