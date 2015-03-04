@@ -1066,7 +1066,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 </div>
 <div hidden><!-- <polymer-element name="cwn-filters" attributes="legend filters"> -->
-<dom-template id="cwn-filters">
+<dom-module id="cwn-filters">
     <style>
         cwn-filters {
             position: absolute;
@@ -1167,9 +1167,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             </div>
         </div>
     </template>
+</dom-module>
 
-
-</dom-template></div>
+</div>
 <div hidden>
 </div>
 <div hidden><!--<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">-->
@@ -1395,7 +1395,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
       <!-- End Header Card -->
-      <span>{{showDateRangeSlider}}</span> <span>{{hasTimeSeries}}</span>
       <div hidden$="{{!showDateRangeSlider}}">
         <div style="padding:20px 50px 5px 50px">
           <h4>Date Range</h4>
