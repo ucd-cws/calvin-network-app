@@ -52,14 +52,16 @@
             cols="{{cols}}"
             options="{{options}}"
             start="{{start}}" 
-            stop="{{stop}}">
+            stop="{{stop}}"
+            animate>
           </cwn-date-linechart>
         </template>
 
         <template is="x-template" id="constraintChart">
           <cwn-linechart
             cols="{{cols}}"
-            options="{{options}}">
+            options="{{options}}"
+            animate>
           </cwn-linechart>
         </template>
     </template>
@@ -393,7 +395,7 @@
             if( this.constraintChart.data.length != 0 ) {
                 var isline = false;
                 
-                if( constraintChart.isTimeSeries ) {
+                if( this.constraintChart.isTimeSeries ) {
                     this.hasTimeSeries = true;
                     this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
                 } else {

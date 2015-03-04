@@ -60,6 +60,13 @@
             $(window).on('resize', this.redraw.bind(this));
 
             setTimeout(function(){
+                // see if we have initial state
+                var slider = document.querySelector('cwn-dateslider');
+                if( slider && slider.current) {
+                    this.startDate = slider.current.start;
+                    this.stopDate = slider.current.end;
+                }
+
                 this.update();
             }.bind(this), 50);
         },

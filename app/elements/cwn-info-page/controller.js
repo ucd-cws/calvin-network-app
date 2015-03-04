@@ -118,7 +118,7 @@ Polymer({
 
       this.climateLoadError = false;
       this.climateLoading = false;
-      this.showDateRangeSlider = false;
+      this.updateDateSliderVisibility();
 
       this.eacChart.data = [];
 
@@ -214,6 +214,7 @@ Polymer({
 
     updateDateFilters : function(e) {
       var eles = this.querySelectorAll('cwn-date-linechart');
+
       for( var i = 0; i < eles.length; i++ ) {
         eles[i].startDate = e.detail.start;
         eles[i].stopDate = e.detail.end;

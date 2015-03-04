@@ -5533,6 +5533,13 @@ modulate('Collection', ['Base', 'ArrayObserve', 'Debounce'], function(Base, Arra
             $(window).on('resize', this.redraw.bind(this));
 
             setTimeout(function(){
+                // see if we have initial state
+                var slider = document.querySelector('cwn-dateslider');
+                if( slider && slider.current) {
+                    this.startDate = slider.current.start;
+                    this.stopDate = slider.current.end;
+                }
+
                 this.update();
             }.bind(this), 50);
         },
@@ -6813,7 +6820,7 @@ modulate('Collection', ['Base', 'ArrayObserve', 'Debounce'], function(Base, Arra
             if( this.constraintChart.data.length != 0 ) {
                 var isline = false;
                 
-                if( constraintChart.isTimeSeries ) {
+                if( this.constraintChart.isTimeSeries ) {
                     this.hasTimeSeries = true;
                     this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
                 } else {
@@ -6983,7 +6990,7 @@ Polymer({
 
       this.climateLoadError = false;
       this.climateLoading = false;
-      this.showDateRangeSlider = false;
+      this.updateDateSliderVisibility();
 
       this.eacChart.data = [];
 
@@ -7079,6 +7086,7 @@ Polymer({
 
     updateDateFilters : function(e) {
       var eles = this.querySelectorAll('cwn-date-linechart');
+
       for( var i = 0; i < eles.length; i++ ) {
         eles[i].startDate = e.detail.start;
         eles[i].stopDate = e.detail.end;

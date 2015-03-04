@@ -1338,12 +1338,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         <div id="constraintChartAnchor"></div>
         <template is="x-template" id="constraintChartTimeSeries">
-          <cwn-date-linechart data="{{data}}" cols="{{cols}}" options="{{options}}" start="{{start}}" stop="{{stop}}">
+          <cwn-date-linechart data="{{data}}" cols="{{cols}}" options="{{options}}" start="{{start}}" stop="{{stop}}" animate="">
           </cwn-date-linechart>
         </template>
 
         <template is="x-template" id="constraintChart">
-          <cwn-linechart cols="{{cols}}" options="{{options}}">
+          <cwn-linechart cols="{{cols}}" options="{{options}}" animate="">
           </cwn-linechart>
         </template>
     </template>
@@ -1395,7 +1395,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
       <!-- End Header Card -->
-
+      <span>{{showDateRangeSlider}}</span> <span>{{hasTimeSeries}}</span>
       <div hidden$="{{!showDateRangeSlider}}">
         <div style="padding:20px 50px 5px 50px">
           <h4>Date Range</h4>
