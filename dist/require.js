@@ -7637,7 +7637,8 @@ Polymer({
                 ds : null,
 
                 markerLayer : null,
-                edgeLayer : null
+                edgeLayer : null,
+                redrawMarkerSizesTimer : -1
             }
         },
 
@@ -7911,7 +7912,36 @@ Polymer({
         },
 
         _onZoomEnd : function() {
-/* WHY AGAIN */
+/* WHY AGAIN 
+            for( var key in this.markerLayer._layers ) {
+                this._hackTouchEvent(this.markerLayer._layers[key]);
+            }
+*/
+            //this.redrawMarkerSizes();
+
+            if( this.map.getZoom() < 10 ) {
+                $('.LineCanvas').hide();
+            } else {
+                $('.LineCanvas').show();
+            }
+        },
+
+        // check sizes
+
+        redrawMarkerSizes : function() {
+        
+            if( this.redrawMarkerSizesTimer != -1 ) {
+                clearTimeout(this.redrawMarkerSizesTimer);
+            }
+
+            this.redrawMarkerSizesTimer = setTimeout(function(){
+                this.redrawMarkerSizesTimer = -1;
+                this._redrawMarkerSizes();
+            }.bind(this), 2000);
+        },
+
+        _redrawMarkerSizes : function() {
+            console.log('redrawing');
             if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
 
             this.markerLayer = L.geoJson(this.ds.data.nodes, {
@@ -7928,25 +7958,14 @@ Polymer({
             this.markerLayer.on('click', function(e){
                 this.fire('selected', e.layer.feature);
             }.bind(this));
-
-            
-            for( var key in this.markerLayer._layers ) {
-                this._hackTouchEvent(this.markerLayer._layers[key]);
-            }
-/**/
-
-
-            if( this.map.getZoom() < 10 ) {
-                $('html /deep/ .LineCanvas').hide();
-            } else {
-                $('html /deep/ .LineCanvas').show();
-            }
         },
 
         _getMarker : function(feature, ll) {
             var render = feature.properties._render || {};
             var type = feature.properties.type;
 
+            /*
+            TODO: this is too slow right now :(
             if( this.map.getZoom() < 10 ) {
                 s = this.map.getZoom() * 3;
             } else {
@@ -7957,14 +7976,12 @@ Polymer({
                 iconSize : new L.Point(s, s),
                 type : type
             };
-
-            /*if( this.filters.calibrationMode && feature.properties.calibrationMode ) {
-                options.radius = 30,
-                options.weight = 7;
-                if( feature.properties.calibrationMode == 'both' ) options.color = 'red';
-                else if( feature.properties.calibrationMode == 'in' ) options.color = 'yellow';
-                else if( feature.properties.calibrationMode == 'out' ) options.color = 'blue';
-            }*/
+            */
+            var options = {
+                iconSize : new L.Point(24, 24),
+                type : type
+            };
+  
 
             var m = new L.Marker(ll, {
                 icon: new L.Icon.Canvas(options), 
