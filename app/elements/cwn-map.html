@@ -67,16 +67,14 @@
             this.filters = filters;
             this.legend = legend;
 
-            this._process();
-
-
             this.map = L.map(this.$.leaflet).setView([40, -121], 5);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18
             }).addTo(this.map);
 
             this.map.on('zoomend', this._onZoomEnd.bind(this));
- 
+
+            this.ds.onLoad(this._process.bind(this));
         },
 
         _process : function() {
