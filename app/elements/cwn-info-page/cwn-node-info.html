@@ -6,7 +6,18 @@
             -moz-transition: margin-top linear 200ms;
             -ms-transition: margin-top linear 200ms;
         }
-        cwn-node-info {
+        .border {
+          padding: 5px;
+          display: inline-block;
+          border-radius: 6px;
+          border: 1px solid #eee;
+          margin-top: 25px;
+        }
+        .description {
+          font-size: 12px;
+          color: #888;
+        }
+        :host {
             display: block;
         }
     </style>
@@ -124,12 +135,14 @@
     Polymer({
         is : 'cwn-node-info',
 
-        published : {
+        properties : {
             feature : {
-              type : Object
+              type : Object,
+              observer : 'update'
             },
             ds : {
-              type : Object
+              type : Object,
+              observer : 'update'
             },
             leaflet : {
               type : Object
@@ -137,11 +150,6 @@
             islocal : {
               type : Boolean
             }
-        },
-
-        bind : {
-            'feature' : 'update',
-            'ds' : 'update'
         },
 
         configure : function() {

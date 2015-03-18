@@ -71,18 +71,15 @@
     Polymer({
         is : 'cwn-cost-info',
 
-        published : {
+        properties : {
             feature : {
-                type : Object
+                type : Object,
+                observer : 'update'
             },
             hasTimeSeries : {
                 type : Boolean,
                 notify : true
             }
-        },
-
-        bind : {
-            feature : 'update'
         },
 
         configure : function() {

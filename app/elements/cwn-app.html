@@ -22,21 +22,21 @@
     </style>
 
     <template>
-        <div class="splash-screen" hidden$="{{!loading}}">
+        <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
             Loading Network...<br />
           </div>
         </div>
 
         <cwn-datastore 
-          id="ds" 
-          loading="{{loading}}" 
+          id="ds"
+          on-load="onLoadingChange"
           on-loaded="onDataLoad"
           islocal$="{{islocal}}"
           >
         </cwn-datastore>
 
-        <cwn-app-layout loading="{{loading}}">
+        <cwn-app-layout>
             <a right-nav on-click="showFilters">
               <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
               <span class="visible-xs"><i class="fa fa-filter"></i></span>
@@ -70,7 +70,7 @@
     Polymer({
         is : 'cwn-app',
 
-        published : {
+        properties : {
           islocal : {
             type : Boolean,
             notify: true
@@ -87,7 +87,6 @@
 
             selectedPage : 0,
 
-            islocal : false,
 
             loading : true,
 
@@ -150,10 +149,15 @@
           }.bind(this), 200);
 
           this.setLocation();
+
+          console.log('islocal: '+this.islocal);
         },
 
         onLoadingChange : function() {
           this.loading = this.$.ds.loading;
+
+          if( this.loading ) this.$.splash.style.display = 'block';
+          else this.$.splash.style.display = 'none';
         },
 
         setLocation : function() {

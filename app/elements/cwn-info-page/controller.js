@@ -1,12 +1,17 @@
 Polymer({
     is : 'cwn-info-page',
 
-    mixins : ['InfoPageDomControllers'],
+    mixins : [new InfoPageDomControllers()],
 
-    published : {
+    properties : {
       hasTimeSeries : {
         type : Boolean,
-        notify : true
+        notify : true,
+        observer : 'updateDateSliderVisibility'
+      },
+      feature : {
+        type : Object,
+        observer : 'update'
       }
     },
 
@@ -79,11 +84,6 @@ Polymer({
         showClimateData : false,
         charts : {}
       }
-    },
-
-    bind : {
-        feature : 'update',
-        hasTimeSeries : 'updateDateSliderVisibility'
     },
 
     init : function(map, ds, islocal) {

@@ -5,7 +5,7 @@
 
 <dom-module id="cwn-date-linechart">
     <style>
-        cwn-date-linechart {
+        :host {
             display: block;
         }
 
@@ -24,17 +24,16 @@
             xlabel : String,
             ylabel : String,
             data : Object,
-            height : Number,
+            height : {
+                type : Number,
+                observer : 'setHeight'
+            },
             options : Object,
             cols: Object,
             startDate : Date,
             stopDate : Date,
             type: String,
             animate : Boolean
-        },
-        
-        bind : {
-            height : 'setHeight'
         },
 
         configure : function() {

@@ -2,15 +2,15 @@
 
 <dom-module id="cwn-info-link">
     <style>
-        cwn-info-link span.invalid {
+        span.invalid {
             color: #888;
             font-style: italic;
             vertical-align:super;
         }
-        cwn-info-link a {
+        a {
             vertical-align: top;
         }
-        cwn-info-link {
+        :host {
             white-space: nowrap;
             display: inline-block;
         }
@@ -30,8 +30,11 @@
     Polymer({
         is : 'cwn-info-link',
         
-        published : {
-            name : String
+        properties : {
+            name : {
+                type : String,
+                observer : 'update'
+            }
         },
 
         configure : function() {
@@ -41,11 +44,7 @@
                 valid : false,
             }
         },
-
-        bind : {
-            name : 'update'
-        },
-
+        
         attached : function() {
             this.ds = document.querySelector('cwn-datastore');
             this.ds.onLoad(this.update.bind(this));

@@ -2,7 +2,7 @@
 
 <dom-module id="cwn-dateslider">
     <style>
-        cwn-dateslider {
+        :host {
             display: block;
         }
         .slider-tabs {
@@ -64,7 +64,7 @@
     Polymer({
         is : 'cwn-dateslider',
 
-        published : {
+        properties : {
             start : {
                 type : String
             },

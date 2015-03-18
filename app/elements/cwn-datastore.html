@@ -103,6 +103,7 @@
                 this.loading = false;
                 this.fire('load', this.loading);
                 this.fire('loaded');
+
                 if( this.callback ) this.callback(err);
 
                 if( !this.initialLoad ) {
@@ -126,6 +127,11 @@
             $.ajax({
                 url : url,
                 success : function(resp) {
+                    if( resp.error ) {
+                        alert('Server error loading network :(');
+                        return callback(resp);
+                    }
+
                     for( var i = 0; i < resp.nodes.length; i++ ) {
                         try {
                             d = JSON.parse(resp.nodes[i]);
@@ -163,6 +169,7 @@
 
         // cwne-fs-network-loader will be injected by the node-webkit app
         loadFromFileSystem : function(callback) {
+            if( !CWN.rootDir ) return;
             document.querySelector('cwne-fs-network-loader').run(function(resp){
                 for( var i = 0; i < resp.nodes.length; i++ ) {
                     this._processNode(resp.nodes[i]);
@@ -245,6 +252,8 @@
                 environmental : link.properties.hasClimate ? true : false
             };
 
+            try {
+
             // Flow to a sink
             if( this.lookupMap[link.properties.terminus] && 
                 this.lookupMap[link.properties.terminus].properties.type == 'Sink' ) {
@@ -257,14 +266,16 @@
                 link.properties.renderInfo.type = 'gwToDemand';
 
             } else if( this.lookupMap[link.properties.origin] && 
-                this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
-                this.lookupMap[link.properties.origin].properties.calibrationMode == 'both' ) {
+                (this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
+                this.lookupMap[link.properties.origin].properties.calibrationMode == 'both') ) {
 
                 link.properties.renderInfo.type = 'artificalRecharge';
             } else {
 
                 link.properties.renderInfo.type = 'unknown';
             }
+
+        } catch(e) {debugger}
 
             // finally, mark the angle of the line, so we can rotate the icon on the
             // map accordingly
