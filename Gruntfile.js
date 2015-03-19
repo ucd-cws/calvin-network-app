@@ -72,6 +72,7 @@ module.exports = function (grunt) {
             options: {
                 dest: '<%= yeoman.dist %>',
                 verbose : true
+                //,flow: { steps: { 'js': ['concat'], 'css': ['concat']}, post: {}}
             },
             html: ['<%= yeoman.app %>/index.html', '<%= yeoman.app %>/require.html']
         },
@@ -240,6 +241,7 @@ module.exports = function (grunt) {
         'cssmin:generated',
         'uglify:generated',
         'usemin',
+        //'useminPrepare', 'concat', 'usemin',
         'vulcanize',
         'shell:clear-bower-components'
     ]);
