@@ -1,7 +1,7 @@
 <!-- <polymer-element name="cwn-filters" attributes="legend filters"> -->
 <dom-module id="cwn-filters">
     <style>
-        cwn-filters {
+        :host {
             position: absolute;
             left: 0;
             top: 0;
@@ -9,7 +9,7 @@
             z-index: 5000;
             background-color: rgba(0,0,0,.5);
         }
-        cwn-filters.open {
+        :host(.open) {
             overflow-y: auto;
             overflow-x: hidden;
             height: 100%;

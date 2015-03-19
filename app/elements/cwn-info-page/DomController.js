@@ -18,6 +18,10 @@ var InfoPageDomControllers = function() {
 
             this.charts.eacChart = this.$.eacChart.stamp(this.eacChart);
             this.$.eacChartRoot.appendChild(this.charts.eacChart.root);
+
+            this.async(function(){
+                this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
+            });
         }
     }
 
