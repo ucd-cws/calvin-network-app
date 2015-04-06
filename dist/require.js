@@ -33,13 +33,17 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
       var hasNativeImports = Boolean('import' in document.createElement('link'));
       var useNativeImports = hasNativeImports;
 
+      var useNativeCustomElements = (!window.CustomElements ||
+        window.CustomElements.useNative);
+
       return {
         wantShadow: wantShadow,
         hasShadow: hasShadow,
         nativeShadow: nativeShadow,
         useShadow: useShadow,
         useNativeShadow: useShadow && nativeShadow,
-        useNativeImports: useNativeImports
+        useNativeImports: useNativeImports,
+        useNativeCustomElements: useNativeCustomElements
       };
     })()
   };
@@ -527,7 +531,7 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
 
   /**
    * Support for `hostAttributes` property.
-   * 
+   *
    *     hostAttributes: 'block vertical layout'
    *
    * `hostAttributes` is a space-delimited string of boolean attribute names to
@@ -537,8 +541,8 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
    *
    * Properties that are configured in `properties` with a type are mapped
    * to attributes.
-   * 
-   * A value set in an attribute is deserialized into the specified 
+   *
+   * A value set in an attribute is deserialized into the specified
    * data-type and stored into the matching property.
    *
    * Example:
@@ -567,7 +571,7 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
    *
    * @class base feature: attributes
    */
-  
+
   Polymer.Base.addFeature({
 
     _marshalAttributes: function() {
@@ -609,7 +613,7 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
         if (propName in this.properties) {
           var type = this.getPropertyType(propName);
           var val = this.getAttribute(attrName);
-          model[propName] = this.deserialize(val, type);          
+          model[propName] = this.deserialize(val, type);
         }
       }
     },
@@ -630,7 +634,6 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
 
     deserialize: function(value, type) {
       switch (type) {
-
         case Number:
           value = Number(value);
           break;
@@ -640,11 +643,19 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
           break;
 
         case Object:
+          try {
+            value = JSON.parse(value);
+          } catch(x) {
+            // allow non-JSON literals like Strings and Numbers
+          }
+          break;
+
         case Array:
           try {
             value = JSON.parse(value);
           } catch(x) {
-            value = '[invalid JSON]';
+            value = null;
+            console.warn('Polymer::Attributes: couldn`t decode Array as JSON');
           }
           break;
 
@@ -655,15 +666,12 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
         case String:
         default:
           break;
-
       }
       return value;
-
     },
 
     serialize: function(value) {
       switch (typeof value) {
-
         case 'boolean':
           return value ? '' : undefined;
 
@@ -680,7 +688,6 @@ e=a.createBuffer(),a.bindBuffer(a.ARRAY_BUFFER,e),a.bufferData(a.ARRAY_BUFFER,c,
 
         default:
           return value != null ? value : undefined;
-
       }
     }
 
@@ -1261,10 +1268,10 @@ Polymer.ArraySplice = (function() {
 
         get localTarget() {
           var current = this.event.currentTarget;
-          var currentRoot = current && current._ownerShadyRoot;
+          var currentRoot = current && Polymer.dom(current)._getOwnerShadyRoot();
           var p$ = this.path;
           for (var i=0; i < p$.length; i++) {
-            if (p$[i]._ownerShadyRoot === currentRoot) {
+            if (Polymer.dom(p$[i])._getOwnerShadyRoot() === currentRoot) {
               return p$[i];
             }
           }
@@ -1296,7 +1303,7 @@ Polymer.ArraySplice = (function() {
         event.__eventApi = new EventApi(event);
       }
       return event.__eventApi;
-    }
+    };
 
     return {
       factory: factory
@@ -1332,13 +1339,13 @@ Polymer.ArraySplice = (function() {
         var self = this;
         this.node.appendChild = function(node) {
           return self.appendChild(node);
-        }
+        };
         this.node.insertBefore = function(node, ref_node) {
           return self.insertBefore(node, ref_node);
-        }
+        };
         this.node.removeChild = function(node) {
           return self.removeChild(node);
-        }
+        };
       },
 
       get childNodes() {
@@ -1458,29 +1465,69 @@ Polymer.ArraySplice = (function() {
         }
       },
 
+      replaceChild: function(node, ref_node) {
+        this.insertBefore(node, ref_node);
+        this.removeChild(ref_node);
+      },
+
+      _getOwnerShadyRoot: function() {
+        return this._ownerShadyRootForNode(this.node);
+      },
+
+      _ownerShadyRootForNode: function(node) {
+        if (node._ownerShadyRoot === undefined) {
+          var root;
+          if (node._isShadyRoot) {
+            root = node;
+          } else if (node.host) {
+            root = node.host.shadyRoot;
+          } else {
+            var parent = Polymer.dom(node).parentNode;
+            if (parent) {
+              root = parent._isShadyRoot ? parent : 
+                this._ownerShadyRootForNode(parent);
+            } else {
+             root = null;
+            }
+          }
+          node._ownerShadyRoot = root;
+        }
+        return node._ownerShadyRoot;
+        
+      },
+
       _maybeDistribute: function(node, parent, host) {
+        var nodeNeedsDistribute = this._nodeNeedsDistribution(node);
         var distribute = this._parentNeedsDistribution(parent) ||
-          this._nodeNeedsDistribution(node);
+          nodeNeedsDistribute;
+        if (nodeNeedsDistribute) {
+          this._updateInsertionPoints(host);
+        }
         if (distribute) {
           this._lazyDistribute(host);
         }
         return distribute;
       },
 
+      _updateInsertionPoints: function(host) {
+        host.shadyRoot._insertionPoints =
+          factory(host.shadyRoot).querySelectorAll(CONTENT);
+      }, 
+
       _nodeIsInLogicalTree: function(node) {
         return Boolean(node._isShadyRoot ||
-          node._ownerShadyRoot ||
+          this._getOwnerShadyRoot(node) ||
           node.shadyRoot);
       },
 
       _hostForNode: function(node) {
         var root = node.shadyRoot || (node._isShadyRoot ? 
-          node : node._ownerShadyRoot);
+          node : this._getOwnerShadyRoot(node));
         return root && root.host;
       },
 
       _parentNeedsDistribution: function(parent) {
-        return parent.shadyRoot && parent.shadyRoot._hasInsertionPoint;
+        return parent.shadyRoot && hasInsertionPoint(parent.shadyRoot);
       },
 
       // TODO(sorvell): technically we should check non-fragment nodes for 
@@ -1531,7 +1578,7 @@ Polymer.ArraySplice = (function() {
         children.splice(index, 1);
         node.lightParent = null;
         // TODO(sorvell): need to clear any children of element?
-        node._ownerShadyRoot = null;
+        node._ownerShadyRoot = undefined;
       },
 
       _addRootToChildren: function(children, root) {
@@ -1650,7 +1697,7 @@ Polymer.ArraySplice = (function() {
         node.__domApi = new DomApi(node, patch);
       }
       return node.__domApi;
-    }
+    };
 
     Polymer.dom = function(obj, patch) {
       if (obj instanceof Event) {
@@ -1686,6 +1733,10 @@ Polymer.ArraySplice = (function() {
       }
     }
 
+    function hasInsertionPoint(root) {
+      return Boolean(root._insertionPoints.length);
+    }
+
     var p = Element.prototype;
     var matchesSelector = p.matches || p.matchesSelector ||
         p.mozMatchesSelector || p.msMatchesSelector ||
@@ -1695,6 +1746,7 @@ Polymer.ArraySplice = (function() {
       getLightChildren: getLightChildren,
       saveLightChildrenIfNeeded: saveLightChildrenIfNeeded,
       matchesSelector: matchesSelector,
+      hasInsertionPoint: hasInsertionPoint,
       factory: factory
     };
 
@@ -1715,6 +1767,10 @@ Polymer.ArraySplice = (function() {
       _prepContent: function() {
         // Use this system iff localDom is needed.
         this._useContent = this._useContent || Boolean(this._template);
+        if (this._useContent) {
+          this._template._hasInsertionPoint =
+            this._template.content.querySelector('content');
+        }
       },
 
       // called as part of content initialization, prior to template stamping
@@ -1735,6 +1791,12 @@ Polymer.ArraySplice = (function() {
       _createLocalRoot: function() {
         this.shadyRoot = this.root;
         this.shadyRoot._isShadyRoot = true;
+        // capture insertion point list
+        // TODO(sorvell): it's faster to do this via native qSA than annotator.
+        this.shadyRoot._insertionPoints = this._template._hasInsertionPoint ?
+          this.shadyRoot.querySelectorAll('content') : [];
+        // save logical tree info for shadyRoot.
+        saveLightChildrenIfNeeded(this.shadyRoot);
         this.shadyRoot.host = this;
       },
 
@@ -1758,7 +1820,7 @@ Polymer.ArraySplice = (function() {
       },
 
       _beginDistribute: function() {
-        if (this._useContent) {
+        if (this._useContent && hasInsertionPoint(this.shadyRoot)) {
           // reset distributions
           this._resetDistribution(this.shadyRoot);
           // compute which nodes should be distributed where
@@ -1771,8 +1833,21 @@ Polymer.ArraySplice = (function() {
       _finishDistribute: function() {
         // compose self
         if (this._useContent) {
-          this._composeTree(this);
-        } else {
+          if (hasInsertionPoint(this.shadyRoot)) {
+            this._composeTree();
+          } else {
+            if (!this.shadyRoot._hasDistributed) {
+              this.textContent = '';
+              this.appendChild(this.shadyRoot);
+            } else {
+              // simplified non-tree walk composition
+              var children = this._composeNode(this);
+              this._updateChildNodes(this, children);
+            }
+          }
+          this.shadyRoot._hasDistributed = true;
+        } else if (this.root !== this) {
+          this.appendChild(this.root);
           this.root = this;
         }
         this._distributionClean = true;
@@ -1792,15 +1867,18 @@ Polymer.ArraySplice = (function() {
       // included here as "protected" methods to allow overriding.
 
       _resetDistribution: function(node) {
+        // light children
         var children = getLightChildren(node);
         for (var i = 0; i < children.length; i++) {
           var child = children[i];
-          if (isInsertionPoint(child)) {
-            child._distributedNodes = [];
-          } else if (child._destinationInsertionPoints) {
+          if (child._destinationInsertionPoints) {
             child._destinationInsertionPoints = undefined;
           }
-          this._resetDistribution(child);
+        }
+        // insertion points
+        var p$ = node._insertionPoints;
+        for (var j = 0; j < p$.length; j++) {
+          p$[j]._distributedNodes = [];
         }
       },
 
@@ -1824,52 +1902,43 @@ Polymer.ArraySplice = (function() {
       // instead elements are distributed into a `content._distributedNodes`
       // array where applicable.
       _distributePool: function(node, pool) {
-        // TODO(sorvell): is this the best place to set this?
-        node._ownerShadyRoot = this.shadyRoot;
-        var children;
-        if (isInsertionPoint(node)) {
-          this.shadyRoot._hasInsertionPoint = true;
-          // distribute nodes from the pool that this selector matches
-          var content = node;
-          var anyDistributed = false;
-          for (var i = 0; i < pool.length; i++) {
-            node = pool[i];
-            // skip nodes that were already used
-            if (!node) {
-              continue;
-            } 
-            // distribute this node if it matches
-            if (this._matchesContentSelect(node, content)) {
-              distributeNodeInto(node, content);
-              // remove this node from the pool
-              pool[i] = undefined;
-              // since at least one node matched, we won't need fallback content
-              anyDistributed = true;
-              var parent = content.lightParent;
-              if (parent && parent.shadyRoot && 
-                parent.shadyRoot._hasInsertionPoint) {
-                //console.warn('marked dirty', this.is);
-                parent._distributionClean = false;
-              }
+        var p$ = node._insertionPoints;
+        for (var i=0, l=p$.length, p; (i<l) && (p=p$[i]); i++) {
+          this._distributeInsertionPoint(p, pool);
+        }
+      },
+
+      _distributeInsertionPoint: function(content, pool) {
+        // distribute nodes from the pool that this selector matches
+        var anyDistributed = false;
+        for (var i=0, l=pool.length, node; i < l; i++) {
+          node=pool[i];
+          // skip nodes that were already used
+          if (!node) {
+            continue;
+          }
+          // distribute this node if it matches
+          if (this._matchesContentSelect(node, content)) {
+            distributeNodeInto(node, content);
+            // remove this node from the pool
+            pool[i] = undefined;
+            // since at least one node matched, we won't need fallback content
+            anyDistributed = true;
+            var parent = content.lightParent;
+            // dirty a shadyRoot if a change may trigger reprojection!
+            if (parent && parent.shadyRoot &&
+              hasInsertionPoint(parent.shadyRoot)) {
+              parent._distributionClean = false;
             }
           }
-          // Fallback content if nothing was distributed here
-          if (!anyDistributed) {
-            children = getLightChildren(content);
-            for (var i = 0; i < children.length; i++) {
-              distributeNodeInto(children[i], content);
-            }
+        }
+        // Fallback content if nothing was distributed here
+        if (!anyDistributed) {
+          var children = getLightChildren(content);
+          for (var j = 0; j < children.length; j++) {
+            distributeNodeInto(children[j], content);
           }
-          return true;
         }
-        // recursively distribute.
-        children = getLightChildren(node);
-        var hasInsertionPoint;
-        for (var i = 0; i < children.length; i++) {
-          hasInsertionPoint = this._distributePool(children[i], pool) ||
-            hasInsertionPoint;
-        }
-        return hasInsertionPoint;
       },
 
       // returns a list of elements that support content distribution
@@ -1880,16 +1949,16 @@ Polymer.ArraySplice = (function() {
 
       // Reify dom such that it is at its correct rendering position
       // based on logical distribution.
-      _composeTree: function(node) {
-        var children = this._composeNode(node);
-        for (var i = 0; i < children.length; i++) {
-          var child = children[i];
-          // If the child has a content root, let it compose itself.
-          if (!child._useContent) {
-            this._composeTree(child);
+      _composeTree: function() {
+        this._updateChildNodes(this, this._composeNode(this));
+        var p$ = this.shadyRoot._insertionPoints;
+        for (var i=0, l=p$.length, p, parent; (i<l) && (p=p$[i]); i++) {
+          parent = p.lightParent || p.parentNode;
+          if (!parent._useContent && (parent !== this) &&
+            (parent !== this.shadyRoot)) {
+            this._updateChildNodes(parent, this._composeNode(parent));
           }
         }
-        this._updateChildNodes(node, children);
       },
 
       // Returns the list of nodes which should be rendered inside `node`.
@@ -1915,7 +1984,7 @@ Polymer.ArraySplice = (function() {
 
       // Ensures that the rendered node list inside `node` is `children`.
       _updateChildNodes: function(node, children) {
-        var splices = 
+        var splices =
           Polymer.ArraySplice.calculateSplices(children, node.childNodes);
         for (var i=0; i<splices.length; i++) {
           var s = splices[i];
@@ -1927,13 +1996,13 @@ Polymer.ArraySplice = (function() {
             }
           }
           // insert
-          for (var idx=s.index, c, o; idx < s.index + s.addedCount; idx++) {
-            c = children[idx];
+          for (var idx=s.index, ch, o; idx < s.index + s.addedCount; idx++) {
+            ch = children[idx];
             o = node.childNodes[idx];
-            while (o && o === c) {
+            while (o && o === ch) {
               o = o.nextSibling;
             }
-            insertBefore(node, c, o);
+            insertBefore(node, ch, o);
           }
         }
       },
@@ -1978,6 +2047,7 @@ Polymer.ArraySplice = (function() {
     var saveLightChildrenIfNeeded = Polymer.DomApi.saveLightChildrenIfNeeded;
     var getLightChildren = Polymer.DomApi.getLightChildren;
     var matchesSelector = Polymer.DomApi.matchesSelector;
+    var hasInsertionPoint = Polymer.DomApi.hasInsertionPoint;
 
     function distributeNodeInto(child, insertionPoint) {
       insertionPoint._distributedNodes.push(child);
@@ -2336,6 +2406,12 @@ Polymer.ArraySplice = (function() {
           name = n.slice(0, -1);
           kind = 'attribute';
         }
+        // Custom notification event
+        var notifyEvent, colon;
+        if (mode == '{' && (colon = v.indexOf('::')) > 0) {
+          notifyEvent = v.substring(colon + 2);
+          v = v.substring(0, colon);
+        }
         // Remove annotation
         node.removeAttribute(n);
         // Case hackery: attributes are lower-case, but bind targets 
@@ -2350,7 +2426,8 @@ Polymer.ArraySplice = (function() {
           mode: mode,
           name: name,
           value: v,
-          negate: not
+          negate: not,
+          event: notifyEvent
         };
       }
     },
@@ -3144,7 +3221,7 @@ Polymer.Debounce = (function() {
     $$: function(slctr) {
       return Polymer.dom(this.root).querySelector(slctr);
     },
-    
+
     toggleClass: function(name, bool, node) {
       node = node || this;
       if (arguments.length == 1) {
@@ -3173,12 +3250,12 @@ Polymer.Debounce = (function() {
     attributeFollows: function(name, neo, old) {
       if (old) {
         old.removeAttribute(name);
-      } 
+      }
       if (neo) {
         neo.setAttribute(name, '');
       }
     },
-    
+
     getContentChildNodes: function(slctr) {
       return Polymer.dom(Polymer.dom(this.root).querySelector(
           slctr || 'content')).getDistributedNodes();
@@ -3211,6 +3288,13 @@ Polymer.Debounce = (function() {
       Polymer.Async.cancel(handle);
     },
 
+    arrayDelete: function(array, item) {
+      var index = array.indexOf(item);
+      if (index >= 0) {
+        return array.splice(index, 1);
+      }
+    },
+
     transform: function(node, transform) {
       node.style.webkitTransform = transform;
       node.style.transform = transform;
@@ -3235,12 +3319,12 @@ Polymer.Debounce = (function() {
     },
 
     /**
-     * Debounce signals. 
-     * 
+     * Debounce signals.
+     *
      * Call `debounce` to collapse multiple requests for a named task into
-     * one invocation which is made after the wait time has elapsed with 
+     * one invocation which is made after the wait time has elapsed with
      * no new request.
-     * 
+     *
      *     debouncedClickAction: function(e) {
      *       // will not call `processClick` more than once per 100ms
      *       this.debounce('click', function() {
@@ -3278,31 +3362,35 @@ Polymer.Debounce = (function() {
       model._clearPath = this._clearPath;
     },
 
-    _addAnnotatedListener: function(model, index, property, path) {
+    _addAnnotatedListener: function(model, index, property, path, event) {
       // <node>.on.<property>-changed: <path> = e.detail.value
       //
-      var changedFn = '\tthis.' + path + ' = e.detail.value;';
+      var value = 'target.' + property;
+      var changedFn = '\t\tthis.' + path + ' = ' + value + ';';
       if (path.indexOf('.') > 0) {
         // TODO(kschaaf): dirty check avoids null references when the object has gone away
         changedFn = 
-          '\tif (this._data[\'' + path + '\'] != e.detail.value) {\n' +
+          '\tif (this._data[\'' + path + '\'] != ' + value + ') {\n' +
           '\t\t' + changedFn + '\n' +
-          '\t\tthis.notifyPath(\'' + path + '\', e.detail.value)\n' +
+          '\t\tthis.notifyPath(\'' + path + '\', ' + value + ')\n' +
           '\t}';
       }
-      changedFn = 'if (e.detail.path) {\n' +
-        '\tvar path = this._fixPath(\'' + path + '\', \'' + 
+      changedFn = 
+        'if (!e.path || e.path[0] == target) {\n' +
+        '\tif (e.detail && e.detail.path) {\n' +
+        '\t\tvar path = this._fixPath(\'' + path + '\', \'' + 
           property + '\', e.detail.path);\n' + 
-        '\tthis.notifyPath(path, e.detail.value);\n' +
-        '} else {\n' +
+        '\t\tthis.notifyPath(path, e.detail.value);\n' +
+        '\t} else {\n' +
         changedFn + '\n' +
+        '\t}' +
         '}';
       //
       model._bindListeners.push({
         index: index,
-        property: property,
         path: path,
-        changedFn: new Function('e', changedFn)
+        changedFn: new Function('e', 'target', changedFn),
+        event: event || (Polymer.CaseMap.camelToDashCase(property) + '-changed')
       });
     },
 
@@ -3437,7 +3525,7 @@ Polymer.Debounce = (function() {
         // <node>.on.<property>-changed: <path]> = e.detail.value
         //console.log('[_setupBindListener]: [%s][%s] listening for [%s][%s-changed]', this.localName, info.path, info.id || info.index, info.property);
         var node = inst._nodes[info.index];
-        node.addEventListener(info.property + '-changed', inst._notifyListener.bind(inst, info.changedFn));
+        node.addEventListener(info.event, inst._notifyListener.bind(inst, info.changedFn));
       });
     },
 
@@ -3576,17 +3664,13 @@ Polymer.Debounce = (function() {
     annotation: function(model, hostProperty, info) {
       var property = info.name;
       if (Polymer.Bind._shouldAddListener(info)) {
-        var dashCaseProperty = Polymer.CaseMap.camelToDashCase(property);
         // <node>.on.<dash-case-property>-changed: <path> = e.detail.value
-        Polymer.Bind._addAnnotatedListener(model, info.index, 
-          dashCaseProperty, info.value);
+        Polymer.Bind._addAnnotatedListener(model, info.index,
+          property, info.value, info.event);
       }
       //
       if (!property) {
         property = 'textContent';
-      }
-      if (property === 'style') {
-        property = 'style.cssText';
       }
       //
       // flow-down
@@ -3711,9 +3795,6 @@ Polymer.Debounce = (function() {
       } else {
         if (!property) {
           property = 'textContent';
-        }
-        if (property === 'style') {
-          property = 'style.cssText';
         }
         methodString = node + '.' + property + ' = ' + value + ';';          
       }
@@ -3979,7 +4060,9 @@ Polymer.Debounce = (function() {
                 var node = this._nodes[x.effect.index];
                 // seeding configuration only
                 if (node._configValue) {
-                  node._configValue(x.effect.name, config[p]);
+                  var value = (p === x.effect.value) ? config[p] :
+                    this.getPathValue(x.effect.value, config);
+                  node._configValue(x.effect.name, value);
                 }
               }
             }
@@ -4011,9 +4094,9 @@ Polymer.Debounce = (function() {
     // handling is queue/defered until then.
     _notifyListener: function(fn, e) {
       if (!this._readied) {
-        this._queueHandler(arguments);
+        this._queueHandler([fn, e, e.target]);
       } else {
-        return fn.call(this, e);
+        return fn.call(this, e, e.target);
       }
     },
 
@@ -4024,7 +4107,7 @@ Polymer.Debounce = (function() {
     _flushHandlers: function() {
       var h$ = this._handlers;
       for (var i=0, l=h$.length, h; (i<l) && (h=h$[i]); i++) {
-        h[0].call(this, h[1]);
+        h[0].call(this, h[1], h[2]);
       }
     }
 
@@ -4136,10 +4219,10 @@ Polymer.Debounce = (function() {
       }
     },
 
-    getPathValue: function(path) {
+    getPathValue: function(path, root) {
       var parts = path.split('.');
       var last = parts.pop();
-      var prop = this;
+      var prop = root || this;
       while (parts.length) {
         prop = prop[parts.shift()];
         if (!prop) {
@@ -5136,11 +5219,11 @@ Polymer.Debounce = (function() {
 
     initFeatures: function() {
       this._poolContent();
-      this._pushHost();
       this._setupConfigure();
+      this._pushHost();
       this._stampTemplate();
-      this._marshalAnnotationReferences();
       this._popHost();
+      this._marshalAnnotationReferences();
       this._marshalInstanceEffects();
       this._marshalAttributes();
       this._marshalListeners();
@@ -5207,6 +5290,7 @@ Polymer.Debounce = (function() {
     extends: 'template',
 
     registerFeatures: function() {
+      this._prepExtends();
       this._prepConstructor();
     },
 
@@ -5368,7 +5452,10 @@ Polymer.Debounce = (function() {
   function observe(array, cb) {
     if (Array.observe) {
       var ncb = function(changes) {
-        cb(changes.filter(function(o) { return o.type == 'splice'; }));
+        changes = changes.filter(function(o) { return o.type == 'splice'; });
+        if (changes.length) {
+          cb(changes);
+        }
       };
       callbacks.set(cb, ncb);
       Array.observe(array, ncb);
@@ -5488,18 +5575,29 @@ Polymer.Debounce = (function() {
     initMap: function() {
       var map = this.map = new WeakMap();
       var s = this.store;
+      var u = this.userArray;
       for (var i=0; i<s.length; i++) {
         var v = s[i];
-        if (typeof v == 'string') {
-          v = s[i] = new String(v);
-        }
+        if (v) {
+          switch (typeof v) {
+            case 'string':
+              v = s[i] = u[i]= new String(v);
+              break;
+            case 'number':
+              v = s[i] = u[i]= new Number(v);
+              break;          
+            case 'boolean':
+              v = s[i] = u[i]= new Boolean(v);
+              break;          
+          }
         map.set(v, i);
+        }
       }
     },
 
     add: function(item, squelch) {
       var key = this.store.push(item) - 1;
-      if (this.map) {
+      if (item != null && this.map) {
         this.map.set(item, key);
       }
       if (!squelch) {
@@ -5520,7 +5618,7 @@ Polymer.Debounce = (function() {
 
     remove: function(item, squelch) {
       var key = this.getKey(item);
-      if (this.map) {
+      if (item != null && this.map) {
         this.map.delete(item);
       }
       delete this.store[key];
@@ -5540,7 +5638,7 @@ Polymer.Debounce = (function() {
         this.added = [];
         this.removed = [];
       }
-      this.callbacks.forEach(function(cb) { 
+      this.callbacks.forEach(function(cb) {
         cb(splices);
       }, this);
     },
@@ -5554,7 +5652,11 @@ Polymer.Debounce = (function() {
     },
 
     getKey: function(item) {
-      return this.map ? this.map.get(item) : this.store.indexOf(item);
+      if (item != null && this.map) {
+        return this.map.get(item);
+      } else {
+        return this.store.indexOf(item);      
+      }
     },
 
     getKeys: function() {
@@ -5977,17 +6079,19 @@ Polymer.Debounce = (function() {
     },
 
     _notifyElement: function(path, value) {
-      // 'items.'.length == 6
-      var dot = path.indexOf('.', 6);
-      var key = path.substring(6, dot < 0 ? path.length : dot);
-      var idx = this._rowForKey[key];
-      var row = this.rows[idx];
-      if (row) {
-        if (dot >= 0) {
-          path = 'item.' + path.substring(dot+1);
-          row.notifyPath(path, value, true);
-        } else {
-          row.item = value;
+      if (this._rowForKey) {
+        // 'items.'.length == 6
+        var dot = path.indexOf('.', 6);
+        var key = path.substring(6, dot < 0 ? path.length : dot);
+        var idx = this._rowForKey[key];
+        var row = this.rows[idx];
+        if (row) {
+          if (dot >= 0) {
+            path = 'item.' + path.substring(dot+1);
+            row.notifyPath(path, value, true);
+          } else {
+            row.item = value;
+          }
         }
       }
     },
@@ -6000,7 +6104,7 @@ Polymer.Debounce = (function() {
       while (el && !el._templateInstance) {
         el = el.parentNode;
       }
-      return el._templateInstance.item;
+      return el._templateInstance && el._templateInstance.item;
     },
 
     /**
@@ -6011,7 +6115,7 @@ Polymer.Debounce = (function() {
       while (el && !el._templateInstance) {
         el = el.parentNode;
       }
-      return el._templateInstance.key;
+      return el._templateInstance && el._templateInstance.key;
     },
 
     /**
@@ -6027,6 +6131,120 @@ Polymer.Debounce = (function() {
 
   });
 
+
+;
+
+
+  Polymer({
+    is: 'x-array-selector',
+    
+    properties: {
+
+      /**
+       * An array containing items from which selection will be made.
+       */
+      items: {
+        type: Array,
+        observer: '_itemsChanged'
+      },
+
+      /**
+       * When `multi` is true, this is an array that contains any selected.
+       * When `multi` is false, this is the currently selected item, or `null`
+       * if no item is selected.
+       */
+      selected: {
+        type: Object,
+        notify: true
+      },
+
+      /**
+       * When `true`, calling `select` on an item that is already selected
+       * will deselect the item.
+       */
+      toggle: Boolean,
+
+      /**
+       * When `true`, multiple items may be selected at once (in this case,
+       * `selected` is an array of currently selected items).  When `false`,
+       * only one item may be selected at a time.
+       */
+      multi: Boolean
+    },
+    
+    _itemsChanged: function() {
+      // Unbind previous selection
+      if (Array.isArray(this.selected)) {
+        for (var i=0; i<this.selected.length; i++) {
+          this.unbindPaths('selected.' + i);
+        }
+      } else {
+        this.unbindPaths('selected');
+      }
+      // Initialize selection
+      if (this.multi) {
+        this.selected = [];
+      } else {
+        this.selected = null;
+      }
+    },
+
+    /**
+     * Deselects the given item if it is already selected.
+     */
+    deselect: function(item) {
+      if (this.multi) {
+        var scol = Polymer.Collection.get(this.selected);
+        // var skey = scol.getKey(item);
+        // if (skey >= 0) {
+        var sidx = this.selected.indexOf(item);
+        if (sidx >= 0) {
+          var skey = scol.getKey(item);
+          this.selected.splice(sidx, 1);
+          // scol.remove(item);
+          this.unbindPaths('selected.' + skey);
+          return true;
+        }
+      } else {
+        this.selected = null;
+        this.unbindPaths('selected');
+      }
+    },
+
+    /**
+     * Selects the given item.  When `toggle` is true, this will automatically
+     * deselect the item if already selected.
+     */
+    select: function(item) {
+      var icol = Polymer.Collection.get(this.items);
+      var key = icol.getKey(item);
+      if (this.multi) {
+        // var sidx = this.selected.indexOf(item);
+        // if (sidx < 0) {
+        var scol = Polymer.Collection.get(this.selected);
+        var skey = scol.getKey(item);
+        if (skey >= 0) {
+          this.deselect(item);
+        } else if (this.toggle) {
+          this.selected.push(item);
+          // this.bindPaths('selected.' + sidx, 'items.' + skey);
+          // skey = Polymer.Collection.get(this.selected).add(item);
+          this.async(function() {
+            skey = scol.getKey(item);
+            this.bindPaths('selected.' + skey, 'items.' + key);
+          });
+        }
+      } else {
+        if (this.toggle && item == this.selected) {
+          this.deselect();
+        } else {
+          this.bindPaths('selected', 'items.' + key);
+          this.selected = item;
+        }
+      }
+    }
+
+  });
 
 ;
 
@@ -8885,7 +9103,8 @@ Polymer({
             */
             var options = {
                 iconSize : new L.Point(24, 24),
-                type : type
+                type : type,
+                name : feature.properties.prmname
             };
   
 
@@ -8962,6 +9181,20 @@ Polymer({
                     e.width = s.x;
                     e.height = s.y;
                     this.draw(e.getContext('2d'), s.x, s.y);
+
+                    // TODO: make sure this doesn't cause a memory leak...
+                    if( this.options.name ) {
+                        var popup = $('<div style="z-index:1000;position:absolute;padding:5px;background-color:white;border:1px solid #ccc">'+this.options.name+'</div>');
+                        $(e)
+                            .on('mouseover', function(e){
+                                popup.css('top', e.clientY+30).css('left', e.clientX);
+                                $('body').append(popup);
+                            })
+                            .on('mouseout', function(){
+                                popup.remove();
+                            });
+                    }
+
                     return e;
                 },
 

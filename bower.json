@@ -22,6 +22,7 @@
     "leaflet": "*",
     "animate-css": "~*",
     "d3": "*",
-    "sigma.js": "*"
+    "sigma.js": "*",
+    "polymer": "Polymer/polymer#^0.8.0-rc.2"
   }
 }
