@@ -1,6 +1,3 @@
-<!--<polymer-element name="cwn-map" attributes="ds filters legend">-->
-<link rel="stylesheet" href="../bower_components/leaflet/dist/leaflet.css" />
-
 <dom-module id="cwn-map">
     <style>
         leaflet-map {
@@ -34,7 +31,6 @@
     <template>
         <div id="leaflet" fit></div>
 
-        <!--<leaflet-map id="leaflet" content tab="true" longitude="-121.00" latitude="40.00" zoom="5"></leaflet-map>-->
         <div hidden$="{{!updating}}" class="updating">
             <div>Filtering...</div>
         </div>
@@ -44,11 +40,6 @@
 <script>
     Polymer({
         is : 'cwn-map',
-
-        bind : {
-            'ds.loading' : 'update',
-            'map' : 'update'
-        },
 
         configure : function() {
             return {
@@ -63,29 +54,32 @@
             }
         },
 
-        init : function(ds, legend, filters) {
-            this.ds = ds;
+        ready : function() {
+            this.firstRender = true;
+            CWN.ds.on('load', this.process.bind(this));
+        },
+
+        init : function(legend, filters) {
             this.filters = filters;
             this.legend = legend;
-
+            
             this.map = L.map(this.$.leaflet).setView([40, -121], 5);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18
             }).addTo(this.map);
 
-            this.map.on('zoomend', this._onZoomEnd.bind(this));
+            this.map.on('zoomend', this.onZoomEnd.bind(this));
 
-            this.ds.onLoad(this._process.bind(this));
         },
 
-        _process : function() {
-            if( !this.ds ) return;
-            if( this.ds.loading || !this.map ) return;
+        process : function() {
+            debugger;
+            if( CWN.ds.loading ) return;
 
             this.edges = [];
             this.knownEdges = [];
-            for( var i = 0; i < this.ds.data.length; i++ ) {
-                var d = this.ds.data[i];
+            for( var i = 0; i < CWN.ds.data.length; i++ ) {
+                var d = CWN.ds.data[i];
 
                 if( d.properties.type == 'Diversion' || d.properties.type == 'Return Flow' ) {
                     this.links.push(d);
@@ -98,13 +92,13 @@
         },
 
         // TODO: this data sucks... needs to be cleaned up!
-        _addEdge : function(edge, type) {
+        addEdge : function(edge, type) {
             if( edge == null ) return;
 
             var pts = edge.split('_');
             if( pts.length <= 1 ) return;
-            if( !this.ds.dataMap[pts[0]] || !this.ds.dataMap[pts[1]] ) return;
-            if( !this.ds.dataMap[pts[0]].geometry || !this.ds.dataMap[pts[1]].geometry ) return;
+            if( !CWN.ds.dataMap[pts[0]] || !CWN.ds.dataMap[pts[1]] ) return;
+            if( !CWN.ds.dataMap[pts[0]].geometry || !CWN.ds.dataMap[pts[1]].geometry ) return;
 
             // only add edge once
             if( this.knownEdges.indexOf(edge) > -1 || this.knownEdges.indexOf(pts[1]+'_'+pts[0]) > -1 ) return;
@@ -115,8 +109,8 @@
                 geometry : {
                     type: 'LineString',
                     coordinates : [
-                        this.ds.dataMap[pts[0]].geometry.coordinates,
-                        this.ds.dataMap[pts[1]].geometry.coordinates 
+                        CWN.ds.dataMap[pts[0]].geometry.coordinates,
+                        CWN.ds.dataMap[pts[1]].geometry.coordinates 
                     ]
                 },
                 properties : {
@@ -127,24 +121,21 @@
         },
 
         update : function() {
-            if( !this.ds ) return;
-            if( this.ds.loading || !this.map ) return;
             this.updating = true;
 
             setTimeout(function(){
                 var map = this.map;
                 var oneStepMode = this.filters.oneStepMode;
 
-                if( !L.MyMarker ) {
+                if( this.firstRender ) {
                     this.initMoveEvents();
-                    this.initMarker();
                 }
 
                 if( this.markerLayer ) map.removeLayer(this.markerLayer);
                 if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
 
                 // update filtering
-                this._filter();
+                this.filter();
 
                 var lineMarkers = this.getEdgeMarkers();
 
@@ -178,7 +169,7 @@
                         return line;
                     },
                     pointToLayer: function (feature, latlng) {
-                        return this._getLineMarker(feature, latlng);
+                        return this.getLineMarker(feature, latlng);
                     }.bind(this),
                     filter: function(feature, layer) {
                         return feature.properties._render.show;
@@ -190,13 +181,13 @@
                 }.bind(this));
                 
                 for( var key in this.edgeLayer._layers ) {
-                    this._hackTouchEvent(this.edgeLayer._layers[key]);
+                    this.hackTouchEvent(this.edgeLayer._layers[key]);
                 }
 
 
-                this.markerLayer = L.geoJson(this.ds.data.nodes, {
+                this.markerLayer = L.geoJson(CWN.ds.data.nodes, {
                     pointToLayer: function(feature, ll) {
-                        return this._getMarker(feature, ll);
+                        return this.getMarker(feature, ll);
                     }.bind(this),
                     filter: function(feature, layer) {
                         return feature.properties._render.show || 
@@ -208,11 +199,13 @@
                 }.bind(this));
 
                 for( var key in this.markerLayer._layers ) {
-                    this._hackTouchEvent(this.markerLayer._layers[key]);
+                    this.hackTouchEvent(this.markerLayer._layers[key]);
                 }
 
                 this.updating = false;
                 this.fire('filtering-complete');
+
+                this.firstRender = false;
             }.bind(this), 250);
             
         },
@@ -220,8 +213,8 @@
         getEdgeMarkers : function() {
             var x2, y2, i, coord, link, markers = [];
 
-            for( i = 0; i < this.ds.data.links.length; i++ ) {
-                link = this.ds.data.links[i];
+            for( i = 0; i < CWN.ds.data.links.length; i++ ) {
+                link = CWN.ds.data.links[i];
                 if( !link.properties._render.show ) continue;
                 coord = link.geometry.coordinates;
                 
@@ -232,20 +225,13 @@
                 y2 = (y2 + coord[1][1]) / 2;
 
                 markers.push(link);
-                /*var m = {
-                    type: "Point", 
-                    coordinates : [x2, y2],
-                    properties : $.extend(true, {}, link.properties)
-                };
-                m.properties.isCanvasMarker = true;
-                markers.push(m);*/
             }
 
             return markers;
         },
 
         // marker nodes that are linked to a visible node with the 'nodeStep' attribute
-        _filter : function() {
+        filter : function() {
             var re, i, d, d2, d3, id;
 
             // three loops, first mark nodes that match, then mark one step nodes
@@ -256,8 +242,8 @@
                 re = new RegExp('.*'+this.filters.text.toLowerCase()+'.*');
             } catch (e) {}
 
-            for( i = 0; i < this.ds.data.nodes.length; i++ ) {
-                d = this.ds.data.nodes[i];
+            for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+                d = CWN.ds.data.nodes[i];
 
                 if( !d.properties._render ) {
                     d.properties._render = {
@@ -267,7 +253,7 @@
                 d.properties._render.oneStep = false;
 
                 
-                if( this.filters[d.properties._render.filter_id] && this._isTextMatch(re, d.properties) ) {
+                if( this.filters[d.properties._render.filter_id] && this.isTextMatch(re, d.properties) ) {
                     if( !this.filters.calibrationMode && d.properties.calibrationNode ) {
                         d.properties._render.show = false;
                     } else {
@@ -279,14 +265,14 @@
             }
 
             // now mark one step nodes
-            for( i = 0; i < this.ds.data.nodes.length; i++ ) {
-                d = this.ds.data.nodes[i];
+            for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+                d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
                 if( !this.filters.calibrationMode && d.properties.calibrationNode ) continue;
 
                 if( d.properties.terminals ) {
                     for( var j = 0; j < d.properties.terminals.length; j++ ) {
-                        d2 = this.ds.lookupMap[d.properties.terminals[j]];
+                        d2 = CWN.ds.lookupMap[d.properties.terminals[j]];
                         if( d2 && d2.properties._render.show ) {
                             d.properties._render.oneStep = true;
                             break;
@@ -295,7 +281,7 @@
                 }
                 if( d.properties.origins && !d.properties._render.oneStep) {
                     for( var j = 0; j < d.properties.origins.length; j++ ) {
-                        d2 = this.ds.lookupMap[d.properties.origins[j]];
+                        d2 = CWN.ds.lookupMap[d.properties.origins[j]];
                         if( d2 && d2.properties._render.show ) {
                             d.properties._render.oneStep = true;
                             break;
@@ -305,14 +291,14 @@
             }
 
             // now mark links that should be show
-            for( var i = 0; i < this.ds.data.links.length; i++ ) {
-                d = this.ds.data.links[i];
+            for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
+                d = CWN.ds.data.links[i];
                 if( !d.properties._render ) {
                     d.properties._render = {};
                 }
 
-                d2 = this.ds.lookupMap[d.properties.origin];
-                d3 = this.ds.lookupMap[d.properties.terminus];
+                d2 = CWN.ds.lookupMap[d.properties.origin];
+                d3 = CWN.ds.lookupMap[d.properties.terminus];
                 if( d2 && d3 && 
                     (d2.properties._render.show || (this.filters.oneStepMode && d2.properties._render.oneStep) ) && 
                     (d3.properties._render.show || (this.filters.oneStepMode && d3.properties._render.oneStep) ) &&
@@ -324,7 +310,7 @@
             }
         },
 
-        _isTextMatch : function(re, props) {
+        isTextMatch : function(re, props) {
             if( this.filters.text == '' || !re ) return true;
 
             if( re.test(props.prmname.toLowerCase()) ) return true;
@@ -332,7 +318,7 @@
             return false;
         },
 
-        _onZoomEnd : function() {
+        onZoomEnd : function() {
 /* WHY AGAIN 
             for( var key in this.markerLayer._layers ) {
                 this._hackTouchEvent(this.markerLayer._layers[key]);
@@ -357,17 +343,17 @@
 
             this.redrawMarkerSizesTimer = setTimeout(function(){
                 this.redrawMarkerSizesTimer = -1;
-                this._redrawMarkerSizes();
+                this.redrawMarkerSizes();
             }.bind(this), 2000);
         },
 
-        _redrawMarkerSizes : function() {
+        redrawMarkerSizes : function() {
             console.log('redrawing');
             if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
 
-            this.markerLayer = L.geoJson(this.ds.data.nodes, {
+            this.markerLayer = L.geoJson(CWN.ds.data.nodes, {
                 pointToLayer: function(feature, ll) {
-                    return this._getMarker(feature, ll);
+                    return this.getMarker(feature, ll);
                 }.bind(this),
                 filter: function(feature, layer) {
                     if( !feature ) return false;
@@ -381,7 +367,7 @@
             }.bind(this));
         },
 
-        _getMarker : function(feature, ll) {
+        getMarker : function(feature, ll) {
             var render = feature.properties._render || {};
             var type = feature.properties.type;
 
@@ -413,7 +399,7 @@
             return m;
         },
 
-        _getLineMarker : function(feature, ll) {
+        getLineMarker : function(feature, ll) {
             var hide = false;
 
             if( this.map.getZoom() < 10 ) {
@@ -449,7 +435,7 @@
             }.bind(this));
         },
 
-        _hackTouchEvent : function(marker) {
+        hackTouchEvent : function(marker) {
             $(marker._container).on('touchend', function(e){
                 setTimeout(function(){
                     var timeFromLastMove = new Date().getTime() - this.lastMove;
@@ -461,109 +447,6 @@
                 // wait 50ms seconds to check to make sure map.movestart has had a chance to fire
                 }.bind(this), 50);
             }.bind(this));
-        },
-
-        initMarker : function() {
-            // can we pass in type and then just use
-            L.Icon.Canvas = L.Icon.extend({
-                options: {
-                    iconSize: new L.Point(20, 20), // Have to be supplied
-                    className: 'leaflet-canvas-icon'
-                },
-
-                createIcon: function () {
-                    var e = document.createElement('canvas');
-                    this._setIconStyles(e, 'icon');
-                    var s = this.options.iconSize;
-                    e.width = s.x;
-                    e.height = s.y;
-                    this.draw(e.getContext('2d'), s.x, s.y);
-
-                    // TODO: make sure this doesn't cause a memory leak...
-                    if( this.options.name ) {
-                        var popup = $('<div style="z-index:1000;position:absolute;padding:5px;background-color:white;border:1px solid #ccc">'+this.options.name+'</div>');
-                        $(e)
-                            .on('mouseover', function(e){
-                                popup.css('top', e.clientY+30).css('left', e.clientX);
-                                $('body').append(popup);
-                            })
-                            .on('mouseout', function(){
-                                popup.remove();
-                            });
-                    }
-
-                    return e;
-                },
-
-                createShadow: function () {
-                    return null;
-                },
-
-                draw: function(ctx, width, height) {
-                    CWN.render[this.options.type](ctx, 2, 2, width-4, height-4);
-                }
-            });
-
-            L.Icon.LineCanvas = L.Icon.extend({
-                options: {
-                    iconSize: new L.Point(20, 20), // Have to be supplied
-                    className: 'LineCanvas'
-                },
-                _transformProps : ['webkitTransform', 'MozTransform', 'msTransform', 'transform'],
-
-                createIcon: function () {
-                    var icon = document.createElement('div');
-                    var canvas = document.createElement('canvas');
-                    icon.appendChild(canvas);
-
-                    this._setIconStyles(icon, 'icon');
-
-                    var s = this.options.iconSize;
-                    canvas.width = s.x;
-                    canvas.height = s.y;
-                    this.draw(canvas.getContext('2d'), s.x, s.y);
-
-                    // now we need to rotate the icon
-                    var rotate = this.options.renderInfo.rotate || 0;
-
-                    for( var i = 0; i < this._transformProps.length; i++ ) {
-                        canvas.style[this._transformProps[i]] = 'rotate('+rotate+'deg)';
-                    }
-                    if( this.options.hide ) icon.style.display = 'none';
-                    return icon;
-                },
-
-                createShadow: function () {
-                    return null;
-                },
-
-                draw: function(ctx, width, height) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(width, 0);
-                    ctx.lineTo(width, height);
-                    ctx.lineTo(0, height);
-                    ctx.moveTo(0, 0);
-                    ctx.closePath();
-                    ctx.stroke();
-
-                    var mX = 5;
-                    var mY = height / 2;
-                    var vX = 10;
-                    var vY = 10;
-
-
-                    if( this.options.renderInfo ) {
-                      for( var key in CWN.render.lineMarkers ) {
-                        if( this.options.renderInfo[key] ) {
-                          CWN.render.lineMarkers[key](ctx, mX, mY, 4, vX, vY);
-                          mX += vX * 1.75;
-                          //mY += vY * 1.75;
-                        }
-                      }
-                    }
-                }
-            });
         }
     });
 </script>

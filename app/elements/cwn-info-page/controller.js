@@ -86,34 +86,29 @@ Polymer({
       }
     },
 
-    init : function(map, ds, islocal) {
+    init : function(map) {
       this.map = map;
-      this.ds = ds;
-      this.islocal = islocal;
+      this.islocal = CWN.ds.islocal;
 
-      if( this.ds.loading ) {
-        this.ds.addEventListener('load', function(e){
-          this.loading = e.detail;
-          if( !this.loading ) this.onLoad();
-        }.bind(this));
-      } else {
-        this.onLoad();
-      }
+      CWN.ds.on('load', this.onLoad.bind(this));
     },
 
     onLoad : function() {
+      if( CWN.ds.loading ) return;
+
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
-        if( this.feature = this.ds.lookupMap[loc[1]] ) {
+        if( this.feature = CWN.ds.lookupMap[loc[1]] ) {
           this.update();
         } else {
-          this.feature = this.ds.lookupMap[loc[1]];
+          this.feature = CWN.ds.lookupMap[loc[1]];
         }
       }
     },
 
     update : function() {
-      if( !this.ds ) return;
+      if( CWN.ds.loading ) return;
+      debugger;
       if( this.feature == null ) return alert('Feature not found');
 
       this.climateLoadError = false;

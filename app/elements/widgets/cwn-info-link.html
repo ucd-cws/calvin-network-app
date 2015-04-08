@@ -1,5 +1,3 @@
-<!--<polymer-element name="cwn-info-link" attributes="name ds">-->
-
 <dom-module id="cwn-info-link">
     <style>
         span.invalid {
@@ -46,21 +44,19 @@
         },
         
         attached : function() {
-            this.ds = document.querySelector('cwn-datastore');
-            this.ds.onLoad(this.update.bind(this));
+            CWN.ds.on('load', this.update.bind(this));
         },
 
         update : function() {
-            if( !this.ds ) return;
-            if( !this.name ) return;
+            if( !CWN.ds.loading ) return;
 
-            if( !this.ds.lookupMap[this.name] ) {
+            if( !CWN.ds.lookupMap[this.name] ) {
                 this.valid = false;
                 return;
             }
 
             this.valid = true;
-            this.type = this.ds.lookupMap[this.name].properties.type;
+            this.type = CWN.ds.lookupMap[this.name].properties.type;
             this.link = '#info/'+ this.name;
         }
 

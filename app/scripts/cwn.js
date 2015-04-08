@@ -14,6 +14,20 @@ CWN.colors = {
   black : '#000000'
 };
 
+
+// elements that need charts can push to this array callbacks for when charts are loaded
+CWN.chartLoadHandlers = [];
+
+google.load("visualization", '1', {
+    packages:['corechart', 'table'],
+    callback : function() {
+        for( var i = 0; i < CWN.chartLoadHandlers.length; i++ ) {
+            CWN.chartLoadHandlers[i]();
+        }
+    }
+});
+
+
 // reneder an icon on a canvas
 CWN.render = {};
 

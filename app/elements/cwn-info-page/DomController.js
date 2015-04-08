@@ -25,13 +25,8 @@ var InfoPageDomControllers = function() {
         }
     }
 
-    function onLoadingChange() {
-        this.notifyPath('ds.loading', this.ds.loading);
-    }
-
     return {
         updateDateSliderVisibility : updateDateSliderVisibility,
-        stampEacChart : stampEacChart,
-        onLoadingChange : onLoadingChange
+        stampEacChart : stampEacChart
     }
 }

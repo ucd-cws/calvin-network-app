@@ -1,6 +1,5 @@
 <!--
     data should be format [[date,value],[date,value]...]
-    <polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols type">
 -->
 <dom-module id="cwn-linechart">
     <style>
@@ -26,21 +25,6 @@
             options : Object,
             cols : Object,
             type : String
-        },
-
-        /*bind : {
-            label : 'redraw',
-            xlabel : 'redraw',
-            ylabel : 'redraw',
-            height : 'setHeight',
-            data  : 'update',
-            start : 'update',
-            stop  : 'update',
-            options : 'update'
-        },*/
-
-        bind : {
-            height: 'setHeight'
         },
 
         configure : function() {

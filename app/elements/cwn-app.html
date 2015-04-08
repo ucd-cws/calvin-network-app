@@ -28,14 +28,6 @@
           </div>
         </div>
 
-        <cwn-datastore 
-          id="ds"
-          on-load="onLoadingChange"
-          on-loaded="onDataLoad"
-          islocal$="{{islocal}}"
-          >
-        </cwn-datastore>
-
         <cwn-app-layout>
             <a right-nav on-click="showFilters">
               <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
@@ -69,13 +61,6 @@
 <script>
     Polymer({
         is : 'cwn-app',
-
-        properties : {
-          islocal : {
-            type : Boolean,
-            notify: true
-          }
-        },
 
         configure : function() {
           return {
@@ -144,19 +129,17 @@
           }.bind(this));
 
           setTimeout(function(){
-            this.$.map.init(this.$.ds, this.legend, this.$.filters.filters);
-            this.$.info.init(this.$.map.map, this.$.ds, this.islocal);
+            this.$.map.init(this.legend, this.$.filters.filters);
+            this.$.info.init(this.$.map.map);
           }.bind(this), 200);
 
           this.setLocation();
 
-          console.log('islocal: '+this.islocal);
+          CWN.ds.on('load', this.onLoadingChange.bind(this));
         },
 
         onLoadingChange : function() {
-          this.loading = this.$.ds.loading;
-
-          if( this.loading ) this.$.splash.style.display = 'block';
+          if( CWN.ds.loading ) this.$.splash.style.display = 'block';
           else this.$.splash.style.display = 'none';
         },
 
@@ -195,7 +178,7 @@
         setInfoFeature : function() {
           var name = window.location.hash.replace('#','').split('/')[1];
           name = decodeURIComponent(name);
-          this.$.info.feature = this.$.ds.lookupMap[name];
+          this.$.info.feature = CWN.ds.lookupMap[name];
         },
        
         onDataLoad : function() {

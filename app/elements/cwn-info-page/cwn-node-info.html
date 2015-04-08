@@ -172,7 +172,7 @@
         },
 
         update : function() {
-            if( !this.ds || !this.feature ) return;
+            if( !CWN.ds || !this.feature ) return;
 
             this.editUrl = '#edit/'+this.feature.properties.prmname;
 
@@ -188,8 +188,8 @@
                       name: this.feature.properties.origins[i], 
                       link: '#info/'+link.properties.prmname,
                       hasLink : true, 
-                      description: this.ds.lookupMap[this.feature.properties.origins[i]] ? 
-                                    this.ds.lookupMap[this.feature.properties.origins[i]].properties.description : ''
+                      description: CWN.ds.lookupMap[this.feature.properties.origins[i]] ? 
+                                    CWN.ds.lookupMap[this.feature.properties.origins[i]].properties.description : ''
                     });
                   } else {
                     this.origins.push({
@@ -210,8 +210,8 @@
                       name: this.feature.properties.terminals[i], 
                       link: '#info/'+link.properties.prmname,
                       hasLink : true, 
-                      description: this.ds.lookupMap[this.feature.properties.terminals[i]] ? 
-                                    this.ds.lookupMap[this.feature.properties.terminals[i]].properties.description : ''
+                      description: CWN.ds.lookupMap[this.feature.properties.terminals[i]] ? 
+                                    CWN.ds.lookupMap[this.feature.properties.terminals[i]].properties.description : ''
                     });
                   } else {
                     this.terminals.push({
@@ -232,7 +232,7 @@
         },
 
         onOriginUpdate : function() {
-            if( !this.ds ) return;
+            if( !CWN.ds ) return;
 
             if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none'; 
             else this.$.origin.style.display = 'block'; 
@@ -240,14 +240,14 @@
             this.hasOriginDescription = false;
             this.originDescription = '';
 
-            if( this.ds.lookupMap[this.feature.properties.origin] ) {
+            if( CWN.ds.lookupMap[this.feature.properties.origin] ) {
                 this.hasOriginDescription = true;
-                this.originDescription = this.ds.lookupMap[this.feature.properties.origin].properties.description
+                this.originDescription = CWN.ds.lookupMap[this.feature.properties.origin].properties.description
             }
         },
 
         onTerminalUpdate : function() {
-            if( !this.ds ) return;
+            if( !CWN.ds ) return;
 
             if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none'; 
             else this.$.terminal.style.display = 'block'; 
@@ -255,14 +255,14 @@
             this.hasTerminalDescription = false;
             this.terminalDescription = '';
 
-            if( this.ds.lookupMap[this.feature.properties.terminus] ) {
+            if( CWN.ds.lookupMap[this.feature.properties.terminus] ) {
                 this.hasTerminalDescription = true;
-                this.terminalDescription = this.ds.lookupMap[this.feature.properties.terminus].properties.description
+                this.terminalDescription = CWN.ds.lookupMap[this.feature.properties.terminus].properties.description
             }
         },
 
         onTypeUpdate : function() {
-            if( !this.ds ) return;
+            if( !CWN.ds ) return;
 
             this.showNavLinks = true;
 
@@ -272,9 +272,9 @@
         },
 
         _lookupLink : function(origin, terminal) {
-          for( var i = 0; i < this.ds.data.links.length; i++ ) {
-            if( this.ds.data.links[i].properties.origin == origin && this.ds.data.links[i].properties.terminus == terminal ) {
-              return this.ds.data.links[i];
+          for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
+            if( CWN.ds.data.links[i].properties.origin == origin && CWN.ds.data.links[i].properties.terminus == terminal ) {
+              return CWN.ds.data.links[i];
             }
           }
           return null;
