@@ -128,10 +128,9 @@
             this.setLocation();
           }.bind(this));
 
-          setTimeout(function(){
-            this.$.map.init(this.legend, this.$.filters.filters);
-            this.$.info.init(this.$.map.map);
-          }.bind(this), 200);
+
+          this.$.map.init(this.legend, this.$.filters.filters);
+          this.$.info.init(this.$.map.map);
 
           this.setLocation();
 

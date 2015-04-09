@@ -41,70 +41,59 @@
     Polymer({
         is : 'cwn-map',
 
-        configure : function() {
-            return {
-                updating: false,
-                filters : {},
-                map : null,
-                ds : null,
+        ready : function() {
+            if( !this.tid ) this.tid = 1;
+            else this.tid += 1;
 
-                markerLayer : null,
-                edgeLayer : null,
-                redrawMarkerSizesTimer : -1
-            }
+            console.log('ready: '+this.tid);
         },
 
-        ready : function() {
-            this.firstRender = true;
-            
+        attached : function() {
+            console.log('attached '+this.tid);
+        },
+
+
+        init : function(legend, filters) {
+            console.log('init '+this.tid);
+
             this.popup = $('<div style="z-index:1000;position:absolute;padding:5px;background-color:white;border:1px solid #ccc; display:none"></div>');
             $('body').append(this.popup);
 
-            CWN.ds.on('load', this.process.bind(this));
-
-        },
-
-        init : function(legend, filters) {
-            this.filters = filters;
-            this.legend = legend;
-            
             this.map = L.map(this.$.leaflet).setView([40, -121], 5);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18
             }).addTo(this.map);
 
+            this.links = [];
+            this.filters = filters;
+            this.legend = legend;
+            
             var ref = this;
-            var BigPointLayer = L.CanvasLayer.extend({
-              renderCircle: function(ctx, point, radius) {
-                ctx.fillStyle = 'rgba(255, 60, 60, 0.2)';
-                ctx.strokeStyle = 'rgba(255, 60, 60, 0.9)';
-                ctx.beginPath();
-                ctx.arc(point.x, point.y, radius, 0, Math.PI * 2.0, true, true);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-              },
+            var MarkerLayer = L.CanvasLayer.extend({
               render: function() {
                 var canvas = this.getCanvas();
                 var ctx = canvas.getContext('2d');
                 // clear canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-
                 ref.renderMarkers(ctx, this);
                 this.redraw();
               }
             });
 
-            this.markerLayer = new BigPointLayer();
+            this.markerLayer = new MarkerLayer();
             this.markerLayer.addTo(this.map);
 
             //this.map.on('zoomend', this.onZoomEnd.bind(this));
             this.map.on('mousemove', this.onMouseMove.bind(this));
             this.map.on('click', this.onClick.bind(this));
-            this.map.on('resize', function(){
-                this.markerLayer.render();
-            }.bind(this));
+
+            CWN.ds.on('load', this.process.bind(this));
+            if( !CWN.ds.loading ) this.process();
+
+            setTimeout(function(){
+                this.map.invalidateSize();
+            }.bind(this), 200)
         },
 
         onClick : function(e) {
@@ -120,6 +109,8 @@
             var node = this.getMouseOverNode(e);
             
             if( !node ) {
+                this.unselectHover();
+
                 this.$.leaflet.style.cursor = 'default';
                 this.popup.hide();
                 return;
@@ -130,6 +121,7 @@
             var point = node.properties._render.point;
             var buffer = node.properties._render.buffer;
 
+            this.selectHover(node);
 
             this.popup
                 .css('top', point.y + buffer + 60)
@@ -162,10 +154,60 @@
             return null;
         },
 
+        selectHover : function(node) {
+            if( this.hoverNode == node ) return;
+            if( this.hoverNode ) this.unselectHover();
 
-        // called in layer scope
+            node.properties._render.multipier = 2;
+            node.properties._render.stroke = 'blue';
+            node.properties._render.lineWidth = 3;
+
+            if( CWN.ds.originLookupMap[node.properties.prmname] ) {
+                var arr = CWN.ds.originLookupMap[node.properties.prmname];
+                for( var i = 0; i < arr.length; i++ ) {
+                    arr[i].properties._render.highlight = 'origin';
+                }
+            }
+            if( CWN.ds.terminalLookupMap[node.properties.prmname] ) {
+                var arr = CWN.ds.terminalLookupMap[node.properties.prmname];
+                for( var i = 0; i < arr.length; i++ ) {
+                    arr[i].properties._render.highlight = 'terminal';
+                }
+            }
+            
+            this.markerLayer.render();
+            this.hoverNode = node;
+        },
+
+        unselectHover : function() {
+            if( !this.hoverNode ) return;
+
+            delete this.hoverNode.properties._render.stroke;
+            delete this.hoverNode.properties._render.lineWidth;
+            delete this.hoverNode.properties._render.multipier;
+
+            if( CWN.ds.originLookupMap[this.hoverNode.properties.prmname] ) {
+                var arr = CWN.ds.originLookupMap[this.hoverNode.properties.prmname];
+                for( var i = 0; i < arr.length; i++ ) {
+                    delete arr[i].properties._render.highlight;
+                }
+            }
+            if( CWN.ds.terminalLookupMap[this.hoverNode.properties.prmname] ) {
+                var arr = CWN.ds.terminalLookupMap[this.hoverNode.properties.prmname];
+                for( var i = 0; i < arr.length; i++ ) {
+                    delete arr[i].properties._render.highlight;
+                }
+            }
+
+            this.hoverNode = null;
+            this.markerLayer.render();
+        },
+
         renderMarkers : function(ctx) {
-            var node, link, point, point2;
+            if( !this.links ) return;
+            var t = new Date().getTime();
+
+            var node, link, point, point2, o, render, ms, color;
 
             var markerSize = 16;
             var zoom = this.map.getZoom()
@@ -173,33 +215,62 @@
             else if( zoom >= 12 ) markerSize = markerSize = 36;
             var buffer = markerSize / 2;
 
+            var bounds = this.map.getBounds();
+
             for( var i = 0; i < this.links.length; i++ ) {
                 link = this.links[i];
-                if( !link.properties._render.show ) continue;
+
+                if( !this.intersectsMap(bounds, link.geometry.coordinates[0]) &&
+                    !this.intersectsMap(bounds, link.geometry.coordinates[1]) ) {
+                    continue;
+                }
+
+                render = link.properties._render || {};
+
+                if( !render.show ) continue;
                 
                 point = this.map.latLngToContainerPoint(new L.LatLng(
                     link.geometry.coordinates[0][1],
                     link.geometry.coordinates[0][0]
                 ));
+
                 point2 = this.map.latLngToContainerPoint(new L.LatLng(
                     link.geometry.coordinates[1][1],
                     link.geometry.coordinates[1][0]
                 ));
 
-
+                color = 'white';
+                if( link.properties._render.highlight ) {
+                    if( link.properties._render.highlight == 'origin' ) color = 'green';
+                    else color = 'blue';
+                }
 
                 ctx.beginPath();
-                ctx.strokeStyle = this.getLineColor(link);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 4;
                 ctx.moveTo(point.x, point.y);
                 ctx.lineTo(point2.x, point2.y);
                 ctx.stroke();
+
+                ctx.beginPath();
+                ctx.strokeStyle = this.getLineColor(link);
+                ctx.lineWidth = 2;
+                ctx.moveTo(point.x, point.y);
+                ctx.lineTo(point2.x, point2.y);
+                ctx.stroke();
+
             }
 
             for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 node = CWN.ds.data.nodes[i];
 
-                if( !(node.properties._render.show || 
-                    (node.properties._render.oneStep && this.filters.oneStepMode)) ) {
+                if( !this.intersectsMap(bounds, node.geometry.coordinates) ) {
+                    continue;
+                }
+
+                render = node.properties._render || {};
+
+                if( !(render.show || (render.oneStep && this.filters.oneStepMode)) ) {
                     continue;
                 }
 
@@ -207,14 +278,34 @@
                     node.geometry.coordinates[1],
                     node.geometry.coordinates[0]
                 ));
+                
+                o = render.oneStep ? .3 : .7;
 
-                var o = node.properties._render.oneStep ? .3 : .7;
+                render.point = point;
+                render.buffer = buffer;
+                ms = markerSize * (render.multipier || 1);
+                buffer = ms / 2;
 
-                node.properties._render.point = point;
-                node.properties._render.buffer = buffer;
-
-                CWN.render[node.properties.type](ctx, point.x-buffer, point.y-buffer, markerSize, markerSize, o);
+                CWN.render[node.properties.type](ctx, {
+                    x: point.x-buffer, 
+                    y: point.y-buffer, 
+                    width: ms,
+                    height: ms,
+                    opacity: o,
+                    fill : render.fill,
+                    stroke : render.stroke,
+                    lineWidth : render.lineWidth, 
+                });
             }
+
+            console.log((new Date().getTime() - t)+'ms');
+        },
+
+        intersectsMap : function(bounds, coordinates) {
+            if( bounds.contains([coordinates[1], coordinates[0]]) ) {
+                return true;
+            }
+            return false;
         },
 
         process : function() {
@@ -233,35 +324,6 @@
             }
 
             this.update();
-        },
-
-        // TODO: this data sucks... needs to be cleaned up!
-        addEdge : function(edge, type) {
-            if( edge == null ) return;
-
-            var pts = edge.split('_');
-            if( pts.length <= 1 ) return;
-            if( !CWN.ds.dataMap[pts[0]] || !CWN.ds.dataMap[pts[1]] ) return;
-            if( !CWN.ds.dataMap[pts[0]].geometry || !CWN.ds.dataMap[pts[1]].geometry ) return;
-
-            // only add edge once
-            if( this.knownEdges.indexOf(edge) > -1 || this.knownEdges.indexOf(pts[1]+'_'+pts[0]) > -1 ) return;
-            this.knownEdges.push(edge);
-
-            this.edges.push({
-                type : 'Feature',
-                geometry : {
-                    type: 'LineString',
-                    coordinates : [
-                        CWN.ds.dataMap[pts[0]].geometry.coordinates,
-                        CWN.ds.dataMap[pts[1]].geometry.coordinates 
-                    ]
-                },
-                properties : {
-                    name : edge
-                    //edgeType : type
-                }
-            });
         },
 
         getLineColor : function(feature) {
@@ -295,95 +357,18 @@
         update : function() {
             this.updating = true;
 
-            setTimeout(function(){
-                var map = this.map;
-                var oneStepMode = this.filters.oneStepMode;
+            var map = this.map;
+            var oneStepMode = this.filters.oneStepMode;
 
-                if( this.firstRender ) {
-                    this.initMoveEvents();
-                }
+            // update filtering
+            this.filter();
 
-                //if( this.markerLayer ) map.removeLayer(this.markerLayer);
-                //if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
+            this.links = this.getEdgeMarkers();
 
-                // update filtering
-                this.filter();
+            this.markerLayer.render();
 
-                this.links = this.getEdgeMarkers();
-
-                /*var lineMarkers = this.getEdgeMarkers();
-
-
-                var calibrationMode = this.filters.calibrationMode;
-                this.edgeLayer = L.geoJson(lineMarkers, {
-                    style: function(feature) {
-                        var color = CWN.colors.salmon;
-                        if( feature.properties.renderInfo ) {
-                            if( feature.properties.renderInfo.type == 'flowToSink' ) {
-                              color = CWN.colors.lightGrey;
-                            } else if( feature.properties.renderInfo.type == 'returnFlowFromDemand' ) {
-                                color = CWN.colors.red;
-                            } else if( feature.properties.renderInfo.type == 'gwToDemand' ) {
-                                color = CWN.colors.black;
-                            } else if( feature.properties.renderInfo.type == 'artificalRecharge' ) {
-                                color = CWN.colors.purple;
-                            }
-                        }
-
-                        var line = {
-                            color: color,
-                            weight: 3,
-                            opacity: 0.4,
-                            smoothFactor: 1
-                        }
-
-                        if( feature.properties.calibrationNode && calibrationMode ) {
-                            line.color = 'blue';
-                        }
-                        return line;
-                    },
-                    pointToLayer: function (feature, latlng) {
-                        return this.getLineMarker(feature, latlng);
-                    }.bind(this),
-                    filter: function(feature, layer) {
-                        return feature.properties._render.show;
-                    }.bind(this)
-                }).addTo(map);
-
-                this.edgeLayer.on('click', function(e){
-                    this.fire('selected', e.layer.feature);
-                }.bind(this));
-                
-                for( var key in this.edgeLayer._layers ) {
-                    this.hackTouchEvent(this.edgeLayer._layers[key]);
-                }*/
-
-
-                /*this.markerLayer = L.geoJson(CWN.ds.data.nodes, {
-                    pointToLayer: function(feature, ll) {
-                        return this.getMarker(feature, ll);
-                    }.bind(this),
-                    filter: function(feature, layer) {
-                        return feature.properties._render.show || 
-                                (feature.properties._render.oneStep && oneStepMode);
-                    }
-                }).addTo(map);
-                this.markerLayer.on('click', function(e){
-                    this.fire('selected', e.layer.feature);
-                }.bind(this));
-
-                for( var key in this.markerLayer._layers ) {
-                    this.hackTouchEvent(this.markerLayer._layers[key]);
-                }*/
-
-                this.markerLayer.render();
-
-                this.updating = false;
-                this.fire('filtering-complete');
-
-                this.firstRender = false;
-            }.bind(this), 250);
-            
+            this.updating = false;
+            this.fire('filtering-complete');
         },
 
         getEdgeMarkers : function() {
@@ -492,137 +477,6 @@
             if( re.test(props.prmname.toLowerCase()) ) return true;
             if( props.description && re.test(props.description.toLowerCase()) ) return true;
             return false;
-        },
-
-/*        onZoomEnd : function() {
-
-            for( var key in this.markerLayer._layers ) {
-                this._hackTouchEvent(this.markerLayer._layers[key]);
-            }
-
-            //this.redrawMarkerSizes();
-
-            if( this.map.getZoom() < 10 ) {
-                $('.LineCanvas').hide();
-            } else {
-                $('.LineCanvas').show();
-            }
-        },
-
-        // check sizes
-
-        redrawMarkerSizes : function() {
-        
-            if( this.redrawMarkerSizesTimer != -1 ) {
-                clearTimeout(this.redrawMarkerSizesTimer);
-            }
-
-            this.redrawMarkerSizesTimer = setTimeout(function(){
-                this.redrawMarkerSizesTimer = -1;
-                this.redrawMarkerSizes();
-            }.bind(this), 2000);
-        },
-
-        redrawMarkerSizes : function() {
-            console.log('redrawing');
-            if( this.markerLayer ) this.map.removeLayer(this.markerLayer);
-
-            this.markerLayer = L.geoJson(CWN.ds.data.nodes, {
-                pointToLayer: function(feature, ll) {
-                    return this.getMarker(feature, ll);
-                }.bind(this),
-                filter: function(feature, layer) {
-                    if( !feature ) return false;
-                    return feature.properties._render.show || 
-                            (feature.properties._render.oneStep && this.filters.oneStepMode);
-                }.bind(this)
-            }).addTo(this.map);
-
-            this.markerLayer.on('click', function(e){
-                this.fire('selected', e.layer.feature);
-            }.bind(this));
-        },*/
-
-        getMarker : function(feature, ll) {
-            var render = feature.properties._render || {};
-            var type = feature.properties.type;
-
-            /*
-            TODO: this is too slow right now :(
-            if( this.map.getZoom() < 10 ) {
-                s = this.map.getZoom() * 3;
-            } else {
-                s = this.map.getZoom() * 4;
-            }
-
-            var options = {
-                iconSize : new L.Point(s, s),
-                type : type
-            };
-            */
-            var options = {
-                iconSize : new L.Point(24, 24),
-                type : type,
-                name : feature.properties.prmname
-            };
-  
-
-            var m = new L.Marker(ll, {
-                icon: new L.Icon.Canvas(options), 
-                opacity: render.oneStep ? .1 : .7
-            });
-
-            return m;
-        },
-
-        getLineMarker : function(feature, ll) {
-            var hide = false;
-
-            if( this.map.getZoom() < 10 ) {
-                s = this.map.getZoom() * 3;
-                hide = true;
-            } else {
-                s = this.map.getZoom() * 4;
-            }
-
-            var options = {
-                iconSize : new L.Point(s, s),
-                renderInfo : feature.properties.renderInfo || {},
-                hide : hide
-            };
-
-            var m = new L.Marker(ll, {
-                icon: new L.Icon.LineCanvas(options)
-            });
-
-            return m;
-        },
-
-        // hack so we know if the map is moving for touch events
-        lastMove : -1,
-        mapMoving : false,
-        initMoveEvents : function() {
-            this.map.on('movestart', function(){
-                this.mapMoving = true;
-            }.bind(this));
-            this.map.on('moveend', function(){
-                this.lastMove = new Date().getTime();
-                this.mapMoving = false;
-            }.bind(this));
-        },
-
-        hackTouchEvent : function(marker) {
-            $(marker._container).on('touchend', function(e){
-                setTimeout(function(){
-                    var timeFromLastMove = new Date().getTime() - this.lastMove;
-                    // make sure the map is not moving and has actually been settled for 300ms
-                    if( !this.mapMoving && timeFromLastMove > 300 ) {
-                        this.fire('selected', marker.feature);
-                    }
-
-                // wait 50ms seconds to check to make sure map.movestart has had a chance to fire
-                }.bind(this), 50);
-            }.bind(this));
         }
     });
 </script>

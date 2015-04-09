@@ -94,7 +94,12 @@
             ctx.clearRect(0, 0, this.width, this.height);
 
             if( !CWN.render[this.type] ) return;
-            CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
+            CWN.render[this.type](ctx, {
+                x: 2, 
+                y: 2, 
+                width: this.width-4, 
+                height: this.height-4
+            });
         }
     }); 
 </script>

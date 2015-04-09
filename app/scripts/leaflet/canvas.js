@@ -190,7 +190,7 @@ initialize: function (options) {
       L.DomUtil.setPosition(this._canvas, { x: -pos.x, y: -pos.y });
     }
     this.onResize();
-    this._render();
+    this.render();
   },
 
   /*
