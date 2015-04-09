@@ -14,9 +14,9 @@ var db = new neo4j.GraphDatabase('http://localhost:7474');
 //var RedisStore = require('connect-redis')(session);
 
 
-var dir = __dirname + '/dist';
+var dir = __dirname + '/../dist';
 process.argv.forEach(function(val){
-    if( val == '--dev' ) dir = __dirname + '/app';
+    if( val == '--dev' ) dir = __dirname + '/../app';
 });
 
 // start of auth login/

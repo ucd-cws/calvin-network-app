@@ -33,10 +33,8 @@ function Datastore() {
 
     this.reload = function(local) {
         this.islocal = local;
-        debugger;
 
         this.loadNetwork(this.network, function(err){
-            debugger;
             this.loading = false;
             this.fire('load', this.loading);
             this.fire('loaded');

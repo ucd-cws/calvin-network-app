@@ -14,6 +14,18 @@ CWN.colors = {
   black : '#000000'
 };
 
+CWN.colors.rgb = {
+  base : [255,255,202],
+  lightGrey : [123,123,121],
+  green : [143,210,72],
+  salmon : [255,205,150],
+  lightBlue : [145,203,221],
+  red : [255,8,0],
+  blue : [79,127,191],
+  purple : [114,40,162],
+  black:[0,0,0]
+}
+
 
 // elements that need charts can push to this array callbacks for when charts are loaded
 CWN.chartLoadHandlers = [];
@@ -46,11 +58,16 @@ CWN.icon = function(type, width, height) {
     return canvas;
 }
 
+CWN.getColor = function(name, opacity) {
+  if( opacity === undefined ) opacity = 1;
+  return 'rgba('+CWN.colors.rgb[name].join(',')+','+opacity+')';
+}
+
 /** render icon on canvas context **/
-/** all icons take a canvas context, left, top, width and height **/
-CWN.render.Junction = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
+/** all icons take a canvas context, left, top, width and height, opacity **/
+CWN.render.Junction = function(ctx, l, t, w, h, o) {
+    ctx.fillStyle = CWN.getColor('base', o);
+    ctx.strokeStyle = CWN.getColor('lightGrey', o);
     ctx.lineWidth = 1;
 
     var r = w / 2;
@@ -62,8 +79,8 @@ CWN.render.Junction = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
-CWN.render['Power Plant'] = function(ctx, l, t, w, h) {
-    CWN.render['Junction'](ctx, l, t, w, h);
+CWN.render['Power Plant'] = function(ctx, l, t, w, h, o) {
+    CWN.render['Junction'](ctx, l, t, w, h, o);
     var r = w / 2;
 
     // horizontal line
@@ -81,8 +98,8 @@ CWN.render['Power Plant'] = function(ctx, l, t, w, h) {
     ctx.closePath();
 }
 
-CWN.render['Pump Plant'] = function(ctx, l, t, w, h) {
-    CWN.render['Junction'](ctx, l, t, w, h);
+CWN.render['Pump Plant'] = function(ctx, l, t, w, h, o) {
+    CWN.render['Junction'](ctx, l, t, w, h, o);
     var r = w / 2;
     var cx = l + r;
     var cy = t + r;
@@ -112,9 +129,9 @@ CWN.render['Pump Plant'] = function(ctx, l, t, w, h) {
     ctx.closePath();
 }
 
-CWN.render['Water Treatment'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
+CWN.render['Water Treatment'] = function(ctx, l, t, w, h, o) {
+    ctx.fillStyle = CWN.getColor('base', o);
+    ctx.strokeStyle = CWN.getColor('lightGrey', o);
     ctx.lineWidth = 1;
 
     CWN.render._nSidedPath(ctx, l, t, w/2, 8, 22.5);
@@ -123,9 +140,9 @@ CWN.render['Water Treatment'] = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
-CWN.render['Surface Storage'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
+CWN.render['Surface Storage'] = function(ctx, l, t, w, h, o) {
+    ctx.fillStyle = CWN.getColor('base', o);
+    ctx.strokeStyle = CWN.getColor('lightGrey', o);
     ctx.lineWidth = 1;
 
     CWN.render._nSidedPath(ctx, l, t, w/2, 3, 90);
@@ -134,15 +151,15 @@ CWN.render['Surface Storage'] = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
-CWN.render['Groundwater Storage'] = function(ctx, l, t, w, h) {
+CWN.render['Groundwater Storage'] = function(ctx, l, t, w, h, o) {
     var r = w / 2;
     
     var grd = ctx.createLinearGradient(l+r, t, l+r, t+h-(.25*h));
-    grd.addColorStop(0, CWN.colors.lightGrey);
-    grd.addColorStop(1, CWN.colors.base);
+    grd.addColorStop(0, CWN.getColor('lightGrey', o));
+    grd.addColorStop(1, CWN.getColor('base', o));
     ctx.fillStyle=grd;
 
-    ctx.strokeStyle = CWN.colors.lightGrey;
+    ctx.strokeStyle = CWN.getColor('lightGrey', o);
     ctx.lineWidth = 1;
 
     CWN.render._nSidedPath(ctx, l, t, r, 3, 90);
@@ -151,9 +168,9 @@ CWN.render['Groundwater Storage'] = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
-CWN.render['Sink'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
+CWN.render['Sink'] = function(ctx, l, t, w, h, o) {
+    ctx.fillStyle = CWN.getColor('base', o);
+    ctx.strokeStyle = CWN.getColor('lightGrey', o);
     ctx.lineWidth = 1;
 
     CWN.render._nSidedPath(ctx, l, t, w/2, 4, 45);
@@ -162,9 +179,9 @@ CWN.render['Sink'] = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
-CWN.render['Non-Standard Demand'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.red;
-    ctx.strokeStyle = CWN.colors.lightGrey;
+CWN.render['Non-Standard Demand'] = function(ctx, l, t, w, h, o) {
+    ctx.fillStyle = CWN.getColor('red', o);
+    ctx.strokeStyle = CWN.getColor('lightGrey', o);
     ctx.lineWidth = 1;
 
     CWN.render._nSidedPath(ctx, l, t, w/2, 4, 45);
@@ -173,16 +190,16 @@ CWN.render['Non-Standard Demand'] = function(ctx, l, t, w, h) {
     ctx.stroke();
 }
 
-CWN.render['Agricultural Demand'] = function(ctx, l, t, w, h) {
-    CWN.render._oval(ctx, l, t, w, h, CWN.colors.lightBlue);
+CWN.render['Agricultural Demand'] = function(ctx, l, t, w, h, o) {
+    CWN.render._oval(ctx, l, t, w, h, CWN.getColor('lightBlue', o));
 }
 
-CWN.render['Urban Demand'] = function(ctx, l, t, w, h) {
-    CWN.render._oval(ctx, l, t, w, h, CWN.colors.salmon);
+CWN.render['Urban Demand'] = function(ctx, l, t, w, h, o) {
+    CWN.render._oval(ctx, l, t, w, h, CWN.getColor('salmon', o));
 }
 
-CWN.render.Wetland = function(ctx, l, t, w, h) {
-    CWN.render._oval(ctx, l, t, w, h, CWN.colors.green);
+CWN.render.Wetland = function(ctx, l, t, w, h, o) {
+    CWN.render._oval(ctx, l, t, w, h, CWN.getColor('green', o));
 }
 
 CWN.render._oval = function(ctx, x, y, w, h, color) {

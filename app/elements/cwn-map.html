@@ -56,7 +56,12 @@
 
         ready : function() {
             this.firstRender = true;
+            
+            this.popup = $('<div style="z-index:1000;position:absolute;padding:5px;background-color:white;border:1px solid #ccc; display:none"></div>');
+            $('body').append(this.popup);
+
             CWN.ds.on('load', this.process.bind(this));
+
         },
 
         init : function(legend, filters) {
@@ -68,12 +73,151 @@
                 maxZoom: 18
             }).addTo(this.map);
 
-            this.map.on('zoomend', this.onZoomEnd.bind(this));
+            var ref = this;
+            var BigPointLayer = L.CanvasLayer.extend({
+              renderCircle: function(ctx, point, radius) {
+                ctx.fillStyle = 'rgba(255, 60, 60, 0.2)';
+                ctx.strokeStyle = 'rgba(255, 60, 60, 0.9)';
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, radius, 0, Math.PI * 2.0, true, true);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+              },
+              render: function() {
+                var canvas = this.getCanvas();
+                var ctx = canvas.getContext('2d');
+                // clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+
+                ref.renderMarkers(ctx, this);
+                this.redraw();
+              }
+            });
+
+            this.markerLayer = new BigPointLayer();
+            this.markerLayer.addTo(this.map);
+
+            //this.map.on('zoomend', this.onZoomEnd.bind(this));
+            this.map.on('mousemove', this.onMouseMove.bind(this));
+            this.map.on('click', this.onClick.bind(this));
+            this.map.on('resize', function(){
+                this.markerLayer.render();
+            }.bind(this));
+        },
+
+        onClick : function(e) {
+            var node = this.getMouseOverNode(e);
+            if( !node ) return;
+
+            this.$.leaflet.style.cursor = 'default';
+            this.popup.hide();
+            window.location = '#info/'+node.properties.prmname;
+        },
+
+        onMouseMove : function(e) {
+            var node = this.getMouseOverNode(e);
+            
+            if( !node ) {
+                this.$.leaflet.style.cursor = 'default';
+                this.popup.hide();
+                return;
+            }
+
+            this.$.leaflet.style.cursor = 'pointer';
+
+            var point = node.properties._render.point;
+            var buffer = node.properties._render.buffer;
+
+
+            this.popup
+                .css('top', point.y + buffer + 60)
+                .css('left', point.x - buffer - 10)
+                .text(node.properties.prmname)
+                .show();
+        },
+
+        getMouseOverNode : function(e) {
+            var p = e.containerPoint, np, buffer;
+
+            for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+                node = CWN.ds.data.nodes[i];
+
+                if( !(node.properties._render.show || 
+                    (node.properties._render.oneStep && this.filters.oneStepMode)) ) {
+                    continue;
+                }
+
+                np = node.properties._render.point;
+                buffer = node.properties._render.buffer;
+
+                if( p.x > np.x - buffer && p.x < np.x + buffer ) {
+                    if( p.y > np.y - buffer && p.y < np.y + buffer ) {
+                        return node;
+                    }
+                }
+            }
+
+            return null;
+        },
+
+
+        // called in layer scope
+        renderMarkers : function(ctx) {
+            var node, link, point, point2;
+
+            var markerSize = 16;
+            var zoom = this.map.getZoom()
+            if( zoom > 8 && zoom < 12 ) markerSize = 22;
+            else if( zoom >= 12 ) markerSize = markerSize = 36;
+            var buffer = markerSize / 2;
+
+            for( var i = 0; i < this.links.length; i++ ) {
+                link = this.links[i];
+                if( !link.properties._render.show ) continue;
+                
+                point = this.map.latLngToContainerPoint(new L.LatLng(
+                    link.geometry.coordinates[0][1],
+                    link.geometry.coordinates[0][0]
+                ));
+                point2 = this.map.latLngToContainerPoint(new L.LatLng(
+                    link.geometry.coordinates[1][1],
+                    link.geometry.coordinates[1][0]
+                ));
+
+
+
+                ctx.beginPath();
+                ctx.strokeStyle = this.getLineColor(link);
+                ctx.moveTo(point.x, point.y);
+                ctx.lineTo(point2.x, point2.y);
+                ctx.stroke();
+            }
+
+            for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+                node = CWN.ds.data.nodes[i];
+
+                if( !(node.properties._render.show || 
+                    (node.properties._render.oneStep && this.filters.oneStepMode)) ) {
+                    continue;
+                }
+
+                point = this.map.latLngToContainerPoint(new L.LatLng(
+                    node.geometry.coordinates[1],
+                    node.geometry.coordinates[0]
+                ));
+
+                var o = node.properties._render.oneStep ? .3 : .7;
+
+                node.properties._render.point = point;
+                node.properties._render.buffer = buffer;
+
+                CWN.render[node.properties.type](ctx, point.x-buffer, point.y-buffer, markerSize, markerSize, o);
+            }
         },
 
         process : function() {
-            debugger;
             if( CWN.ds.loading ) return;
 
             this.edges = [];
@@ -120,6 +264,34 @@
             });
         },
 
+        getLineColor : function(feature) {
+            var color = CWN.colors.salmon;
+            if( feature.properties.renderInfo ) {
+                if( feature.properties.renderInfo.type == 'flowToSink' ) {
+                  color = CWN.colors.lightGrey;
+                } else if( feature.properties.renderInfo.type == 'returnFlowFromDemand' ) {
+                    color = CWN.colors.red;
+                } else if( feature.properties.renderInfo.type == 'gwToDemand' ) {
+                    color = CWN.colors.black;
+                } else if( feature.properties.renderInfo.type == 'artificalRecharge' ) {
+                    color = CWN.colors.purple;
+                }
+            }
+
+            var line = {
+                color: color,
+                weight: 3,
+                opacity: 0.4,
+                smoothFactor: 1
+            }
+
+            if( feature.properties.calibrationNode && this.filters.calibrationMode ) {
+                line.color = 'blue';
+            }
+
+            return color;
+        },
+
         update : function() {
             this.updating = true;
 
@@ -131,13 +303,15 @@
                     this.initMoveEvents();
                 }
 
-                if( this.markerLayer ) map.removeLayer(this.markerLayer);
-                if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
+                //if( this.markerLayer ) map.removeLayer(this.markerLayer);
+                //if( this.edgeLayer ) map.removeLayer(this.edgeLayer);
 
                 // update filtering
                 this.filter();
 
-                var lineMarkers = this.getEdgeMarkers();
+                this.links = this.getEdgeMarkers();
+
+                /*var lineMarkers = this.getEdgeMarkers();
 
 
                 var calibrationMode = this.filters.calibrationMode;
@@ -182,10 +356,10 @@
                 
                 for( var key in this.edgeLayer._layers ) {
                     this.hackTouchEvent(this.edgeLayer._layers[key]);
-                }
+                }*/
 
 
-                this.markerLayer = L.geoJson(CWN.ds.data.nodes, {
+                /*this.markerLayer = L.geoJson(CWN.ds.data.nodes, {
                     pointToLayer: function(feature, ll) {
                         return this.getMarker(feature, ll);
                     }.bind(this),
@@ -200,7 +374,9 @@
 
                 for( var key in this.markerLayer._layers ) {
                     this.hackTouchEvent(this.markerLayer._layers[key]);
-                }
+                }*/
+
+                this.markerLayer.render();
 
                 this.updating = false;
                 this.fire('filtering-complete');
@@ -318,12 +494,12 @@
             return false;
         },
 
-        onZoomEnd : function() {
-/* WHY AGAIN 
+/*        onZoomEnd : function() {
+
             for( var key in this.markerLayer._layers ) {
                 this._hackTouchEvent(this.markerLayer._layers[key]);
             }
-*/
+
             //this.redrawMarkerSizes();
 
             if( this.map.getZoom() < 10 ) {
@@ -365,7 +541,7 @@
             this.markerLayer.on('click', function(e){
                 this.fire('selected', e.layer.feature);
             }.bind(this));
-        },
+        },*/
 
         getMarker : function(feature, ll) {
             var render = feature.properties._render || {};
