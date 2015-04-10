@@ -93,7 +93,26 @@
 
             setTimeout(function(){
                 this.map.invalidateSize();
-            }.bind(this), 200)
+            }.bind(this), 200);
+
+            setTimeout(function(){
+                // just add top layer
+                var layers = [];
+                for( var i = 0; i < regions.subregions.length; i++ ) {
+                    var name = regions.subregions[i].name;
+
+                    for( var j = 0; j < regionsGeo.length; j++ ) {
+                        if( !regionsGeo[j].properties ) continue;
+
+                        if( regionsGeo[j].properties.id == name ) {
+                            layers.push(regionsGeo[j]);
+                            break;
+                        } 
+                    }
+                }
+
+                L.geoJson( layers ).addTo(this.map);
+            }.bind(this), 1000);
         },
 
         onClick : function(e) {
@@ -142,6 +161,8 @@
                 }
 
                 np = node.properties._render.point;
+                if( !np ) continue;
+
                 buffer = node.properties._render.buffer;
 
                 if( p.x > np.x - buffer && p.x < np.x + buffer ) {
@@ -182,20 +203,20 @@
         unselectHover : function() {
             if( !this.hoverNode ) return;
 
-            delete this.hoverNode.properties._render.stroke;
-            delete this.hoverNode.properties._render.lineWidth;
-            delete this.hoverNode.properties._render.multipier;
+            this.hoverNode.properties._render.stroke = null;
+            this.hoverNode.properties._render.lineWidth = null;
+            this.hoverNode.properties._render.multipier = null;
 
             if( CWN.ds.originLookupMap[this.hoverNode.properties.prmname] ) {
                 var arr = CWN.ds.originLookupMap[this.hoverNode.properties.prmname];
                 for( var i = 0; i < arr.length; i++ ) {
-                    delete arr[i].properties._render.highlight;
+                    arr[i].properties._render.highlight = null;
                 }
             }
             if( CWN.ds.terminalLookupMap[this.hoverNode.properties.prmname] ) {
                 var arr = CWN.ds.terminalLookupMap[this.hoverNode.properties.prmname];
                 for( var i = 0; i < arr.length; i++ ) {
-                    delete arr[i].properties._render.highlight;
+                    arr[i].properties._render.highlight = null;
                 }
             }
 
@@ -264,11 +285,13 @@
             for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 node = CWN.ds.data.nodes[i];
 
+                render = node.properties._render || {};
+                render.point = null;
+
                 if( !this.intersectsMap(bounds, node.geometry.coordinates) ) {
                     continue;
                 }
-
-                render = node.properties._render || {};
+                
 
                 if( !(render.show || (render.oneStep && this.filters.oneStepMode)) ) {
                     continue;
@@ -298,7 +321,7 @@
                 });
             }
 
-            console.log((new Date().getTime() - t)+'ms');
+            //console.log((new Date().getTime() - t)+'ms');
         },
 
         intersectsMap : function(bounds, coordinates) {

@@ -28,6 +28,13 @@
         <script>
             $(document).ready(function(){
                 CWN.ds.reload();
+
+                $.get('/regions.json', function(resp){
+                    window.regions = resp;
+                });
+                $.get('/regions.geojson', function(resp){
+                    window.regionsGeo = JSON.parse(resp);
+                });
             });
         </script>
     </body>

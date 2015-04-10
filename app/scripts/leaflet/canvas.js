@@ -85,52 +85,19 @@ initialize: function (options) {
     map.on('move', this.render, this);
     map.on('resize', this._reset, this);
     map.on({
-        'zoomanim': this._animateZoom,
-        'zoomend': this._endZoomAnim
+        'zoomstart': this._startZoom,
+        'zoomend': this._endZoom
     }, this);
-
-    //if(this.options.tileLoader) {
-    //  this._initTileLoader();
-    //}
 
     this._reset();
   },
 
-  _animateZoom: function (e) {
-      if (!this._animating) {
-          this._animating = true;
-      }
-      var back = this._backCanvas;
-
-      back.width = this._canvas.width;
-      back.height = this._canvas.height;
-
-      // paint current canvas in back canvas with trasnformation
-      var pos = this._canvas._leaflet_pos || { x: 0, y: 0 };
-      back.getContext('2d').drawImage(this._canvas, 0, 0);
-
-      // hide original
-      this._canvas.style.display = 'none';
-      back.style.display = 'block';
-      var map = this._map;
-      var scale = map.getZoomScale(e.zoom);
-      var newCenter = map._latLngToNewLayerPoint(map.getCenter(), e.zoom, e.center);
-      var oldCenter = map._latLngToNewLayerPoint(e.center, e.zoom, e.center);
-
-      var origin = {
-        x:  newCenter.x - oldCenter.x,
-        y:  newCenter.y - oldCenter.y
-      };
-
-      var bg = back;
-      var transform = L.DomUtil.TRANSFORM;
-      bg.style[transform] =  L.DomUtil.getTranslateString(origin) + ' scale(' + e.scale + ') ';
+  _startZoom: function() {
+    this._canvas.style.visibility = 'hidden';
   },
-
-  _endZoomAnim: function () {
-      this._animating = false;
-      this._canvas.style.display = 'block';
-      this._backCanvas.style.display = 'none';
+  
+  _endZoom: function () {
+      this._canvas.style.visibility = 'visible';
   },
 
   getCanvas: function() {
