@@ -230,6 +230,9 @@
         renderMarkers : function(ctx) {
             if( !this.links || CWN.ds.loading ) return;
 
+            console.log(this.$.menu.state);
+            console.log(this.renderState);
+
             var t = new Date().getTime();
 
             var node, link, point, point2, o, render, ms, color, i, j, region, coord;
@@ -243,9 +246,9 @@
             var bounds = this.map.getBounds();
 
             // render regions, for now, top layer
-            var subregions = CWN.ds.regionLookupMap['California'].subregions;
+            var subregions = this.renderState.polygons;
             for( i = 0; i < subregions.length; i++ ) {
-              region = CWN.ds.regionLookupMap[subregions[i]];
+              region = subregions[i];
 
               // initialize helper info
               if( !region.simplified ) {
@@ -292,8 +295,8 @@
             }
 
             var highlights = [];
-            for( i = 0; i < this.links.length; i++ ) {
-                link = this.links[i];
+            for( i = 0; i < this.renderState.lines.length; i++ ) {
+                link = this.renderState.lines[i];
 
                 if( !this.intersectsMap(bounds, link.geometry.coordinates[0]) &&
                     !this.intersectsMap(bounds, link.geometry.coordinates[1]) ) {
@@ -336,8 +339,8 @@
 
             }
 
-            for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
-                node = CWN.ds.data.nodes[i];
+            for( var i = 0; i < this.renderState.points.length; i++ ) {
+                node = this.renderState.points[i];
 
                 render = node.properties._render || {};
                 render.point = null;
@@ -406,6 +409,7 @@
 
             this.$.menu.init();
 
+            this.updateRenderState();
             this.update();
         },
 
@@ -598,7 +602,8 @@
         },
 
         onRegionSelect : function(e) {
-          console.log(e);
+          this.updateRenderState();
+          this.markerLayer.render();
         },
 
         updateRenderState : function() {
@@ -612,7 +617,7 @@
         },
 
         _updateRenderState : function(name) {
-          var region = CWN.ds.regionLookupMap(name);
+          var region = CWN.ds.regionLookupMap[name];
           var state = this.$.menu.state;
 
           if( state.enabled.indexOf(name) > -1 ) {
@@ -622,31 +627,35 @@
               this._updateRenderState(region.subregions[i]);
             }
           } else {
-            this.renderState.polygons.push(region.geo);
+
+            if( name != 'California' ) this.renderState.polygons.push(region);
           }
         },
 
         _addStateNodes : function(nodes, state) {
           for( var i = 0; i < nodes.length; i++ ) {
-            var node = nodes[i];
+            var node = CWN.ds.filenameLookupMap[nodes[i]];
+
+            // TODO: why!?
+            if( !node ) continue;
 
             if( node.type == 'Diversion' || node.type == 'Return Flow' ) {
               var terminal = this._getStateNodeLocation(node.terminus, state);
               var origin = this._getStateNodeLocation(node.origin, state);
 
-              this.state.lines.push({
+              this.renderState.lines.push({
                 "type" : "Feature",
                 "geometry" : {
                   "type" : "LineString",
                   coordinates : [origin, terminal]
-                }
-                properties : node.properties;
+                },
+                properties : node.properties
               });
 
             } else {
-              this.state.points.push(node);
+              this.renderState.points.push(node);
             }
-          },
+          }
         },
 
         _getStateNodeLocation : function(name, state) {

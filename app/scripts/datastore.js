@@ -19,6 +19,7 @@ function Datastore() {
     this.originLookupMap = {};
     this.terminalLookupMap = {};
     this.regionLookupMap = {};
+    this.filenameLookupMap = {};
 
     this.reset = function() {
         this.fire('load', this.loading);
@@ -32,6 +33,7 @@ function Datastore() {
         this.originLookupMap = {};
         this.terminalLookupMap = {};
         this.regionLookupMap = {};
+        this.filenameLookupMap = {};
     }
 
     this.reload = function(local) {
@@ -138,6 +140,7 @@ function Datastore() {
         }
 
         this.lookupMap[node.properties.prmname] = node;
+        this.filenameLookupMap[node.properties.filename] = node;
     }
 
     this.processLink = function(link) {
