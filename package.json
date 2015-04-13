@@ -46,6 +46,7 @@
     "minimist": "^1.1.0",
     "rimraf": "^2.2.8",
     "install": "^0.1.8",
-    "fast-csv": "^0.5.4"
+    "fast-csv": "^0.5.4",
+    "mongodb": "^2.0.27"
   }
 }

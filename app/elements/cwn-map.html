@@ -1,8 +1,20 @@
 <dom-module id="cwn-map">
     <style>
+        :host {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
         leaflet-map {
             height: 100%;
             display: relative;
+            z-index: 100;
+        }
+        cwn-map-menu {
+            z-index: 101;
         }
         .updating {
             position: absolute;
@@ -29,7 +41,10 @@
     </style>
 
     <template>
-        <div id="leaflet" fit></div>
+        <cwn-map-menu id="menu"></cwn-map-menu>
+        <div id="leaflet">
+            
+        </div>
 
         <div hidden$="{{!updating}}" class="updating">
             <div>Filtering...</div>
@@ -41,7 +56,7 @@
     Polymer({
         is : 'cwn-map',
 
-        ready : function() {
+        /*ready : function() {
             if( !this.tid ) this.tid = 1;
             else this.tid += 1;
 
@@ -50,11 +65,11 @@
 
         attached : function() {
             console.log('attached '+this.tid);
-        },
+        },*/
 
 
         init : function(legend, filters) {
-            console.log('init '+this.tid);
+            //console.log('init '+this.tid);
 
             this.popup = $('<div style="z-index:1000;position:absolute;padding:5px;background-color:white;border:1px solid #ccc; display:none"></div>');
             $('body').append(this.popup);
@@ -69,24 +84,29 @@
             this.legend = legend;
             
             var ref = this;
-            var MarkerLayer = L.CanvasLayer.extend({
-              render: function() {
-                var canvas = this.getCanvas();
-                var ctx = canvas.getContext('2d');
-                // clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                ref.renderMarkers(ctx, this);
-                this.redraw();
-              }
-            });
-
-            this.markerLayer = new MarkerLayer();
-            this.markerLayer.addTo(this.map);
+            
 
             //this.map.on('zoomend', this.onZoomEnd.bind(this));
             this.map.on('mousemove', this.onMouseMove.bind(this));
             this.map.on('click', this.onClick.bind(this));
+
+            var MarkerLayer = L.CanvasLayer.extend({
+                  render: function() {
+                    var canvas = this.getCanvas();
+                    var ctx = canvas.getContext('2d');
+                    // clear canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    ref.renderMarkers(ctx, this);
+                    this.redraw();
+                  }
+                });
+
+                this.markerLayer = new MarkerLayer();
+                this.markerLayer.addTo(this.map);
+
+
+
 
             CWN.ds.on('load', this.process.bind(this));
             if( !CWN.ds.loading ) this.process();
@@ -112,7 +132,15 @@
                 }
 
                 L.geoJson( layers ).addTo(this.map);
-            }.bind(this), 1000);
+
+                this.controller = new CWN.MapController({
+                    map : this.map
+                });
+                this.$.menu.init(this.controller);
+
+
+                
+            }.bind(this), 2000);
         },
 
         onClick : function(e) {
@@ -263,7 +291,7 @@
                 color = 'white';
                 if( link.properties._render.highlight ) {
                     if( link.properties._render.highlight == 'origin' ) color = 'green';
-                    else color = 'blue';
+                    else color = 'red';
                 }
 
                 ctx.beginPath();
@@ -388,7 +416,7 @@
 
             this.links = this.getEdgeMarkers();
 
-            this.markerLayer.render();
+            if( this.markerLayer ) this.markerLayer.render();
 
             this.updating = false;
             this.fire('filtering-complete');

@@ -26,7 +26,7 @@ var Region = function(root, name) {
 
         if( stat.isDirectory() ) {
             this.subregions.push(new Region(dir, file));
-        } else if ( stat.isFile() ) {
+        } else if ( stat.isFile() && file.match('\.geojson$') ) {
             this.nodes.push(file.replace(/\.geojson/, ''));
         }
     }.bind(this));
@@ -39,7 +39,7 @@ var Region = function(root, name) {
 
         var json = {
             name : this.name,
-            root : this.root,
+            //root : this.root,
             nodes : this.nodes,
             geo : this.geo
         }

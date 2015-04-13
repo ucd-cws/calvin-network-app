@@ -48,7 +48,6 @@ function Datastore() {
         }
 
         var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
-        url += '?network='+network;
 
         $.ajax({
             url : url,
@@ -58,21 +57,12 @@ function Datastore() {
                     return callback(resp);
                 }
 
-                for( var i = 0; i < resp.nodes.length; i++ ) {
-                    try {
-                        d = JSON.parse(resp.nodes[i]);
-                        this.processNode(d);
-                    } catch (e) {
-                        debugger;
-                    }
-                }
-                for( var i = 0; i < resp.links.length; i++ ) {
-                    try {
-                        d = JSON.parse(resp.links[i]);
-                        this.processLink(d);
-                    } catch (e) {
-                        debugger;
-                    }
+                for( var i = 0; i < resp.length; i++ ) {
+                  if( resp[i].properties.type == 'Diversion' || resp[i].properties.type == 'Return Flow' ) {
+                    this.processLink(resp[i]);
+                  } else {
+                    this.processNode(resp[i]);
+                  }
                 }
 
                 callback();
@@ -97,7 +87,7 @@ function Datastore() {
             }
             callback();
         }.bind(this));
-    }  
+    }
 
     this.processNode = function(node) {
         if( !node ) return;
@@ -105,7 +95,7 @@ function Datastore() {
         if( !node.properties.prmname ) return;
 
         this.markCalibrationNode(node);
-        
+
         if( !this.lookupMap[node.properties.prmname] ) {
             this.data.nodes.push(node);
         }
@@ -158,17 +148,17 @@ function Datastore() {
         try {
 
             // Flow to a sink
-            if( this.lookupMap[link.properties.terminus] && 
+            if( this.lookupMap[link.properties.terminus] &&
                 this.lookupMap[link.properties.terminus].properties.type == 'Sink' ) {
                 link.properties.renderInfo.type = 'flowToSink';
-            
+
             } else if( link.properties.type == 'Return Flow' ) {
                 link.properties.renderInfo.type = 'returnFlowFromDemand';
 
             } else if ( this.isGWToDemand(link) ) {
                 link.properties.renderInfo.type = 'gwToDemand';
 
-            } else if( this.lookupMap[link.properties.origin] && 
+            } else if( this.lookupMap[link.properties.origin] &&
                 (this.lookupMap[link.properties.origin].properties.calibrationMode == 'in' ||
                 this.lookupMap[link.properties.origin].properties.calibrationMode == 'both') ) {
 
@@ -196,7 +186,7 @@ function Datastore() {
         if( !origin || !terminal ) return false;
 
         if( origin.properties.type != 'Groundwater Storage' ) return false;
-        if( terminal.properties.type == 'Non-Standard Demand' || 
+        if( terminal.properties.type == 'Non-Standard Demand' ||
             terminal.properties.type == 'Agricultural Demand' ||
             terminal.properties.type == 'Urban Demand' ) return true;
 
@@ -231,11 +221,11 @@ function Datastore() {
                     break;
                 }
             }
-        } 
+        }
 
         node.properties.calibrationNode = true;
         if( !hasIn && !hasOut ) return;
-        
+
         if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
         else if ( hasIn ) node.properties.calibrationMode = 'in';
         else if ( hasOut ) node.properties.calibrationMode = 'out';

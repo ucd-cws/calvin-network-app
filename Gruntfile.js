@@ -210,14 +210,14 @@ module.exports = function (grunt) {
                     stdout: true,
                     stderr: true
                 },
-                command: 'node ./server/server --dev'
+                command: 'node ./server --dev'
             },
             'build-server' : {
                 options: {
                     stdout: true,
                     stderr: true
                 },
-                command: 'node ./server/server.js'
+                command: 'node ./server'
             }
         }
 

@@ -1,0 +1,66 @@
+<dom-module id="cwn-map-menu">
+    <style>
+        :host {
+            position: absolute;
+            height: 100%;
+            width: 320px;
+            background: rgba(0,0,0,.8);
+            color: white;
+            border: 1px solid black;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+        }
+        #content {
+            padding: 5px;
+        }
+    </style>
+    <template>
+        <div id="content"></div>
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is : 'cwn-map-menu',
+
+        init : function(controller) {
+            this.controller = controller;
+            this.render();
+        },
+
+        render : function() {
+            this.$.content.innerHTML = '';
+            this.renderRegion(this.controller.regions, this.$.content);
+        },
+
+        renderRegion : function(region, root) {
+            var panel = $('<div style="padding-left: 10px"></div>');
+            var input = $('<div><input type="checkbox" name="'+region.name+'" ' + 
+                            ( region.name == 'California' ? 'checked' : '') +' /> '+region.name+'</div>');
+
+            var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
+            panel.append(input);
+            panel.append(children);
+            
+            root.appendChild(panel[0]);
+
+            input.find('input').on('change', function(){
+                var ele = $(this);
+
+                if( ele.is(':checked') ) {
+                    children.show('fast');
+                } else {
+                    children.hide('fast');
+                }
+            });
+
+            if( !region.subregions ) return;
+
+            for( var i = 0; i < region.subregions.length; i++ ) {
+                this.renderRegion(region.subregions[i], children[0]);
+            }
+        }
+    })
+</script>
