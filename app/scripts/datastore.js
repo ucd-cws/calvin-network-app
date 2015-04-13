@@ -9,7 +9,8 @@ function Datastore() {
 
     this.data = {
         nodes : [],
-        links : []
+        links : [],
+        regions : []
     }
 
     // look up any node or terminal by prmname
@@ -17,6 +18,7 @@ function Datastore() {
     // look up any link origin name
     this.originLookupMap = {};
     this.terminalLookupMap = {};
+    this.regionLookupMap = {};
 
     this.reset = function() {
         this.fire('load', this.loading);
@@ -29,6 +31,7 @@ function Datastore() {
         this.lookupMap = {};
         this.originLookupMap = {};
         this.terminalLookupMap = {};
+        this.regionLookupMap = {};
     }
 
     this.reload = function(local) {
@@ -47,14 +50,21 @@ function Datastore() {
             return;
         }
 
+        var networkLoaded = false;
+        var regionsLoaded = false;
+        function done() {
+          if( networkLoaded && regionsLoaded ) callback();
+        }
+
         var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
 
         $.ajax({
             url : url,
             success : function(resp) {
+                networkLoaded = true;
                 if( resp.error ) {
                     alert('Server error loading network :(');
-                    return callback(resp);
+                    return done();
                 }
 
                 for( var i = 0; i < resp.length; i++ ) {
@@ -65,11 +75,38 @@ function Datastore() {
                   }
                 }
 
-                callback();
+
+                done();
             }.bind(this),
             error : function(resp) {
+                networkLoaded = true;
                 alert('Error retrieving data from network: '+network);
-                callback(true);
+                done();
+            }.bind(this)
+        });
+
+        url = window.location.protocol+'//'+window.location.host+'/rest/getRegions';
+        $.ajax({
+            url : url,
+            success : function(resp) {
+                regionsLoaded = true;
+                if( resp.error ) {
+                    alert('Server error loading network :(');
+                    return done();
+                }
+
+                this.data.regions = resp;
+
+                for( var i = 0; i < this.data.regions.length; i++ ) {
+                  this.regionLookupMap[this.data.regions[i].name] = this.data.regions[i];
+                }
+
+                done();
+            }.bind(this),
+            error : function(resp) {
+                regionsLoaded = true;
+                alert('Error retrieving data from network: '+network);
+                done();
             }.bind(this)
         });
     }

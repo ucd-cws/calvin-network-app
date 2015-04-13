@@ -14,6 +14,11 @@ var defaultIgnore = {
   inflows : 0,
   el_ar_cap : 0,
   _id : 0
+};
+
+var regionIgnore = {
+  root : 0,
+  _id : 0
 }
 
 exports.connect = function(callback) {

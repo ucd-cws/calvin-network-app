@@ -21,8 +21,7 @@ nodes.forEach(function(node){
 
 processLinks();
 
-
-setRegions(ca, '');
+setRegions(json, '');
 
 mongo.connect(function(err){
   if( err ) {
@@ -76,11 +75,44 @@ function setRegions(region, path) {
 
   var newPath = (path.length > 0 ? path+' ' : '') + region.name;
 
-  if( region.nodes ) {
+  if( region.nodes && region.nodes.length > 0 ) {
+    var min = null;
+    var max = null;
+
     region.nodes.forEach(function(nodeName){
-      if( lookup[nodeName] ) lookup[nodeName].properties.regions = newPath.split(' ');
-      else console.log('Unable to find node: '+nodeName+' in region '+newPath);
+      if( lookup[nodeName] ) {
+        var node = lookup[nodeName];
+        node.properties.regions = newPath.split(' ');
+
+        if( node.properties.type !== 'Diversion' && node.properties.type !== 'Return Flow' && node.geometry ) {
+          if( min == null ) min = [node.geometry.coordinates[0], node.geometry.coordinates[1]];
+          if( max == null ) max = [node.geometry.coordinates[0], node.geometry.coordinates[1]];
+
+          updateMinMax(min, max, node.geometry.coordinates);
+        }
+      } else {
+        console.log('Unable to find node: '+nodeName+' in region '+newPath);
+      }
     });
+
+    if( Object.keys(region.geo).length == 0 ) {
+      region.geo = {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[
+            min,
+            [min[0], max[1]],
+            max,
+            [max[1], min[1]],
+            min
+          ]]
+        },
+        "properties": {
+          name : region.name
+        }
+      }
+    }
   }
 
   if( !region.subregions ) return;
@@ -154,4 +186,13 @@ function processLinks() {
   removeList.forEach(function(node){
     nodes.splice(nodes.indexOf(node), 1);
   });
+}
+
+// find the min / max for a region.  if the region does not contain a geometry
+// a bounding box will be assigned using the min / max values
+function updateMinMax(min, max, coord) {
+  if( min[0] > coord[0] ) min[0] = coord[0];
+  if( min[1] > coord[1] ) min[1] = coord[1];
+  if( max[0] < coord[0] ) max[0] = coord[0];
+  if( max[1] < coord[1] ) max[1] = coord[1];
 }

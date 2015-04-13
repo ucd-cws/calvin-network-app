@@ -25,25 +25,55 @@
     Polymer({
         is : 'cwn-map-menu',
 
-        init : function(controller) {
-            this.controller = controller;
+        init : function() {
+            this.state = {
+              enabled : [],
+              disabled : []
+            };
             this.render();
+        },
+
+        getEnabled : function() {
+          this.state = {
+            enabled : [],
+            disabled : []
+          };
+          this._getEnabled('California');
+          return this.state;
+        },
+
+        _getEnabled : function(name) {
+          var ele = $(this).find('input[name="'+name+'"]');
+
+          if( ele.is(':checked') ) {
+            if( name != 'California' ) this.state.enabled.push(name);
+            var region = CWN.ds.regionLookupMap[name];
+
+            for( var i = 0; i < region.subregions.length; i++ ) {
+              this._getEnabled(region.subregions[i]);
+            }
+          } else {
+            this.state.disabled.push(name);
+          }
         },
 
         render : function() {
             this.$.content.innerHTML = '';
-            this.renderRegion(this.controller.regions, this.$.content);
+            this.renderRegion('California', this.$.content);
         },
 
-        renderRegion : function(region, root) {
+        renderRegion : function(regionName, root) {
+            var ref = this;
+            var region = CWN.ds.regionLookupMap[regionName];
+
             var panel = $('<div style="padding-left: 10px"></div>');
-            var input = $('<div><input type="checkbox" name="'+region.name+'" ' + 
+            var input = $('<div><input type="checkbox" name="'+region.name+'" ' +
                             ( region.name == 'California' ? 'checked' : '') +' /> '+region.name+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
             panel.append(input);
             panel.append(children);
-            
+
             root.appendChild(panel[0]);
 
             input.find('input').on('change', function(){
@@ -54,6 +84,8 @@
                 } else {
                     children.hide('fast');
                 }
+
+                ref.fire('select', ref.getEnabled());
             });
 
             if( !region.subregions ) return;

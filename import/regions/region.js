@@ -5,6 +5,7 @@ var Region = function(root, name) {
     this.subregions = [];
     this.nodes = [];
     this.geo = {};
+    this.isARegion = false;
 
     this.root = root;
     this.name = name;
@@ -19,13 +20,15 @@ var Region = function(root, name) {
             var json = fs.readFileSync(dir+'/'+file, 'utf-8');
             this.geo = JSON.parse(json);
             this.geo.properties.id = name;
+            this.isARegion = true;
             return;
         }
 
         var stat = fs.statSync(dir+'/'+file);
 
         if( stat.isDirectory() ) {
-            this.subregions.push(new Region(dir, file));
+          var r = new Region(dir, file);
+          if( r.isARegion ) this.subregions.push(r);
         } else if ( stat.isFile() && file.match('\.geojson$') ) {
             this.nodes.push(file.replace(/\.geojson/, ''));
         }
