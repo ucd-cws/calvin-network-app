@@ -26,11 +26,17 @@ var Region = function(root, name) {
 
         var stat = fs.statSync(dir+'/'+file);
 
-        if( stat.isDirectory() ) {
+        if( stat.isDirectory() && file !== 'regions' ) {
+
           var r = new Region(dir, file);
-          if( r.isARegion ) this.subregions.push(r);
+          if( r.isARegion ) {
+            this.subregions.push(r);
+            this.isARegion = true;
+          }
+
         } else if ( stat.isFile() && file.match('\.geojson$') ) {
-            this.nodes.push(file.replace(/\.geojson/, ''));
+          this.isARegion = true;
+          this.nodes.push(file.replace(/\.geojson/, ''));
         }
     }.bind(this));
 

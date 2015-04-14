@@ -6,6 +6,8 @@ var dir = process.argv[2], files;
 
 var nodes = [];
 var regions = [];
+var regionNames = {};
+
 var ca = new Region(dir);
 ca.name = 'California';
 
@@ -71,8 +73,18 @@ function readNodes(dir) {
 
 // set the regions array
 function setRegions(region, path) {
+
+  // make sure we have a unique name
+  var c = 1;
+  while( regionNames[region.name] ) {
+    region.name = region.name.replace(/-.*/,'')+'-'+c;
+    c++;
+  }
+  regionNames[region.name] = 1;
+
   regions.push(region);
 
+  region.parents = path.split(' ');
   var newPath = (path.length > 0 ? path+' ' : '') + region.name;
 
   if( region.nodes && region.nodes.length > 0 ) {
@@ -95,7 +107,8 @@ function setRegions(region, path) {
       }
     });
 
-    if( Object.keys(region.geo).length == 0 ) {
+    // set a bounding box if no geometry given
+    if( Object.keys(region.geo).length == 0 && min && max ) {
       region.geo = {
         "type": "Feature",
         "geometry": {
@@ -109,9 +122,12 @@ function setRegions(region, path) {
           ]]
         },
         "properties": {
-          name : region.name
+          id : region.name
         }
       }
+    } else if( region.geo ) {
+      if( !region.geo.properties ) region.geo.properties = {};
+      region.geo.properties.id = region.name;
     }
   }
 
@@ -130,8 +146,6 @@ function readRefs(dir, filename, parent, attr) {
   for( var key in parent[attr] ) {
 
     if( key === '$ref' ) {
-
-
       try {
         var file;
         if( parent[attr].$ref.match(/^\.\/.*/) ) {
@@ -146,8 +160,6 @@ function readRefs(dir, filename, parent, attr) {
       } catch(e) {
         parent[attr] = 'Unabled to read: '+file;
       }
-
-
 
     } else if( typeof parent[attr][key] === 'object' && parent[attr][key] !== null ) {
       readRefs(dir, filename, parent[attr], key);

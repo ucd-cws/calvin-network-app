@@ -49,6 +49,8 @@
             if( name != 'California' ) this.state.enabled.push(name);
             var region = CWN.ds.regionLookupMap[name];
 
+            if( !region.subregions ) return;
+            
             for( var i = 0; i < region.subregions.length; i++ ) {
               this._getEnabled(region.subregions[i]);
             }

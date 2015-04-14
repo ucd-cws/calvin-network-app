@@ -100,6 +100,7 @@ function Datastore() {
                 this.data.regions = resp;
 
                 for( var i = 0; i < this.data.regions.length; i++ ) {
+                  this.processRegion(this.data.regions[i]);
                   this.regionLookupMap[this.data.regions[i].name] = this.data.regions[i];
                 }
 
@@ -159,6 +160,7 @@ function Datastore() {
         }
 
         this.lookupMap[link.properties.prmname] = link;
+        this.filenameLookupMap[link.properties.filename] = link;
 
         // set the origin lookup map
         if( !this.originLookupMap[link.properties.origin] ) {
@@ -173,6 +175,28 @@ function Datastore() {
         } else {
             this.terminalLookupMap[link.properties.terminus].push(link);
         }
+    }
+
+    this.processRegion = function(region) {
+      if( !region.geo ) return;
+      if( !region.geo.geometry ) return;
+
+      var tmp = [];
+      for( j = 0; j < region.geo.geometry.coordinates[0].length; j++ ) {
+        tmp.push({
+          x : region.geo.geometry.coordinates[0][j][0],
+          y : region.geo.geometry.coordinates[0][j][1]
+        });
+      }
+
+      region.simplified = L.LineUtil.simplify(tmp, .001);
+      region.center = this.getCenter(region.simplified);
+
+      // todo calc bbox so we know if we need to render geometry or not
+
+      for( j = 0; j < region.simplified.length; j++ ) {
+        region.simplified[j] = [region.simplified[j].x, region.simplified[j].y]
+      }
     }
 
     this.markLinkTypes = function(link) {
@@ -269,6 +293,46 @@ function Datastore() {
         if( hasIn && hasOut ) node.properties.calibrationMode = 'both';
         else if ( hasIn ) node.properties.calibrationMode = 'in';
         else if ( hasOut ) node.properties.calibrationMode = 'out';
+    }
+
+
+    /** helper for processing region center **/
+    this.getCenter = function (points) {
+        var i, j, len, p1, p2, f, area, x, y,
+        // polygon centroid algorithm; uses all the rings, may works better for banana type polygons
+
+        area = x = y = 0;
+
+        for (i = 0, len = points.length, j = len - 1; i < len; j = i++) {
+                p1 = points[i];
+                p2 = points[j];
+
+                f = p1.y * p2.x - p2.y * p1.x;
+                x += (p1.x + p2.x) * f;
+                y += (p1.y + p2.y) * f;
+
+        }
+
+        f = this._getArea(points) * 6;
+
+        //return [x / f, y / f]
+        // wtf.  no idea
+        return [-1 * (x / f), -1 * (y / f)];
+    },
+
+    /** helper for processing region center **/
+    this._getArea = function(points){
+        var area = 0;
+        var lengthPoints = points.length;
+        var j = lengthPoints - 1;
+        var p1; var p2;
+        for (var i = 0; i < lengthPoints; j = i++) {
+            p1 = points[i]; p2 = points[j];
+            area += p1.x * p2.y;
+            area -= p1.y * p2.x;
+        }
+        area /= 2;
+        return area;
     }
 }
 
