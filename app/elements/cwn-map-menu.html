@@ -15,6 +15,23 @@
         #content {
             padding: 5px;
         }
+        .menu-root {
+          background-color: rgba(0,0,0,.1);
+          padding-left: 10px;
+          border-radius: 3px;
+        }
+        .menu-item {
+          padding: 5px;
+          font-size: 14px;
+        }
+        .menu-item:hover {
+          color: red;
+          cursor: pointer;
+        }
+        .menu-item.hovered {
+          color: red;
+          background-color: rgba(255,255,255,.2);
+        }
     </style>
     <template>
         <div id="content"></div>
@@ -50,7 +67,7 @@
             var region = CWN.ds.regionLookupMap[name];
 
             if( !region.subregions ) return;
-            
+
             for( var i = 0; i < region.subregions.length; i++ ) {
               this._getEnabled(region.subregions[i]);
             }
@@ -68,8 +85,9 @@
             var ref = this;
             var region = CWN.ds.regionLookupMap[regionName];
 
-            var panel = $('<div style="padding-left: 10px"></div>');
-            var input = $('<div><input type="checkbox" name="'+region.name+'" ' +
+            var panel = $('<div style-scope="cwn-map-menu" class="menu-root"></div>');
+            var input = $('<div class="menu-item" name="'+region.name+'" style-scope="cwn-map-menu">'+
+                          '<input type="checkbox" name="'+region.name+'" ' +
                             ( region.name == 'California' ? 'checked' : '') +' /> '+region.name+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
@@ -78,23 +96,53 @@
 
             root.appendChild(panel[0]);
 
-            input.find('input').on('change', function(){
-                var ele = $(this);
 
-                if( ele.is(':checked') ) {
-                    children.show('fast');
-                } else {
-                    children.hide('fast');
-                }
+            input.find('input').on('click', function(e){
+              e.stopPropagation();
 
-                ref.fire('select', ref.getEnabled());
+              var ele = $(this);
+
+              if( ele.is(':checked') ) {
+                  children.show('fast');
+              } else {
+                  children.hide('fast');
+              }
+
+              ref.fire('select', ref.getEnabled());
             });
+
+            input
+              .on('click', function(){
+                input.find('input').trigger("click");
+              })
+              .on('mouseover', function(){
+                this.fire('hover', regionName);
+              }.bind(this))
+              .on('mouseout', function(){
+                this.fire('nohover', regionName);
+              }.bind(this));
+
 
             if( !region.subregions ) return;
 
             for( var i = 0; i < region.subregions.length; i++ ) {
                 this.renderRegion(region.subregions[i], children[0]);
             }
+        },
+
+        setHovered : function(region) {
+          if( !region ) {
+            $(this).find('.menu-item').removeClass('hovered');
+            this.mouseOverRegion = null;
+            return;
+          }
+
+          if( this.mouseOverRegion && region.name == this.mouseOverRegion.name ) return;
+
+          $(this).find('.menu-item').removeClass('hovered');
+          this.mouseOverRegion = region;
+
+          $(this).find('.menu-item[name="'+region.name+'"]').addClass('hovered');
         }
     })
 </script>

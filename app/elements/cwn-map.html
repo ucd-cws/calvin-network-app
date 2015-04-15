@@ -41,7 +41,11 @@
     </style>
 
     <template>
-        <cwn-map-menu id="menu" on-select="onRegionSelect"></cwn-map-menu>
+        <cwn-map-menu id="menu"
+          on-select="onRegionSelect"
+          on-hover="onMenuRegionHover"
+          on-nohover="onMenuRegionNoHover">
+        </cwn-map-menu>
         <div id="leaflet">
 
         </div>
@@ -82,6 +86,8 @@
             this.filters = filters;
             this.legend = legend;
 
+            this.mouseMoveTimer = -1;
+
             this.renderState = {
               points : [],
               lines : [],
@@ -92,6 +98,7 @@
 
             //this.map.on('zoomend', this.onZoomEnd.bind(this));
             this.map.on('mousemove', this.onMouseMove.bind(this));
+            this.map.on('mouseout', this.onMouseOut.bind(this));
             this.map.on('click', this.onClick.bind(this));
 
             var MarkerLayer = L.CanvasLayer.extend({
@@ -126,7 +133,32 @@
             window.location = '#info/'+node.properties.prmname;
         },
 
+        onMouseOut : function() {
+          setTimeout(function(){
+            // for region
+            this.$.menu.setHovered(null);
+
+            // for marker
+            this.unselectHover();
+            this.$.leaflet.style.cursor = 'default';
+            this.popup.hide();
+          }.bind(this), 200);
+        },
+
         onMouseMove : function(e) {
+          if( this.mouseMoveTimer != -1 ) clearTimeout(this.mouseMoveTimer);
+
+          this._onMouseMove(e);
+
+          this.mouseMoveTimer = setTimeout(function(){
+            this.mouseMoveTimer = -1;
+
+            var region = this.getMouseOverRegion(e);
+            this.$.menu.setHovered(region);
+          }.bind(this), 100);
+        },
+
+        _onMouseMove : function(e) {
             var node = this.getMouseOverNode(e);
 
             if( !node ) {
@@ -154,8 +186,8 @@
         getMouseOverNode : function(e) {
             var p = e.containerPoint, np, buffer;
 
-            for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
-                node = CWN.ds.data.nodes[i];
+            for( var i = 0; i < this.renderState.points.length; i++ ) {
+                node = this.renderState.points[i];
 
                 if( !(node.properties._render.show ||
                     (node.properties._render.oneStep && this.filters.oneStepMode)) ) {
@@ -175,6 +207,23 @@
             }
 
             return null;
+        },
+
+        getMouseOverRegion : function(e) {
+          var point = {
+            type : "Point",
+            "coordinates": [e.latlng.lng, e.latlng.lat]
+          }
+
+          for( var i = 0; i < this.renderState.polygons.length; i++ ) {
+            if( !this.renderState.polygons[i].geo.geometry ) continue;
+
+            if( GeoJSONUtils.pointInPolygon(point, this.renderState.polygons[i].geo.geometry) ) {
+              return this.renderState.polygons[i];
+            }
+          }
+
+          return null;
         },
 
         selectHover : function(node) {
@@ -230,8 +279,8 @@
         renderMarkers : function(ctx) {
             if( !this.links || CWN.ds.loading ) return;
 
-            console.log(this.$.menu.state);
-            console.log(this.renderState);
+            //console.log(this.$.menu.state);
+            //console.log(this.renderState);
 
             var t = new Date().getTime();
 
@@ -248,39 +297,8 @@
             // render regions, for now, top layer
             var subregions = this.renderState.polygons;
             for( i = 0; i < subregions.length; i++ ) {
-              region = subregions[i];
-
-              if( !region.geo ) {
-                console.log('Ignoring: '+region.name+', no geo info');
-                continue;
-              }
-              if( !region.geo.geometry ) {
-                console.log('Ignoring: '+region.name+', no geo info');
-                continue;
-              }
-
-              coord = region.simplified;
-
-              ctx.beginPath();
-              ctx.strokeStyle = 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
-              ctx.fillStyle = 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
-              ctx.lineWidth = 4;
-              for( j = 0; j < coord.length; j++ ) {
-
-                point = this.map.latLngToContainerPoint([coord[j][1], coord[j][0]]);
-
-                if( j == 0 ) ctx.moveTo(point.x, point.y);
-                else ctx.lineTo(point.x, point.y);
-              }
-              ctx.stroke();
-              ctx.fill();
-
-              // draw center
-              ctx.beginPath();
-              point = this.map.latLngToContainerPoint([region.center[1], region.center[0]]);
-              ctx.arc(point.x, point.y, 25, 0, 2*Math.PI);
-              ctx.stroke();
-              ctx.fill();
+              if( subregions[i] == this.hoverRegion ) continue;
+              this.drawRegion(ctx, subregions[i]);
             }
 
             var highlights = [];
@@ -367,7 +385,66 @@
                 });
             }
 
+            // now lets draw hovered stuff
+            if( this.hoverRegion ) {
+              this.drawRegion(ctx, CWN.ds.regionLookupMap[this.hoverRegion], {
+                strokeStyle : 'rgba('+CWN.colors.rgb.red.join(',')+',.8)',
+                fillStyle : 'rgba('+CWN.colors.rgb.red.join(',')+',.4)',
+                noCenteriod : true
+              });
+            }
+
+
             //console.log((new Date().getTime() - t)+'ms');
+        },
+
+        drawRegion : function(ctx, region, config) {
+          if( !config ) config = {};
+
+
+          if( !region.geo ) {
+            console.log('Ignoring: '+region.name+', no geo info');
+            return;
+          }
+          if( !region.geo.geometry ) {
+            console.log('Ignoring: '+region.name+', no geo info');
+            return;
+          }
+
+          for( j = 0; j < region.simplified.length; j++ ) {
+            coord = region.simplified[j];
+
+            ctx.beginPath();
+            ctx.strokeStyle = config.strokeStyle ? config.strokeStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
+            ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
+            ctx.lineWidth = 4;
+            for( j = 0; j < coord.length; j++ ) {
+
+              try {
+                point = this.map.latLngToContainerPoint([coord[j][1], coord[j][0]]);
+              } catch(e) {
+                debugger;
+              }
+
+              if( j == 0 ) ctx.moveTo(point.x, point.y);
+              else ctx.lineTo(point.x, point.y);
+            }
+            ctx.stroke();
+            ctx.fill();
+          }
+
+          // draw center
+          if( !config.noCenteriod ) {
+            ctx.beginPath();
+            try {
+              point = this.map.latLngToContainerPoint([region.center[1], region.center[0]]);
+            } catch(e) {
+              debugger;
+            }
+            ctx.arc(point.x, point.y, 25, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.fill();
+          }
         },
 
         drawLine : function() {
@@ -382,7 +459,6 @@
             return false;
           } catch(e) {
             debugger;
-
           }
           return false;
         },
@@ -582,7 +658,7 @@
             this._addStateNodes(region.nodes, state);
 
             if( !region.subregions ) return;
-            
+
             for( var i = 0; i < region.subregions.length; i++ ) {
               this._updateRenderState(region.subregions[i]);
             }
@@ -602,6 +678,13 @@
             if( node.properties.type == 'Diversion' || node.properties.type == 'Return Flow' ) {
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
               var origin = this._getStateNodeLocation(node.properties.origin, state);
+
+              // BADNESS
+              if( !origin || !terminal ) {
+                if( !origin ) console.log('Not drawing link: '+node.properties.prmname+'.  missing origin: '+node.properties.origin);
+                if( !terminal ) console.log('Not drawing link: '+node.properties.prmname+'.  missing terminus: '+node.properties.terminus);
+                continue;
+              }
 
               this.renderState.lines.push({
                 "type" : "Feature",
@@ -623,12 +706,27 @@
 
           for( var i = 0; i < node.properties.regions.length; i++ ) {
             if( state.disabled.indexOf(node.properties.regions[i]) > -1 ) {
-              return CWN.ds.regionLookupMap[node.properties.regions[i]].center;
+              if( CWN.ds.regionLookupMap[node.properties.regions[i]].center ) {
+                return CWN.ds.regionLookupMap[node.properties.regions[i]].center;
+              }
             }
           }
 
-          return node.geometry.coordinates;
+          return node.geometry.coordinates || [0,0];
+        },
+
+        onMenuRegionHover : function(e) {
+          this.hoverRegion = e.detail;
+          this.markerLayer.render();
+        },
+
+        onMenuRegionNoHover : function(e) {
+          if( this.hoverRegion == e.detail ) {
+            this.hoverRegion = null;
+            this.markerLayer.render();
+          }
         }
+
 
     });
 </script>

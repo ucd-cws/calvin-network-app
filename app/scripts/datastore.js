@@ -178,32 +178,69 @@ function Datastore() {
     }
 
     this.processRegion = function(region) {
+      if( region.subregions ) {
+        region.subregions.sort();
+      }
+
       if( !region.geo ) return;
       if( !region.geo.geometry ) return;
 
-      var tmp = [];
-      for( j = 0; j < region.geo.geometry.coordinates[0].length; j++ ) {
-        tmp.push({
-          x : region.geo.geometry.coordinates[0][j][0],
-          y : region.geo.geometry.coordinates[0][j][1]
-        });
+      //if( region.name == 'western-uplands' ) debugger;
+
+      var polys = this.getXYPolygons(region.geo);
+
+      region.simplified = [];
+      for( var i = 0; i < polys.length; i++ ) {
+        if( polys[i].length > 100 ) {
+          region.simplified.push(L.LineUtil.simplify(polys[i], .001));
+        } else {
+          region.simplified.push(polys[i]);
+        }
       }
 
-      if( tmp.length > 100 ) {
-        region.simplified = L.LineUtil.simplify(tmp, .001);
-      } else {
-        region.simplified = tmp;
-      }
-      region.center = this.getCenter(region.simplified);
-
-      // HACK
-      if( isNaN(region.center[0]) ) region.center = region.geo.geometry.coordinates[0][0];
+      region.center = this.getCenter(region.simplified[0]);
 
       // todo calc bbox so we know if we need to render geometry or not
 
-      for( j = 0; j < region.simplified.length; j++ ) {
-        region.simplified[j] = [region.simplified[j].x, region.simplified[j].y]
+      for( var i = 0; i < region.simplified.length; i++ ) {
+        for( var j = 0; j < region.simplified[i].length; j++ ) {
+          region.simplified[i][j] = [region.simplified[i][j].x, region.simplified[i][j].y]
+        }
       }
+
+      // HACK
+      if( isNaN(region.center[0]) ) region.center = region.simplified[0][0];
+    }
+
+    this.getXYPolygons = function(geojson) {
+      var polys = [], tmp = [], i, j, p;
+      if( geojson.geometry.type == 'Polygon' ) {
+        // we only care about the outer ring.  no holes allowed.
+        for( i = 0; i < geojson.geometry.coordinates[0].length; i++ ) {
+          tmp.push({
+            x : geojson.geometry.coordinates[0][i][0],
+            y : geojson.geometry.coordinates[0][i][1]
+          });
+        }
+        polys.push(tmp);
+
+      } else if( geojson.geometry.type == 'MultiPolygon' ) {
+        // we only care about the outer ring.  no holes allowed.
+        for( i = 0; i < geojson.geometry.coordinates.length; i++ ) {
+          tmp = [];
+          p = geojson.geometry.coordinates[i][0];
+
+          for( j = 0; j < p.length; j++ ) {
+            tmp.push({
+              x : p[j][0],
+              y : p[j][1]
+            });
+          }
+
+          polys.push(tmp);
+        }
+      }
+      return polys;
     }
 
     this.markLinkTypes = function(link) {
