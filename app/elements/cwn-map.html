@@ -148,14 +148,13 @@
         onMouseMove : function(e) {
           if( this.mouseMoveTimer != -1 ) clearTimeout(this.mouseMoveTimer);
 
-          this._onMouseMove(e);
-
           this.mouseMoveTimer = setTimeout(function(){
             this.mouseMoveTimer = -1;
 
+            this._onMouseMove(e);
             var region = this.getMouseOverRegion(e);
             this.$.menu.setHovered(region);
-          }.bind(this), 100);
+          }.bind(this), 50);
         },
 
         _onMouseMove : function(e) {
