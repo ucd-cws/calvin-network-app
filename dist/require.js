@@ -8213,12 +8213,18 @@ Polymer({
     Polymer({
         is : 'cwn-map-menu',
 
+        ready : function() {
+          this.classList.add('closed');
+        },
+
         init : function() {
             this.state = {
               enabled : [],
               disabled : []
             };
             this.render();
+
+            if( $(window).width() > 700 ) this.toggle();
         },
 
         getEnabled : function() {
@@ -8314,6 +8320,16 @@ Polymer({
           this.mouseOverRegion = region;
 
           $(this).find('.menu-item[name="'+region.name+'"]').addClass('hovered');
+        },
+
+        toggle : function() {
+          if( $(this).hasClass('closed') ) {
+            $(this).removeClass('closed');
+            this.$.toggle.className = "fa fa-arrow-right";
+          } else {
+            $(this).addClass('closed');
+            this.$.toggle.className = "fa fa-arrow-left";
+          }
         }
     })
 ;

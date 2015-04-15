@@ -1268,9 +1268,14 @@ Note, all features of `x-style` are available when defining styles as part of Po
             right: 0;
             bottom: 0;
             overflow: auto;
+
+            transition: all 250ms linear;
+            -webkit-transition: all 250ms linear;
+            -moz-transition: all 250ms linear;
+            -ms-transition: all 250ms linear;
         }
         #content {
-            padding: 5px;
+            padding: 5px 5px 5px 15px;
         }
         .menu-root {
           background-color: rgba(0,0,0,.1);
@@ -1289,8 +1294,17 @@ Note, all features of `x-style` are available when defining styles as part of Po
           color: red;
           background-color: rgba(255,255,255,.2);
         }
+        :host(.closed) {
+          transform: translateX(290px);
+          -webkit-transform: translateX(290px);
+          -moz-transform: translateX(290px);
+          -ms-transform: translateX(290px);
+        }
     </style>
     <template>
+        <div>
+          <a class="btn btn-link" style="color:white" on-click="toggle"><i id="toggle" class="fa fa-arrow-left"></i></a>
+        </div>
         <div id="content"></div>
     </template>
 </dom-module>
