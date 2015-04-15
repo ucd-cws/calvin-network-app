@@ -189,8 +189,15 @@ function Datastore() {
         });
       }
 
-      region.simplified = L.LineUtil.simplify(tmp, .001);
+      if( tmp.length > 100 ) {
+        region.simplified = L.LineUtil.simplify(tmp, .001);
+      } else {
+        region.simplified = tmp;
+      }
       region.center = this.getCenter(region.simplified);
+
+      // HACK
+      if( isNaN(region.center[0]) ) region.center = region.geo.geometry.coordinates[0][0];
 
       // todo calc bbox so we know if we need to render geometry or not
 

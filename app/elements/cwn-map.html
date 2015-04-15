@@ -581,6 +581,8 @@
           if( state.enabled.indexOf(name) > -1 ) {
             this._addStateNodes(region.nodes, state);
 
+            if( !region.subregions ) return;
+            
             for( var i = 0; i < region.subregions.length; i++ ) {
               this._updateRenderState(region.subregions[i]);
             }

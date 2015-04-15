@@ -64,6 +64,7 @@ function readNodes(dir) {
         d.properties.dir = dir;
         d.properties.filename = file.replace('\.geojson', '');
 
+
         readRefs(d.properties.dir, d.properties.filename, d, 'properties');
 
         nodes.push(d);
@@ -117,14 +118,14 @@ function setRegions(region, path) {
             min,
             [min[0], max[1]],
             max,
-            [max[1], min[1]],
+            [max[0], min[1]],
             min
           ]]
         },
         "properties": {
           id : region.name
         }
-      }
+      };
     } else if( region.geo ) {
       if( !region.geo.properties ) region.geo.properties = {};
       region.geo.properties.id = region.name;
@@ -203,8 +204,9 @@ function processLinks() {
 // find the min / max for a region.  if the region does not contain a geometry
 // a bounding box will be assigned using the min / max values
 function updateMinMax(min, max, coord) {
-  if( min[0] > coord[0] ) min[0] = coord[0];
+  if( min[0] < coord[0] ) min[0] = coord[0];
   if( min[1] > coord[1] ) min[1] = coord[1];
-  if( max[0] < coord[0] ) max[0] = coord[0];
+
+  if( max[0] > coord[0] ) max[0] = coord[0];
   if( max[1] < coord[1] ) max[1] = coord[1];
 }
