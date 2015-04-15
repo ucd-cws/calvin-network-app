@@ -8387,7 +8387,15 @@ Polymer({
 
         onClick : function(e) {
             var node = this.getMouseOverNode(e);
-            if( !node ) return;
+            if( !node ) {
+              var region = this.getMouseOverRegion(e);
+
+              if( region ) {
+                $('.menu-item[name="'+region.name+'"]').trigger('click');
+              }
+
+              return;
+            }
 
             this.$.leaflet.style.cursor = 'default';
             this.popup.hide();
@@ -8407,15 +8415,15 @@ Polymer({
         },
 
         onMouseMove : function(e) {
-          if( this.mouseMoveTimer != -1 ) clearTimeout(this.mouseMoveTimer);
+        //  if( this.mouseMoveTimer != -1 ) clearTimeout(this.mouseMoveTimer);
 
-          this.mouseMoveTimer = setTimeout(function(){
-            this.mouseMoveTimer = -1;
+        //  this.mouseMoveTimer = setTimeout(function(){
+        //    this.mouseMoveTimer = -1;
 
             this._onMouseMove(e);
-            var region = this.getMouseOverRegion(e);
-            this.$.menu.setHovered(region);
-          }.bind(this), 50);
+        //    var region = this.getMouseOverRegion(e);
+        //    this.$.menu.setHovered(region);
+        //  }.bind(this), 50);
         },
 
         _onMouseMove : function(e) {
@@ -8704,6 +8712,11 @@ Polymer({
             ctx.arc(point.x, point.y, 25, 0, 2*Math.PI);
             ctx.stroke();
             ctx.fill();
+
+            // add name
+            ctx.fillStyle = '#333333';
+            ctx.font="14px \"Helvetica Neue\",Helvetica,Arial,sans-serif";
+            ctx.fillText(region.name, point.x - 20, point.y + 40 );
           }
         },
 
