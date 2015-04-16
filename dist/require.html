@@ -1176,7 +1176,7 @@ Note, all features of `x-style` are available when defining styles as part of Po
         box-shadow: 0 0 15px black;
       }
     </style>
-    <template>      
+    <template>
 
         <div class="modal-dialog">
           <div class="modal-content">
@@ -1798,7 +1798,7 @@ Note, all features of `x-style` are available when defining styles as part of Po
             </tr></tbody></table>
         </div>
 
-        <cwn-popup id="popup" nofooter="">
+        <cwn-popup id="popup" nofooter="" style="z-index: 11000">
             <div class="popup-body">
                 <div class="layout horizontal">
                     <div>
@@ -1809,11 +1809,11 @@ Note, all features of `x-style` are available when defining styles as part of Po
                             <div>{{popupNode.properties.description}}</div>
                             <h4 style="margin-top: 30px">Actions</h4>
                             <ul>
-                                <li><a class="btn btn-link" href="{{graphLink}}" on-click="hide">
+                                <li><a class="btn btn-link" on-click="goToGraphLink">
                                         Set as Graph Root</a>
                                 </li>
-                                <li><a class="btn btn-link" href="{{infoLink}}" on-click="hide">View Info</a></li>
-                                <li><a class="btn btn-link" on-click="{{goTo}}">View on Map</a></li>
+                                <li><a class="btn btn-link" on-click="goToInfoLink">View Info</a></li>
+                                <li><a class="btn btn-link" on-click="goTo">View on Map</a></li>
                             </ul>
                         </div>
                     </div>

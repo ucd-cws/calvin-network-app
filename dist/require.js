@@ -7233,22 +7233,19 @@ Polymer.Debounce = (function() {
   Polymer({
       is : 'cwn-popup',
 
-      published : {
-        header : String,
-        noFooter : Boolean
-      },
-
-      configure : function() {
-        return {
-          //header : '',
-          showHeader : false,
-          noFooter : true,
-          showing : false,
+      properties : {
+        header : {
+          type : String,
+          observer : 'onHeaderUpdate'
+        },
+        noFooter : {
+          type : Boolean,
+          value : true
+        },
+        showing : {
+          type : Boolean,
+          value : false
         }
-      },
-
-      bind : {
-        header : 'onHeaderUpdate'
       },
 
       ready : function() {
@@ -7271,7 +7268,7 @@ Polymer.Debounce = (function() {
         if( this.header.length > 0 ) this.showHeader = true;
         else this.showHeader = false;
       },
-        
+
       show: function() {
           if( this.showing ) return;
           this.showing = true;
@@ -8303,30 +8300,31 @@ Polymer({
     Polymer({
         is : 'cwn-graph',
 
-        configure : function() {
-            return {
-                hack : '',
 
-                maxDepth : '6',
-                negativeDepth : '0',
-                graph : null,
-                graphJson : {},
-                updateTimer : -1,
-                prmname : '',
-                popupNode : {},
-
-                nodeLevels : {},
-                negativeLevels : {},
-                cnodes : [],
-                graphLink : '',
-                infoLink : '',
-                mapLink : '#map'
-            }
+        properties : {
+          prmname : {
+            type : String,
+            observer : 'update'
+          }
         },
 
-        bind : {
-            'prmname' : 'update',
-            'popupNode' : 'setLinks'
+        ready : function() {
+          this.hack = '';
+
+          this.maxDepth = '6';
+          this.negativeDepth = '0';
+          this.graph = null;
+          this.graphJson = {};
+          this.updateTimer = -1;
+          this.prmname = '';
+          this.popupNode = {};
+
+          this.nodeLevels = {};
+          this.negativeLevels = {};
+          this.cnodes = [];
+          this.graphLink = '';
+          this.infoLink = '';
+          this.mapLink = '#map';
         },
 
         attached : function() {
@@ -8344,8 +8342,8 @@ Polymer({
             if( !this.popupNode ) return;
             if( !this.popupNode.properties ) return;
 
-            this.graphLink = '#info/'+this.popupNode.properties.prmname;
-            this.infoLink = '#info/'+this.popupNode.properties.prmname;
+            this.graphLink = 'graph/'+this.popupNode.properties.prmname;
+            this.infoLink = 'info/'+this.popupNode.properties.prmname;
         },
 
         changeNode : function() {
@@ -8667,6 +8665,16 @@ Polymer({
             }
             // ForceAtlas Layout
             //this.graph.startForceAtlas2();
+        },
+
+        goToGraphLink : function() {
+          window.location.hash = 'graph/'+this.popupNode.properties.prmname;
+          this.hide();
+        },
+
+        goToInfoLink : function() {
+          window.location.hash = 'info/'+this.popupNode.properties.prmname;
+          this.hide();
         },
 
         goTo : function() {

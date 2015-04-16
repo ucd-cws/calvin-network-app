@@ -43,7 +43,7 @@
             </table>
         </div>
 
-        <cwn-popup id="popup" noFooter>
+        <cwn-popup id="popup" noFooter style="z-index: 11000">
             <div class="popup-body">
                 <div class="layout horizontal">
                     <div>
@@ -56,12 +56,11 @@
                             <ul>
                                 <li><a
                                         class="btn btn-link"
-                                        href="{{graphLink}}"
-                                        on-click="hide">
+                                        on-click="goToGraphLink">
                                         Set as Graph Root</a>
                                 </li>
-                                <li><a class="btn btn-link" href="{{infoLink}}" on-click="hide">View Info</a></li>
-                                <li><a class="btn btn-link" on-click="{{goTo}}">View on Map</a></li>
+                                <li><a class="btn btn-link" on-click="goToInfoLink">View Info</a></li>
+                                <li><a class="btn btn-link" on-click="goTo">View on Map</a></li>
                             </ul>
                         </div>
                     </div>
@@ -75,30 +74,31 @@
     Polymer({
         is : 'cwn-graph',
 
-        configure : function() {
-            return {
-                hack : '',
 
-                maxDepth : '6',
-                negativeDepth : '0',
-                graph : null,
-                graphJson : {},
-                updateTimer : -1,
-                prmname : '',
-                popupNode : {},
-
-                nodeLevels : {},
-                negativeLevels : {},
-                cnodes : [],
-                graphLink : '',
-                infoLink : '',
-                mapLink : '#map'
-            }
+        properties : {
+          prmname : {
+            type : String,
+            observer : 'update'
+          }
         },
 
-        bind : {
-            'prmname' : 'update',
-            'popupNode' : 'setLinks'
+        ready : function() {
+          this.hack = '';
+
+          this.maxDepth = '6';
+          this.negativeDepth = '0';
+          this.graph = null;
+          this.graphJson = {};
+          this.updateTimer = -1;
+          this.prmname = '';
+          this.popupNode = {};
+
+          this.nodeLevels = {};
+          this.negativeLevels = {};
+          this.cnodes = [];
+          this.graphLink = '';
+          this.infoLink = '';
+          this.mapLink = '#map';
         },
 
         attached : function() {
@@ -116,8 +116,8 @@
             if( !this.popupNode ) return;
             if( !this.popupNode.properties ) return;
 
-            this.graphLink = '#info/'+this.popupNode.properties.prmname;
-            this.infoLink = '#info/'+this.popupNode.properties.prmname;
+            this.graphLink = 'graph/'+this.popupNode.properties.prmname;
+            this.infoLink = 'info/'+this.popupNode.properties.prmname;
         },
 
         changeNode : function() {
@@ -439,6 +439,16 @@
             }
             // ForceAtlas Layout
             //this.graph.startForceAtlas2();
+        },
+
+        goToGraphLink : function() {
+          window.location.hash = 'graph/'+this.popupNode.properties.prmname;
+          this.hide();
+        },
+
+        goToInfoLink : function() {
+          window.location.hash = 'info/'+this.popupNode.properties.prmname;
+          this.hide();
         },
 
         goTo : function() {
