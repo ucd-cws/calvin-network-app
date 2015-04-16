@@ -54,8 +54,8 @@
                             <div>{{popupNode.properties.description}}</div>
                             <h4 style="margin-top: 30px">Actions</h4>
                             <ul>
-                                <li><a 
-                                        class="btn btn-link" 
+                                <li><a
+                                        class="btn btn-link"
                                         href="{{graphLink}}"
                                         on-click="hide">
                                         Set as Graph Root</a>
@@ -65,7 +65,7 @@
                             </ul>
                         </div>
                     </div>
-                </div> 
+                </div>
             </div>
         </cwn-popup>
     </template>
@@ -131,20 +131,24 @@
 
                 if( !this.graph ) this.render();
 
-                // make sure it was drawn correctly
                 setTimeout(function(){
-                     this.graph.refresh();
-                }.bind(this), 500);
-                setTimeout(function(){
-                     this.graph.refresh();
-                }.bind(this), 1000);
+                    this.update();
+
+                    // make sure it was drawn correctly
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 500);
+                    setTimeout(function(){
+                         this.graph.refresh();
+                    }.bind(this), 1000);
+                }.bind(this), 200);
             }
         },
 
         update : function() {
             if( !this.ds ) return;
             if( this.prmname == '' ) return;
-            
+
             this.reset();
 
             var t1 = new Date().getTime();
@@ -281,7 +285,7 @@
             var tNode = this.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
             // make sure the next node exists
             if( !tNode ) return;
-            
+
             // make sure the next node is being shown
             if( tNode.properties._render && !tNode.properties._render.show ) {
                 this._followLink(link, level, direction);
@@ -407,7 +411,7 @@
 
         render : function() {
             if( !this.graph ) {
-                this.graph = new sigma({ 
+                this.graph = new sigma({
                     graph: this.graphJson,
                     renderer : {
                         container: this.$.sigma,
@@ -427,7 +431,7 @@
                     this.$.popup.show();
                 }.bind(this));
             } else {
-  
+
                 this.graph.graph.clear();
                 this.graph.graph.read(this.graphJson);
                 // Refresh the display:
