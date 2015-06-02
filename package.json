@@ -13,8 +13,7 @@
   },
   "author": "Justin Merz (jrmerz@ucdavis.edu)",
   "license": "ISC",
-  "dependencies": {
-    "express": "^4.8.3",
+  "devDependencies" : {
     "grunt": "^0.4.5",
     "grunt-vulcanize": "^0.4.1",
     "grunt-manifest": "^0.4.0",
@@ -33,7 +32,10 @@
     "grunt-contrib-compass": "^0.9.1",
     "grunt-contrib-imagemin": "^0.8.0",
     "grunt-contrib-cssmin": "^0.10.0",
-    "grunt-svgmin": "^0.4.0",
+    "grunt-svgmin": "^0.4.0"
+  },
+  "dependencies": {
+    "express": "^4.8.3",
     "neo4j": "^1.1.0",
     "connect-redis": "^2.1.0",
     "redis": "^0.12.1",
