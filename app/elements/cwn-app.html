@@ -34,23 +34,23 @@
               <span class="visible-xs"><i class="fa fa-filter"></i></span>
             </a>
 
-            <cwn-filters 
-              id="filters" content 
+            <cwn-filters
+              id="filters" content
               legend="{{legend}}"
               on-update="onFiltersUpdated"></cwn-filters>
 
             <cwn-map content
-              id="map" 
+              id="map"
               on-selected="onFeatureSelected"
               on-filtering-complete="updateGraph">
             </cwn-map>
 
-            <cwn-info-page content 
+            <cwn-info-page content
               id="info">
             </cwn-info-page>
 
             <cwn-graph content
-              class="fit" 
+              class="fit"
               id="graph">
             </cwn-graph>
 
@@ -62,23 +62,22 @@
     Polymer({
         is : 'cwn-app',
 
-        configure : function() {
-          return {
-            PAGES : {
-              map : 0,
-              info : 1,
-              graph : 2
-            },
+        ready : function() {
+          this.PAGES = {
+            map : 0,
+            info : 1,
+            graph : 2
+          };
 
-            selectedPage : 0,
+          this.selectedPage = 0;
 
 
-            loading : true,
+          this.loading = true;
 
-            dataLoaded : false,
-            dataLoadHandlers : [],
+          this.dataLoaded = false;
+          this.dataLoadHandlers = [];
 
-            legend : {
+          this.legend = {
             'Power Plant'         : {
               color : '#3366cc',
               google : 'small_red'
@@ -119,8 +118,8 @@
                 color : '#22aa99',
                 google : 'shaded_dot'
             }
-          }
-          }
+          };
+
         },
 
         attached : function() {
@@ -179,7 +178,7 @@
           name = decodeURIComponent(name);
           this.$.info.feature = CWN.ds.lookupMap[name];
         },
-       
+
         onDataLoad : function() {
           this.dataLoaded = true;
           for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
