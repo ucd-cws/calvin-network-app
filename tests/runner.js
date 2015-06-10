@@ -31,7 +31,7 @@ var feature = {
 markerLayer.addFeature(feature);
 
 
-$.get('http://localhost:3007/rest/getRegions', function(resp){
+$.get('http://192.168.1.3:3007/rest/getRegions', function(resp){
 
   for( var i = 0; i < resp.length; i++ ) {
 
@@ -42,22 +42,13 @@ $.get('http://localhost:3007/rest/getRegions', function(resp){
 
         ctx.beginPath();
         ctx.strokeStyle = 'blue';
-        ctx.fillStyle = 'red';
+        ctx.fillStyle = 'rgba(0, 0, 0, .3)';
         ctx.lineWidth = 4;
 
-        if( xyPoints.length > 500 ) {
-          for( j = 0; j < xyPoints.length; j += 50 ) {
-            if( j == 0 ) ctx.moveTo(xyPoints[j].x, xyPoints[j].y);
-            else ctx.lineTo(xyPoints[j].x, xyPoints[j].y);
-          }
-        } else {
-          for( j = 0; j < xyPoints.length; j++ ) {
-            if( j == 0 ) ctx.moveTo(xyPoints[j].x, xyPoints[j].y);
-            else ctx.lineTo(xyPoints[j].x, xyPoints[j].y);
-          }
+        for( j = 0; j < xyPoints.length; j++ ) {
+          if( j == 0 ) ctx.moveTo(xyPoints[j].x, xyPoints[j].y);
+          else ctx.lineTo(xyPoints[j].x, xyPoints[j].y);
         }
-
-
 
         ctx.stroke();
         ctx.fill();

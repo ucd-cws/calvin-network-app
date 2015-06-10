@@ -92,6 +92,9 @@ if(typeof(L) !== 'undefined') {
           'zoomstart': this._startZoom,
           'zoomend': this._endZoom
       }, this);
+      map.on('mousemove', this.intersects, this);
+      map.on('click', this.intersects, this);
+
 
       this._reset();
     },
@@ -102,9 +105,9 @@ if(typeof(L) !== 'undefined') {
     },
 
     _endZoom: function () {
-        this._canvas.style.visibility = 'visible';
-        this.zooming = false;
-        this.render();
+      this._canvas.style.visibility = 'visible';
+      this.zooming = false;
+      setTimeout(this.render.bind(this), 50);
     },
 
     getCanvas: function() {
@@ -177,51 +180,33 @@ if(typeof(L) !== 'undefined') {
       // if this hasn't changed the ll -> container pt is not needed
 
       var bounds = this._map.getBounds();
-      var boundsStr = bounds.toBBoxString();
       var zoom = this._map.getZoom();
 
       for( var i = 0; i < this.features.length; i++ ) {
-        this.redrawFeature(this.features[i], bounds, boundsStr, zoom, diff);
+        this.redrawFeature(this.features[i], bounds, zoom, diff);
       }
     },
 
-    redrawFeature : function(feature, bounds, boundsStr, zoom, diff) {
+    redrawFeature : function(feature, bounds, zoom, diff) {
       // ignore anything flagged as hidden
       if( !feature.visible ) return;
-
-      // ignore anything not in bounds
-      if( feature.geojson.geometry.type == 'Point' ) {
-        if( !bounds.contains(feature.latlng) ) {
-          feature.outOfBounds = true;
-          return;
-        }
-      } else {
-        if( !bounds.contains(feature.bounds) && !bounds.intersects(feature.bounds) ) {
-          feature.outOfBounds = true;
-          return;
-        }
-      }
 
       // now lets check cache to see if we need to reproject the
       // xy coordinates
       var reproject = true;
       if( feature.cache ) {
         if( feature.cache.zoom == zoom &&
-            feature.cache.geoXY && !feature.outOfBounds ) {
+            feature.cache.geoXY ) {
 
           reproject = false;
         }
       }
-
-      // if the feature was out of bounds last time we want to reproject
-      feature.outOfBounds = false;
 
       // actually project to xy if needed
       if( reproject ) {
 
         if( !feature.cache ) feature.cache = {};
 
-        feature.cache.bboxString = boundsStr;
         feature.cache.zoom = zoom;
 
         if( feature.geojson.geometry.type == 'Point' ) {
@@ -254,6 +239,22 @@ if(typeof(L) !== 'undefined') {
           this.moveLine(feature.cache.geoXY, diff);
         }
       }
+
+      // ignore anything not in bounds
+      if( feature.geojson.geometry.type == 'Point' ) {
+        if( !bounds.contains(feature.latlng) ) {
+          //feature.outOfBounds = true;
+          return;
+        }
+      } else {
+        if( !bounds.contains(feature.bounds) && !bounds.intersects(feature.bounds) ) {
+          //feature.outOfBounds = true;
+          return;
+        }
+      }
+
+      // if the feature was out of bounds last time we want to reproject
+      //feature.outOfBounds = false;
 
       // call feature render function in feature scope;
       feature.render.call(feature, this._ctx, feature.cache.geoXY, this._map);
@@ -341,6 +342,8 @@ if(typeof(L) !== 'undefined') {
     lastCenterLL : null,
 
     render: function(e) {
+      var t = new Date().getTime();
+
       var diff = null;
       if( e && e.type == 'move' ) {
         var center = this._map.getCenter();
@@ -367,9 +370,86 @@ if(typeof(L) !== 'undefined') {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if( !this.zooming ) this.redraw(diff);
+
+      var diff = new Date().getTime() - t;
+
+      var c = 0;
+
+      for( var i = 0; i < this.features.length; i++ ) {
+        if( Array.isArray(this.features[i].cache.geoXY) ) c += this.features[i].cache.geoXY.length;
+      }
+      console.log('Rendered '+c+' pts in '+diff+'ms');
+
+    },
+
+    intersects : function(e) {
+      console.log(e);
+
+      var mpp = this.metersPerPx(e.latlng);
+      var r = mpp * 5; // 5 px radius buffer;
+
+      console.log(mpp);
+
+      return;
+
+      for( var i = 0; i < this.features.length; i++ ) {
+        if( !this.features[i].visible ) continue;
+        if( this.features[i].bounds && !this.features[i].bounds.contains(e.latlng) ) continue;
+
+
+
+
+        if( GeoJSONUtils.pointInPolygon(e.latlng, this.renderState.polygons[i].geo.geometry) ) {
+          return this.renderState.polygons[i];
+        }
+      }
+
+    },
+
+    geometryWithinRadius : function(geometry, center, radius) {
+      if (geometry.type == 'Point') {
+        return GeoJSONUtils.pointDistance(geometry, center) <= radius;
+      } else if (geometry.type == 'LineString' || geometry.type == 'Polygon') {
+
+        var point = {};
+        var coordinates;
+        if (geometry.type == 'Polygon') {
+          // it's enough to check the exterior ring of the Polygon
+          coordinates = geometry.coordinates[0];
+        } else {
+          coordinates = geometry.coordinates;
+        }
+        for (var i in coordinates) {
+          point.coordinates = coordinates[i];
+          if (GeoJSONUtils.pointDistance(point, center) < radius) {
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+
+    // http://math.stackexchange.com/questions/275529/check-if-line-intersects-with-circles-perimeter
+    lineIntersectsCircle : function() {
+      return (Math.abs((l2.lat() - l1.lat())*c.lat() +  c.lng()*(l1.lng() -
+       l2.lng()) + (l1.lat() - l2.lat())*l1.lng() +
+       (l1.lng() - l2.lng())*c.lat())/ Math.sqrt((l2.lat() - l1.lat())^2 +
+       (l1.lng() - l2.lng())^2) <= r)
+    },
+
+    // http://wiki.openstreetmap.org/wiki/Zoom_levels
+    // http://stackoverflow.com/questions/27545098/leaflet-calculating-meters-per-pixel-at-zoom-level
+    metersPerPx : function(ll, zoom) {
+      var pointC = map.latLngToContainerPoint(ll); // convert to containerpoint (pixels)
+      var pointX = [pointC.x + 1, pointC.y]; // add one pixel to x
+
+      // convert containerpoints to latlng's
+      var latLngC = map.containerPointToLatLng(pointC);
+      var latLngX = map.containerPointToLatLng(pointX);
+
+      var distanceX = latLngC.distanceTo(latLngX); // calculate distance between c and x (latitude)
+      return distanceX;
     }
-
-
 
 
   });
