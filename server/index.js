@@ -1,7 +1,7 @@
 // express js
 var express = require('express');
 var app = express();
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 var mongo = require('./lib/mongo');
 
 
@@ -21,6 +21,8 @@ mongo.connect(function(err){
   app.use(bodyParser.json());
 
   app.get('/rest/getRegions', function(req, resp){
+    resp.header("Access-Control-Allow-Origin", "*");
+
     mongo.getRegions(function(err, result){
       if( err ) return sendError(resp, 'Error retrieving CALVIN network region data :(');
       resp.send(result);

@@ -22,7 +22,7 @@ if(typeof(L) !== 'undefined') {
         zoomOffset: 0,
         opacity: 1,
         unloadInvisibleTiles: L.Browser.mobile,
-        updateWhenIdle: L.Browser.mobile,
+        updateWhenIdle: L.Browser.mobile
         //tileLoader: false // installs tile loading events
     },
 
@@ -68,6 +68,7 @@ if(typeof(L) !== 'undefined') {
       // map pane to keep the canvas always in (0, 0)
       var tilePane = this._map._panes.tilePane;
       var _container = L.DomUtil.create('div', 'leaflet-layer');
+
       _container.appendChild(this._canvas);
       _container.appendChild(this._backCanvas);
       this._backCanvas.style.display = 'none';
@@ -97,10 +98,13 @@ if(typeof(L) !== 'undefined') {
 
     _startZoom: function() {
       this._canvas.style.visibility = 'hidden';
+      this.zooming = true;
     },
 
     _endZoom: function () {
         this._canvas.style.visibility = 'visible';
+        this.zooming = false;
+        this.render();
     },
 
     getCanvas: function() {
@@ -168,7 +172,7 @@ if(typeof(L) !== 'undefined') {
     onResize: function() {},
 
 
-    redraw: function(force) {
+    redraw: function(diff) {
       // objects should keep track of last bbox and zoom of map
       // if this hasn't changed the ll -> container pt is not needed
 
@@ -177,47 +181,77 @@ if(typeof(L) !== 'undefined') {
       var zoom = this._map.getZoom();
 
       for( var i = 0; i < this.features.length; i++ ) {
-        this.redrawFeature(this.features[i], bounds, boundsStr, zoom);
+        this.redrawFeature(this.features[i], bounds, boundsStr, zoom, diff);
       }
     },
 
-    redrawFeature : function(feature, bounds, boundsStr, zoom) {
+    redrawFeature : function(feature, bounds, boundsStr, zoom, diff) {
       // ignore anything flagged as hidden
       if( !feature.visible ) return;
 
       // ignore anything not in bounds
-      if( feature.geojson.type == 'Point' ) {
-        if( !bounds.contains(feature.latlng) ) return;
+      if( feature.geojson.geometry.type == 'Point' ) {
+        if( !bounds.contains(feature.latlng) ) {
+          feature.outOfBounds = true;
+          return;
+        }
       } else {
-        if( !bounds.contains(feature.bounds) ) return;
+        if( !bounds.contains(feature.bounds) && !bounds.intersects(feature.bounds) ) {
+          feature.outOfBounds = true;
+          return;
+        }
       }
 
       // now lets check cache to see if we need to reproject the
       // xy coordinates
       var reproject = true;
       if( feature.cache ) {
-        if( feature.cache.bboxString == boundsStr &&
-            feature.cache.zoom == zoom &&
-            feature.cache.geoXY ) {
+        if( feature.cache.zoom == zoom &&
+            feature.cache.geoXY && !feature.outOfBounds ) {
 
           reproject = false;
         }
       }
 
+      // if the feature was out of bounds last time we want to reproject
+      feature.outOfBounds = false;
+
       // actually project to xy if needed
       if( reproject ) {
+
+        if( !feature.cache ) feature.cache = {};
+
         feature.cache.bboxString = boundsStr;
         feature.cache.zoom = zoom;
 
-        if( feature.geojson.type == 'Point' ) {
+        if( feature.geojson.geometry.type == 'Point' ) {
+
           feature.cache.geoXY = this._map.latLngToContainerPoint([
-              feature.geojson.coordinates[1],
-              feature.geojson.coordinates[0]
+              feature.geojson.geometry.coordinates[1],
+              feature.geojson.geometry.coordinates[0]
           ]);
-        } else if( feature.geojson.type == 'LineString' ) {
-          feature.cache.geoXY = this.projectLine(feature.geojson.coordinates);
-        } else if ( feature.geojson.type == 'Polygon' ) {
-          feature.cache.geoXY = this.projectLine(feature.geojson.coordinates[0]);
+
+          // TODO: calculate bounding box if zoom has changed
+          if( feature.size ){
+
+          }
+
+        } else if( feature.geojson.geometry.type == 'LineString' ) {
+          feature.cache.geoXY = this.projectLine(feature.geojson.geometry.coordinates);
+        } else if ( feature.geojson.geometry.type == 'Polygon' ) {
+          feature.cache.geoXY = this.projectLine(feature.geojson.geometry.coordinates[0]);
+        }
+      }
+
+      if( diff && !reproject ) {
+        if( feature.geojson.geometry.type == 'Point' ) {
+          feature.cache.geoXY.x += diff.x;
+          feature.cache.geoXY.y += diff.y;
+
+        } else if( feature.geojson.geometry.type == 'LineString' ) {
+          this.moveLine(feature.cache.geoXY, diff);
+        } else if ( feature.geojson.geometry.type == 'Polygon' ) {
+          this.moveLine(feature.cache.geoXY, diff);
         }
       }
 
@@ -234,25 +268,31 @@ if(typeof(L) !== 'undefined') {
 
     /**
       A Feature should have the following:
+
       feature = {
         visible : Boolean,
         size : Number, // points only, used for mouse interact
         geojson : {}
         render : function(context, coordinatesInXY, map) {} // called in feature scope
       }
+
+      geoXY and leaflet will be assigned
     **/
     addFeature : function(feature) {
-      if( feature.visible === 'undefined' ) feature.visible = true;
+      if( !feature.geojson ) return;
+      if( !feature.geojson.geometry ) return;
+
+      if( typeof feature.visible === 'undefined' ) feature.visible = true;
       feature.cache = null;
 
-      if( feature.geojson.type == 'LineString' ) {
-        feature.bounds = this.calcBounds(feature.geojson.coordinates);
-      } else if ( feature.geojson.type == 'Polygon' ) {
-        feature.bounds = this.calcBounds(feature.geojson.coordinates[0]);
-      } else if ( feature.geojson.type == 'Point' ) {
-        feature.latlng = L.latlng(feature.geojson.coordinates[1], feature.geojson.coordinates[0]);
+      if( feature.geojson.geometry.type == 'LineString' ) {
+        feature.bounds = this.calcBounds(feature.geojson.geometry.coordinates);
+      } else if ( feature.geojson.geometry.type == 'Polygon' ) {
+        feature.bounds = this.calcBounds(feature.geojson.geometry.coordinates[0]);
+      } else if ( feature.geojson.geometry.type == 'Point' ) {
+        feature.latlng = L.latLng(feature.geojson.geometry.coordinates[1], feature.geojson.geometry.coordinates[0]);
       } else {
-        console.log('GeoJSON feature type "'+feature.geojson.type+'" no supported.');
+        console.log('GeoJSON feature type "'+feature.geojson.geometry.type+'" not supported.');
         console.log(feature.geojson);
         return;
       }
@@ -260,6 +300,13 @@ if(typeof(L) !== 'undefined') {
       this.features.push(feature);
     },
 
+
+    moveLine : function(coords, diff) {
+      for( var i = 0; i < coords.length; i++ ) {
+        coords[i].x += diff.x;
+        coords[i].y += diff.y;
+      }
+    },
 
     projectLine : function(coords) {
       var xyLine = [];
@@ -285,10 +332,41 @@ if(typeof(L) !== 'undefined') {
         if( xmax < coords[i][0] ) ymax = coords[i][0];
       }
 
-      var southWest = L.latlng(ymin, xmin);
-      var northEast = L.latlng(ymax, xmax);
+      var southWest = L.latLng(xmin, ymin);
+      var northEast = L.latLng(xmax, ymax);
 
       return L.latLngBounds(southWest, northEast);
+    },
+
+    lastCenterLL : null,
+
+    render: function(e) {
+      var diff = null;
+      if( e && e.type == 'move' ) {
+        var center = this._map.getCenter();
+
+        var pt = this._map.latLngToContainerPoint(center);
+        if( this.lastCenterLL ) {
+          var lastXy = this._map.latLngToContainerPoint(this.lastCenterLL);
+          diff = {
+            x : lastXy.x - pt.x,
+            y : lastXy.y - pt.y
+          }
+        }
+
+        this.lastCenterLL = center;
+      }
+
+      var topLeft = this._map.containerPointToLayerPoint([0, 0]);
+      L.DomUtil.setPosition(this._canvas, topLeft);
+
+      var canvas = this.getCanvas();
+      var ctx = canvas.getContext('2d');
+
+      // clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if( !this.zooming ) this.redraw(diff);
     }
 
 
