@@ -388,45 +388,34 @@ if(typeof(L) !== 'undefined') {
       var mpp = this.metersPerPx(e.latlng);
       var r = mpp * 5; // 5 px radius buffer;
 
-      console.log(mpp);
-
-      return;
-
-      for( var i = 0; i < this.features.length; i++ ) {
-        if( !this.features[i].visible ) continue;
-        if( this.features[i].bounds && !this.features[i].bounds.contains(e.latlng) ) continue;
-
-
-
-
-        if( GeoJSONUtils.pointInPolygon(e.latlng, this.renderState.polygons[i].geo.geometry) ) {
-          return this.renderState.polygons[i];
-        }
+      var center = {
+        type : 'Point',
+        coordinates : [e.latlng.lng, e.latlng.lat]
       }
 
+      var f;
+      var intersects = [];
+      for( var i = 0; i < this.features.length; i++ ) {
+        f = this.features[i];
+        if( !f.visible ) continue;
+        if( !f.geojson.geometry ) continue;
+        if( f.bounds && !f.bounds.contains(e.latlng) ) continue;
+
+        if( this.geometryWithinRadius(f.geojson.geometry, center, r) ) {
+          intersects.push(f.geojson);
+        }
+      }
+      console.log(intersects);
     },
 
     geometryWithinRadius : function(geometry, center, radius) {
       if (geometry.type == 'Point') {
         return GeoJSONUtils.pointDistance(geometry, center) <= radius;
-      } else if (geometry.type == 'LineString' || geometry.type == 'Polygon') {
-
-        var point = {};
-        var coordinates;
-        if (geometry.type == 'Polygon') {
-          // it's enough to check the exterior ring of the Polygon
-          coordinates = geometry.coordinates[0];
-        } else {
-          coordinates = geometry.coordinates;
-        }
-        for (var i in coordinates) {
-          point.coordinates = coordinates[i];
-          if (GeoJSONUtils.pointDistance(point, center) < radius) {
-            return false;
-          }
-        }
+      } else if (geometry.type == 'LineString' ) {
+        return false;
+      } else if (geometry.type == 'Polygon') {
+        return GeoJSONUtils.pointInPolygon(center, geometry);
       }
-      return true;
     },
 
     // http://math.stackexchange.com/questions/275529/check-if-line-intersects-with-circles-perimeter

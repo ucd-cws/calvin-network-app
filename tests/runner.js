@@ -31,7 +31,7 @@ var feature = {
 markerLayer.addFeature(feature);
 
 
-$.get('http://192.168.1.3:3007/rest/getRegions', function(resp){
+$.get('http://localhost:3007/rest/getRegions', function(resp){
 
   for( var i = 0; i < resp.length; i++ ) {
 
