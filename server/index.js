@@ -30,6 +30,8 @@ mongo.connect(function(err){
   });
 
   app.get('/rest/getNetwork', function(req, resp){
+    resp.header("Access-Control-Allow-Origin", "*");
+
     mongo.getNetwork(function(err, result){
       if( err ) return sendError(resp, 'Error retrieving CALVIN network data :(');
       resp.send(result);

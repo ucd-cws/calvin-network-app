@@ -83,7 +83,8 @@
             }).addTo(this.map);
 
             this.links = [];
-            this.filters = filters;
+            this.mapFilters = filters || {};
+
             this.legend = legend;
 
             this.mouseMoveTimer = -1;
@@ -97,11 +98,12 @@
             var ref = this;
 
             //this.map.on('zoomend', this.onZoomEnd.bind(this));
-            this.map.on('mousemove', this.onMouseMove.bind(this));
-            this.map.on('mouseout', this.onMouseOut.bind(this));
-            this.map.on('click', this.onClick.bind(this));
 
-            var MarkerLayer = L.CanvasLayer.extend({
+            //this.map.on('mousemove', this.onMouseMove.bind(this));
+            //this.map.on('mouseout', this.onMouseOut.bind(this));
+            //this.map.on('click', this.onClick.bind(this));
+
+            /*var MarkerLayer = L.CanvasLayer.extend({
               render: function() {
                 var canvas = this.getCanvas();
                 var ctx = canvas.getContext('2d');
@@ -115,6 +117,25 @@
 
             this.markerLayer = new MarkerLayer();
             this.markerLayer.addTo(this.map);
+            */
+
+            this.markerLayer = new L.CanvasGeojsonLayer({
+              onMouseOver : function(features) {
+                for( var i = 0; i < features.length; i++ ) {
+                  if( !features[i].properties._render ) features[i].properties._render = {};
+                  features[i].properties._render.hover = true;
+                }
+              },
+              onMouseOut : function(features) {
+                for( var i = 0; i < features.length; i++ ) {
+                  if( !features[i].properties._render ) features[i].properties._render = {};
+                  features[i].properties._render.hover = false;
+                }
+              }
+            });
+            this.markerLayer.addTo(this.map);
+
+
 
             CWN.ds.on('load', this.process.bind(this));
             if( !CWN.ds.loading ) this.process();
@@ -147,24 +168,27 @@
             this.$.menu.setHovered(null);
 
             // for marker
-            this.unselectHover();
+            //this.unselectHover();
             this.$.leaflet.style.cursor = 'default';
             this.popup.hide();
           }.bind(this), 200);
         },
 
         onMouseMove : function(e) {
+        return;
         //  if( this.mouseMoveTimer != -1 ) clearTimeout(this.mouseMoveTimer);
 
         //  this.mouseMoveTimer = setTimeout(function(){
         //    this.mouseMoveTimer = -1;
 
-            this._onMouseMove(e);
+        /*    this._onMouseMove(e); */
         //    var region = this.getMouseOverRegion(e);
         //    this.$.menu.setHovered(region);
         //  }.bind(this), 50);
         },
 
+
+        /*
         _onMouseMove : function(e) {
             var node = this.getMouseOverNode(e);
 
@@ -189,7 +213,9 @@
                 .text(node.properties.prmname)
                 .show();
         },
+        */
 
+        /*
         getMouseOverNode : function(e) {
             var p = e.containerPoint, np, buffer;
 
@@ -197,7 +223,7 @@
                 node = this.renderState.points[i];
 
                 if( !(node.properties._render.show ||
-                    (node.properties._render.oneStep && this.filters.oneStepMode)) ) {
+                    (node.properties._render.oneStep && this.mapFilters.oneStepMode)) ) {
                     continue;
                 }
 
@@ -215,7 +241,9 @@
 
             return null;
         },
+        */
 
+        /*
         getMouseOverRegion : function(e) {
           var point = {
             type : "Point",
@@ -258,7 +286,9 @@
             this.hoverNode = node;
             this.markerLayer.render();
         },
+        */
 
+        /*
         unselectHover : function() {
             if( !this.hoverNode ) return;
 
@@ -282,166 +312,83 @@
             this.hoverNode = null;
             this.markerLayer.render();
         },
+        */
 
-        renderMarkers : function(ctx) {
-            if( !this.links || CWN.ds.loading ) return;
 
-            //console.log(this.$.menu.state);
-            //console.log(this.renderState);
+        render : function(ctx, xyPoints, map, feature) {
+          var render = feature.geojson.properties._render || {};
 
-            var t = new Date().getTime();
+          if( feature.geojson.geometry.type == 'Point' ) {
 
-            var node, link, point, point2, o, render, ms, color, i, j, region, coord;
+            o = render.oneStep ? .3 : .7;
 
-            var markerSize = 16;
-            var zoom = this.map.getZoom()
-            if( zoom > 8 && zoom < 12 ) markerSize = 22;
-            else if( zoom >= 12 ) markerSize = markerSize = 36;
-            var buffer = markerSize / 2;
+            render.point = xyPoints;
+            ms = (feature.size || 20) * (render.multipier || 1);
+            buffer = ms / 2;
 
-            var bounds = this.map.getBounds();
+            CWN.render[feature.geojson.properties.type](ctx, {
+                x: xyPoints.x,
+                y: xyPoints.y,
+                width: ms,
+                height: ms,
+                opacity: o,
+                fill : render.fill,
+                stroke : render.stroke,
+                lineWidth : render.lineWidth,
+            });
 
-            // render regions, for now, top layer
-            var subregions = this.renderState.polygons;
-            for( i = 0; i < subregions.length; i++ ) {
-              if( subregions[i] == this.hoverRegion ) continue;
-              this.drawRegion(ctx, subregions[i]);
+          } else if ( feature.geojson.geometry.type == 'LineString' ) {
+
+            color = 'white';
+            if( render.highlight ) {
+                if( ender.highlight == 'origin' ) color = 'green';
+                else color = 'red';
             }
 
-            var highlights = [];
-            for( i = 0; i < this.renderState.lines.length; i++ ) {
-                link = this.renderState.lines[i];
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
+            ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
+            ctx.stroke();
 
-                if( !this.intersectsMap(bounds, link.geometry.coordinates[0]) &&
-                    !this.intersectsMap(bounds, link.geometry.coordinates[1]) ) {
-                    continue;
-                }
+            ctx.beginPath();
+            ctx.strokeStyle = this.getLineColor(feature.geojson);
+            ctx.lineWidth = 2;
+            ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
+            ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
+            ctx.stroke();
 
-                render = link.properties._render || {};
+          } else if ( feature.geojson.geometry.type == 'Polygon' ) {
 
-                if( !render.show ) continue;
+            this.drawRegion(ctx, xyPoints, render, this);
 
-                point = this.map.latLngToContainerPoint([
-                    link.geometry.coordinates[0][1],
-                    link.geometry.coordinates[0][0]
-                ]);
+          }
 
-                point2 = this.map.latLngToContainerPoint([
-                    link.geometry.coordinates[1][1],
-                    link.geometry.coordinates[1][0]
-                ]);
-
-                color = 'white';
-                if( link.properties._render.highlight ) {
-                    if( link.properties._render.highlight == 'origin' ) color = 'green';
-                    else color = 'red';
-                }
-
-                ctx.beginPath();
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 4;
-                ctx.moveTo(point.x, point.y);
-                ctx.lineTo(point2.x, point2.y);
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.strokeStyle = this.getLineColor(link);
-                ctx.lineWidth = 2;
-                ctx.moveTo(point.x, point.y);
-                ctx.lineTo(point2.x, point2.y);
-                ctx.stroke();
-
-            }
-
-            for( var i = 0; i < this.renderState.points.length; i++ ) {
-                node = this.renderState.points[i];
-
-                render = node.properties._render || {};
-                render.point = null;
-
-                if( !this.intersectsMap(bounds, node.geometry.coordinates) ) {
-                    continue;
-                }
-
-
-                if( !(render.show || (render.oneStep && this.filters.oneStepMode)) ) {
-                    continue;
-                }
-
-                point = this.map.latLngToContainerPoint([
-                    node.geometry.coordinates[1],
-                    node.geometry.coordinates[0]
-                ]);
-
-                o = render.oneStep ? .3 : .7;
-
-                render.point = point;
-                render.buffer = buffer;
-                ms = markerSize * (render.multipier || 1);
-                buffer = ms / 2;
-
-                CWN.render[node.properties.type](ctx, {
-                    x: point.x-buffer,
-                    y: point.y-buffer,
-                    width: ms,
-                    height: ms,
-                    opacity: o,
-                    fill : render.fill,
-                    stroke : render.stroke,
-                    lineWidth : render.lineWidth,
-                });
-            }
-
-            // now lets draw hovered stuff
-            if( this.hoverRegion ) {
-              this.drawRegion(ctx, CWN.ds.regionLookupMap[this.hoverRegion], {
-                strokeStyle : 'rgba('+CWN.colors.rgb.red.join(',')+',.8)',
-                fillStyle : 'rgba('+CWN.colors.rgb.red.join(',')+',.4)',
-                noCenteriod : true
-              });
-            }
-
-
-            //console.log((new Date().getTime() - t)+'ms');
         },
 
-        drawRegion : function(ctx, region, config) {
-          if( !config ) config = {};
+        drawRegion : function(ctx, xyPoints, render, feature) {
+          var point;
 
-
-          if( !region.geo ) {
-            console.log('Ignoring: '+region.name+', no geo info');
-            return;
-          }
-          if( !region.geo.geometry ) {
-            console.log('Ignoring: '+region.name+', no geo info');
-            return;
-          }
-
-          for( j = 0; j < region.simplified.length; j++ ) {
-            coord = region.simplified[j];
+          for( var j = 0; j < xyPoints.length; j++ ) {
+            coord = xyPoints[j];
 
             ctx.beginPath();
             ctx.strokeStyle = config.strokeStyle ? config.strokeStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
             ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
             ctx.lineWidth = 4;
-            for( j = 0; j < coord.length; j++ ) {
 
-              try {
-                point = this.map.latLngToContainerPoint([coord[j][1], coord[j][0]]);
-              } catch(e) {
-                debugger;
-              }
-
+            for( j = 0; j < point.length; j++ ) {
               if( j == 0 ) ctx.moveTo(point.x, point.y);
               else ctx.lineTo(point.x, point.y);
             }
+
             ctx.stroke();
             ctx.fill();
           }
 
           // draw center
-          if( !config.noCenteriod ) {
+          /*if( !config.noCenteriod ) {
             ctx.beginPath();
             try {
               point = this.map.latLngToContainerPoint([region.center[1], region.center[0]]);
@@ -456,40 +403,55 @@
             ctx.fillStyle = '#333333';
             ctx.font="14px \"Helvetica Neue\",Helvetica,Arial,sans-serif";
             ctx.fillText(region.name, point.x - 20, point.y + 40 );
-          }
+          }*/
         },
 
-        // TODO :need make a generic renderer for all canvas data
-        drawLine : function() {
-
-        },
-
-        intersectsMap : function(bounds, coordinates) {
-          try {
-            if( bounds.contains([coordinates[1], coordinates[0]]) ) {
-                return true;
-            }
-            return false;
-          } catch(e) {
-            debugger;
-          }
-          return false;
-        },
 
         process : function() {
             if( CWN.ds.loading ) return;
 
             this.edges = [];
             this.knownEdges = [];
-            for( var i = 0; i < CWN.ds.data.length; i++ ) {
+            /*for( var i = 0; i < CWN.ds.data.length; i++ ) {
                 var d = CWN.ds.data[i];
 
                 if( d.properties.type == 'Diversion' || d.properties.type == 'Return Flow' ) {
                     this.links.push(d);
+
                 } else {
                     this.nodes.push(d);
                 }
+            }*/
+
+            var self = this;
+            for( var i = 0; i < CWN.ds.data.regions.length; i++ ) {
+              this.markerLayer.addFeature({
+                geojson: CWN.ds.data.regions[i],
+                render: function(ctx, xyPoints, map){
+                  self.render(ctx, xyPoints, map, this);
+                }
+              })
             }
+
+            for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
+              this.markerLayer.addFeature({
+                geojson: CWN.ds.data.links[i],
+                render: function(ctx, xyPoints, map){
+                  self.render(ctx, xyPoints, map, this);
+                }
+              })
+            }
+
+            for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+              this.markerLayer.addFeature({
+                geojson: CWN.ds.data.nodes[i],
+                render: function(ctx, xyPoint, map){
+                  self.render(ctx, xyPoint, map, this);
+                }
+              })
+            }
+
+
 
             this.$.menu.init();
 
@@ -518,7 +480,7 @@
                 smoothFactor: 1
             }
 
-            if( feature.properties.calibrationNode && this.filters.calibrationMode ) {
+            if( feature.properties.calibrationNode && this.mapFilters.calibrationMode ) {
                 line.color = 'blue';
             }
 
@@ -528,8 +490,10 @@
         update : function() {
             this.updating = true;
 
+            if( !this.mapFilters ) this.mapFilters = {};
+
             var map = this.map;
-            var oneStepMode = this.filters.oneStepMode;
+            var oneStepMode = this.mapFilters.oneStepMode;
 
             // update filtering
             this.filter();
@@ -569,7 +533,7 @@
             // three loops, first mark nodes that match, then mark one step nodes
             // finally mark links to hide and show
             try {
-                re = new RegExp('.*'+this.filters.text.toLowerCase()+'.*');
+                re = new RegExp('.*'+this.mapFilters.text.toLowerCase()+'.*');
             } catch (e) {}
 
             for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
@@ -583,8 +547,8 @@
                 d.properties._render.oneStep = false;
 
 
-                if( this.filters[d.properties._render.filter_id] && this.isTextMatch(re, d.properties) ) {
-                    if( !this.filters.calibrationMode && d.properties.calibrationNode ) {
+                if( this.mapFilters[d.properties._render.filter_id] && this.isTextMatch(re, d.properties) ) {
+                    if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) {
                         d.properties._render.show = false;
                     } else {
                         d.properties._render.show = true;
@@ -598,7 +562,7 @@
             for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
-                if( !this.filters.calibrationMode && d.properties.calibrationNode ) continue;
+                if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
 
                 if( d.properties.terminals ) {
                     for( var j = 0; j < d.properties.terminals.length; j++ ) {
@@ -630,8 +594,8 @@
                 d2 = CWN.ds.lookupMap[d.properties.origin];
                 d3 = CWN.ds.lookupMap[d.properties.terminus];
                 if( d2 && d3 &&
-                    (d2.properties._render.show || (this.filters.oneStepMode && d2.properties._render.oneStep) ) &&
-                    (d3.properties._render.show || (this.filters.oneStepMode && d3.properties._render.oneStep) ) &&
+                    (d2.properties._render.show || (this.mapFilters.oneStepMode && d2.properties._render.oneStep) ) &&
+                    (d3.properties._render.show || (this.mapFilters.oneStepMode && d3.properties._render.oneStep) ) &&
                    !(d2.properties._render.oneStep && d3.properties._render.oneStep ) ) {
                     d.properties._render.show = true;
                 } else {
@@ -641,7 +605,7 @@
         },
 
         isTextMatch : function(re, props) {
-            if( this.filters.text == '' || !re ) return true;
+            if( this.mapFilters.text == '' || !re ) return true;
 
             if( re.test(props.prmname.toLowerCase()) ) return true;
             if( props.description && re.test(props.description.toLowerCase()) ) return true;
@@ -661,6 +625,21 @@
           }
 
           this._updateRenderState('California');
+
+          var f = null;
+          for( var i = 0; i < this.markerLayer.features.length; i++ ) {
+            f = this.markerLayer.features[i];
+
+            if( this.renderState.points.indexOf(f.geojson) > -1 ||
+              this.renderState.lines.indexOf(f.geojson) > -1 ||
+              this.renderState.polygons.indexOf(f.geojson) > -1  ) {
+//                f.visible = true;
+            } else {
+//              f.visible = false;
+            }
+          }
+
+          this.markerLayer.render();
         },
 
         _updateRenderState : function(name) {
@@ -709,7 +688,9 @@
               });
 
             } else {
+
               this.renderState.points.push(node);
+
             }
           }
         },
