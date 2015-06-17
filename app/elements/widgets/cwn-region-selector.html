@@ -1,9 +1,8 @@
 <dom-module id="cwn-region-selector">
   <template>
-    <cwn-popup id="popup">
-      <div class="popup-body">
-        Hello World
-      </div>
+    <cwn-popup id="popup" style="z-index: 10000">
+      <div class="popup-title">Select Region</div>
+      <div class="popup-body" id="body"></div>
     </cwn-popup>
   </template>
 </dom-module>
@@ -13,36 +12,63 @@
     is : 'cwn-region-selector',
 
     ready : function() {
-      /*CWN.ds.on('load', function(){
-        this.show('central-coast');
-      }.bind(this));
-      if( !CWN.ds.loading ) this.show('central-coast');*/
+
     },
 
-    show : function(regionName) {
+    init : function(map, markerLayer) {
+      this.map = map;
+      this.markerLayer = markerLayer;
+
+      this.map.on('click', function(e){
+        var features = this.markerLayer.getAllIntersectingGeometry(e.latlng);
+        var regions = this.getRegionsFromList(features);
+        this.show(regions);
+
+        this.markerLayer.render();
+      }.bind(this));
+
+    },
+
+    getRegionsFromList : function(list) {
+      var regions = [];
+
+      for( var i = 0; i < list.length; i++ ) {
+        if( !CWN.ds.regionLookupMap[list[i].geojson.properties.id] ) continue;
+        regions.push(CWN.ds.regionLookupMap[list[i].geojson.properties.id]);
+      }
+
+      // now sort
+      regions.sort(function(a, b){
+        if( a.parents && a.parents.indexOf(b.name) ) return -1;
+        if( b.parents && b.parents.indexOf(a.name) ) return 1;
+        return 0;
+      });
+
+      return regions;
+    },
+
+    show : function(regions) {
+      var table = '<table class="table">';
+
+      for (var i = 0; i < regions.length; i++) {
+        var r = regions[i];
+        table +=
+          '<tr>' +
+            '<td>Show</td>' +
+            '<td style="text-align:center">'+
+              (r.geo.properties.name ? r.geo.properties.name : r.geo.properties.id )+'<br />' +
+              (i != regions.length-1 ? '<i style="font-size: 26px" class="fa fa-arrow-down"></i>' : '')+
+              JSON.stringify(r.parents)+
+            '</td>' +
+          '</tr>';
+      }
+
+      this.$.body.innerHTML = table+'</table>';
+
       this.$.popup.show();
 
-      this.levels = {};
-
-      var region = CWN.ds.regionLookupMap[regionName];
-      if( !region ) return console.log('Invalid Region Name: '+region);
-
-      this.appendRegion(region, 0);
-      console.log(this.levels);
+      console.log(regions);
     },
-
-    appendRegion : function(region, level) {
-      if( !this.levels[level] ) this.levels[level] = [];
-      this.levels[level].push(region);
-
-      if( !region.subregions ) return;
-      level++;
-      for( var i = 0; i < region.subregions.length; i++ ) {
-        if( !CWN.ds.regionLookupMap[region.subregions[i]] ) continue;
-
-        this.appendRegion(CWN.ds.regionLookupMap[region.subregions[i]], level);
-      }
-    }
 
 
   })

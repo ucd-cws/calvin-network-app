@@ -53,6 +53,8 @@
         <div hidden$="{{!updating}}" class="updating">
             <div>Filtering...</div>
         </div>
+
+        <cwn-region-selector id="selector"></cwn-region-selector>
     </template>
 </dom-module>
 
@@ -103,20 +105,8 @@
             //this.map.on('mouseout', this.onMouseOut.bind(this));
             //this.map.on('click', this.onClick.bind(this));
 
-            var tFeatures = [];
-            this.map.on('click', function(e){
-              for( var i = 0; i < tFeatures.length; i++ ) {
-                tFeatures[i].visible = false;
-              }
 
-              tFeatures = this.markerLayer.getAllIntersectingGeometry(e.latlng, 50);
-              console.log(tFeatures);
 
-              for( var i = 0; i < tFeatures.length; i++ ) {
-                tFeatures[i].visible = true;
-              }
-              this.markerLayer.render();
-            }.bind(this));
 
             /*var MarkerLayer = L.CanvasLayer.extend({
               render: function() {
@@ -135,7 +125,7 @@
             */
 
             this.markerLayer = new L.CanvasGeojsonLayer({
-              onMouseOver : function(features) {
+              /*onMouseOver : function(features) {
                 for( var i = 0; i < features.length; i++ ) {
                   if( !features[i].properties._render ) features[i].properties._render = {};
                   features[i].properties._render.hover = true;
@@ -146,11 +136,11 @@
                   if( !features[i].properties._render ) features[i].properties._render = {};
                   features[i].properties._render.hover = false;
                 }
-              }
+              }*/
             });
             this.markerLayer.addTo(this.map);
 
-
+            this.$.selector.init(this.map, this.markerLayer);
 
             CWN.ds.on('load', this.process.bind(this));
             if( !CWN.ds.loading ) this.process();
@@ -384,18 +374,20 @@
 
         drawRegion : function(ctx, xyPoints, config, feature) {
           var point;
+          if( xyPoints.length <= 1 ) return;
 
           ctx.beginPath();
+
+          point = xyPoints[0];
+          ctx.moveTo(point.x, point.y);
+          for( var i = 1; i < xyPoints.length; i++ ) {
+            ctx.lineTo(xyPoints[i].x, xyPoints[i].y);
+          }
+          ctx.lineTo(xyPoints[0].x, xyPoints[0].y);
+
           ctx.strokeStyle = config.strokeStyle ? config.strokeStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
           ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
           ctx.lineWidth = 4;
-
-          for( var i = 0; i < xyPoints.length; i++ ) {
-            point = xyPoints[i];
-
-            if( i == 0 ) ctx.moveTo(point.x, point.y);
-            else ctx.lineTo(point.x, point.y);
-          }
 
           ctx.stroke();
           ctx.fill();
@@ -646,9 +638,9 @@
             if( this.renderState.points.indexOf(f.geojson) > -1 ||
               this.renderState.lines.indexOf(f.geojson) > -1 ||
               this.renderState.polygons.indexOf(f.geojson) > -1  ) {
-                f.visible = true;
+                //f.visible = true;
             } else {
-              f.visible = false;
+              //f.visible = false;
             }
           }
           console.log('set render state');
