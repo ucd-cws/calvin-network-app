@@ -1,0 +1,49 @@
+<dom-module id="cwn-region-selector">
+  <template>
+    <cwn-popup id="popup">
+      <div class="popup-body">
+        Hello World
+      </div>
+    </cwn-popup>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is : 'cwn-region-selector',
+
+    ready : function() {
+      /*CWN.ds.on('load', function(){
+        this.show('central-coast');
+      }.bind(this));
+      if( !CWN.ds.loading ) this.show('central-coast');*/
+    },
+
+    show : function(regionName) {
+      this.$.popup.show();
+
+      this.levels = {};
+
+      var region = CWN.ds.regionLookupMap[regionName];
+      if( !region ) return console.log('Invalid Region Name: '+region);
+
+      this.appendRegion(region, 0);
+      console.log(this.levels);
+    },
+
+    appendRegion : function(region, level) {
+      if( !this.levels[level] ) this.levels[level] = [];
+      this.levels[level].push(region);
+
+      if( !region.subregions ) return;
+      level++;
+      for( var i = 0; i < region.subregions.length; i++ ) {
+        if( !CWN.ds.regionLookupMap[region.subregions[i]] ) continue;
+
+        this.appendRegion(CWN.ds.regionLookupMap[region.subregions[i]], level);
+      }
+    }
+
+
+  })
+</script>

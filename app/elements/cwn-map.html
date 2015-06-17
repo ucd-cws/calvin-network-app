@@ -103,6 +103,21 @@
             //this.map.on('mouseout', this.onMouseOut.bind(this));
             //this.map.on('click', this.onClick.bind(this));
 
+            var tFeatures = [];
+            this.map.on('click', function(e){
+              for( var i = 0; i < tFeatures.length; i++ ) {
+                tFeatures[i].visible = false;
+              }
+
+              tFeatures = this.markerLayer.getAllIntersectingGeometry(e.latlng, 50);
+              console.log(tFeatures);
+
+              for( var i = 0; i < tFeatures.length; i++ ) {
+                tFeatures[i].visible = true;
+              }
+              this.markerLayer.render();
+            }.bind(this));
+
             /*var MarkerLayer = L.CanvasLayer.extend({
               render: function() {
                 var canvas = this.getCanvas();
@@ -367,25 +382,23 @@
 
         },
 
-        drawRegion : function(ctx, xyPoints, render, feature) {
+        drawRegion : function(ctx, xyPoints, config, feature) {
           var point;
 
-          for( var j = 0; j < xyPoints.length; j++ ) {
-            coord = xyPoints[j];
+          ctx.beginPath();
+          ctx.strokeStyle = config.strokeStyle ? config.strokeStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
+          ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
+          ctx.lineWidth = 4;
 
-            ctx.beginPath();
-            ctx.strokeStyle = config.strokeStyle ? config.strokeStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
-            ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
-            ctx.lineWidth = 4;
+          for( var i = 0; i < xyPoints.length; i++ ) {
+            point = xyPoints[i];
 
-            for( j = 0; j < point.length; j++ ) {
-              if( j == 0 ) ctx.moveTo(point.x, point.y);
-              else ctx.lineTo(point.x, point.y);
-            }
-
-            ctx.stroke();
-            ctx.fill();
+            if( i == 0 ) ctx.moveTo(point.x, point.y);
+            else ctx.lineTo(point.x, point.y);
           }
+
+          ctx.stroke();
+          ctx.fill();
 
           // draw center
           /*if( !config.noCenteriod ) {
@@ -426,7 +439,7 @@
             var self = this;
             for( var i = 0; i < CWN.ds.data.regions.length; i++ ) {
               this.markerLayer.addFeature({
-                geojson: CWN.ds.data.regions[i],
+                geojson: CWN.ds.data.regions[i].geo,
                 render: function(ctx, xyPoints, map){
                   self.render(ctx, xyPoints, map, this);
                 }
@@ -633,12 +646,12 @@
             if( this.renderState.points.indexOf(f.geojson) > -1 ||
               this.renderState.lines.indexOf(f.geojson) > -1 ||
               this.renderState.polygons.indexOf(f.geojson) > -1  ) {
-//                f.visible = true;
+                f.visible = true;
             } else {
-//              f.visible = false;
+              f.visible = false;
             }
           }
-
+          console.log('set render state');
           this.markerLayer.render();
         },
 
@@ -656,7 +669,7 @@
             }
           } else {
 
-            if( name != 'California' ) this.renderState.polygons.push(region);
+            if( name != 'California' ) this.renderState.polygons.push(region.geo);
           }
         },
 

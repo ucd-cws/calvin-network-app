@@ -61,6 +61,8 @@ function readNodes(dir) {
         var d = fs.readFileSync(dir+'/'+file, 'utf-8').replace(/[\r\n]/g,'');
         d = JSON.parse(d);
 
+        if( d.type == 'FeatureCollection' ) return;
+
         d.properties.dir = dir;
         d.properties.filename = file.replace('\.geojson', '');
 

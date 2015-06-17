@@ -105,8 +105,8 @@
             var ref = this;
             var region = CWN.ds.regionLookupMap[regionName];
 
-            var panel = $('<div style-scope="cwn-map-menu" class="menu-root"></div>');
-            var input = $('<div class="menu-item" name="'+region.name+'" style-scope="cwn-map-menu">'+
+            var panel = $('<div class="menu-root cwn-map-menu"></div>');
+            var input = $('<div class="menu-item cwn-map-menu" name="'+region.name+'">'+
                           '<input type="checkbox" name="'+region.name+'" ' +
                             ( region.name == 'California' ? 'checked' : '') +' /> '+region.name+'</div>');
 
