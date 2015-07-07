@@ -63,137 +63,65 @@
         is : 'cwn-map',
 
         ready : function() {
-          this.customLines = [];
+          this.customLines = {};
         },
 
         init : function(legend, filters) {
-            //console.log('init '+this.tid);
+          this.map = L.map(this.$.leaflet).setView([40, -121], 5);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 18
+          }).addTo(this.map);
 
-            this.popup = $('<div style="z-index:1000;position:absolute;padding:5px;background-color:white;border:1px solid #ccc; display:none"></div>');
-            $('body').append(this.popup);
+          this.links = [];
+          this.mapFilters = filters || {};
 
-            this.map = L.map(this.$.leaflet).setView([40, -121], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18
-            }).addTo(this.map);
+          this.legend = legend;
 
-            this.links = [];
-            this.mapFilters = filters || {};
+          this.mouseMoveTimer = -1;
 
-            this.legend = legend;
+          this.renderState = {
+            points : [],
+            lines : [],
+            polygons : []
+          }
 
-            this.mouseMoveTimer = -1;
+          var ref = this;
 
-            this.renderState = {
-              points : [],
-              lines : [],
-              polygons : []
+          this.markerLayer = new L.CanvasGeojsonLayer({
+            onMouseOver : function(features) {
+              for( var i = 0; i < features.length; i++ ) {
+                if( !features[i].properties._render ) features[i].properties._render = {};
+                features[i].properties._render.hover = true;
+              }
+            },
+            onMouseOut : function(features) {
+              for( var i = 0; i < features.length; i++ ) {
+                if( !features[i].properties._render ) features[i].properties._render = {};
+                features[i].properties._render.hover = false;
+              }
+            },
+            onClick : function(features) {
+              if( features.length > 0 ) {
+                ref.onRegionClick(features[0].properties.id);
+              }
             }
-
-            var ref = this;
-
-            //this.map.on('zoomend', this.onZoomEnd.bind(this));
-
-            //this.map.on('mousemove', this.onMouseMove.bind(this));
-            //this.map.on('mouseout', this.onMouseOut.bind(this));
-            //this.map.on('click', this.onClick.bind(this));
+          });
+          this.markerLayer.addTo(this.map);
 
 
+          CWN.ds.on('load', this.process.bind(this));
+          if( !CWN.ds.loading ) this.process();
 
-
-            /*var MarkerLayer = L.CanvasLayer.extend({
-              render: function() {
-                var canvas = this.getCanvas();
-                var ctx = canvas.getContext('2d');
-                // clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                ref.renderMarkers(ctx, this);
-                this.redraw();
-              }
-            });
-
-            this.markerLayer = new MarkerLayer();
-            this.markerLayer.addTo(this.map);
-            */
-
-            this.markerLayer = new L.CanvasGeojsonLayer({
-              onMouseOver : function(features) {
-                for( var i = 0; i < features.length; i++ ) {
-                  if( !features[i].properties._render ) features[i].properties._render = {};
-                  features[i].properties._render.hover = true;
-                }
-              },
-              onMouseOut : function(features) {
-                for( var i = 0; i < features.length; i++ ) {
-                  if( !features[i].properties._render ) features[i].properties._render = {};
-                  features[i].properties._render.hover = false;
-                }
-              },
-              onClick : function(features) {
-                if( features.length > 0 ) {
-                  ref.onRegionClick(features[0].properties.id);
-                }
-              }
-            });
-            this.markerLayer.addTo(this.map);
-
-            //this.$.selector.init(this.map, this.markerLayer);
-
-            CWN.ds.on('load', this.process.bind(this));
-            if( !CWN.ds.loading ) this.process();
-
-            setTimeout(function(){
-                this.map.invalidateSize();
-            }.bind(this), 200);
-        },
-
-        onClick : function(e) {
-            var node = this.getMouseOverNode(e);
-            if( !node ) {
-              var region = this.getMouseOverRegion(e);
-
-              if( region ) {
-                $('.menu-item[name="'+region.name+'"]').trigger('click');
-              }
-
-              return;
-            }
-
-            this.$.leaflet.style.cursor = 'default';
-            this.popup.hide();
-            window.location = '#info/'+node.properties.prmname;
-        },
-
-        onMouseOut : function() {
           setTimeout(function(){
-            // for region
-            this.$.menu.setHovered(null);
-
-            // for marker
-            //this.unselectHover();
-            this.$.leaflet.style.cursor = 'default';
-            this.popup.hide();
+              this.map.invalidateSize();
           }.bind(this), 200);
-        },
-
-        onMouseMove : function(e) {
-        return;
-        //  if( this.mouseMoveTimer != -1 ) clearTimeout(this.mouseMoveTimer);
-
-        //  this.mouseMoveTimer = setTimeout(function(){
-        //    this.mouseMoveTimer = -1;
-
-        /*    this._onMouseMove(e); */
-        //    var region = this.getMouseOverRegion(e);
-        //    this.$.menu.setHovered(region);
-        //  }.bind(this), 50);
         },
 
         render : function(ctx, xyPoints, map, feature) {
           var render = feature.geojson.properties._render || {};
 
           if( feature.geojson.geometry.type == 'Point' ) {
+            console.log('point');
 
             o = render.oneStep ? .3 : .7;
 
@@ -201,9 +129,10 @@
             ms = (feature.size || 20) * (render.multipier || 1);
             buffer = ms / 2;
 
+            // TODO: set feature.size and you want have to worry about -10 offset here
             CWN.render[feature.geojson.properties.type](ctx, {
-                x: xyPoints.x,
-                y: xyPoints.y,
+                x: xyPoints.x - 10,
+                y: xyPoints.y - 10,
                 width: ms,
                 height: ms,
                 opacity: o,
@@ -213,6 +142,7 @@
             });
 
           } else if ( feature.geojson.geometry.type == 'LineString' ) {
+            console.log('line');
 
             color = 'white';
             if( render.highlight ) {
@@ -235,11 +165,31 @@
             ctx.stroke();
 
           } else if ( feature.geojson.geometry.type == 'Polygon' ) {
+            console.log('polygon');
 
             this.drawRegion(ctx, xyPoints, render, this);
 
           }
 
+        },
+
+        renderRegionLine : function(ctx, xyPoints, config, feature) {
+          console.log('line')
+          color = 'orange';
+
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 6;
+          ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
+          ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.strokeStyle = 'blue';
+          ctx.lineWidth = 2;
+          ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
+          ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
+          ctx.stroke();
         },
 
         drawRegion : function(ctx, xyPoints, config, feature) {
@@ -543,6 +493,15 @@
         _addStateNodes : function(nodes, state) {
           var self = this;
 
+          // find first region and insert after
+          var index = 0;
+          for( var i = 0; i < this.markerLayer.features.length; i++ ) {
+            if( this.markerLayer.features[i].geojson.geometry.type != 'Polygon' ) {
+              index = i;
+              break;
+            }
+          }
+
           for( var i = 0; i < nodes.length; i++ ) {
             var node = CWN.ds.filenameLookupMap[nodes[i]];
 
@@ -553,57 +512,88 @@
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
               var origin = this._getStateNodeLocation(node.properties.origin, state);
 
-              // BADNESS
-              if( !origin || !terminal ) {
-                if( !origin ) console.log('Not drawing link: '+node.properties.prmname+'.  missing origin: '+node.properties.origin);
-                if( !terminal ) console.log('Not drawing link: '+node.properties.prmname+'.  missing terminus: '+node.properties.terminus);
-                continue;
+
+              var lineFeature;
+              if( terminal.isNode && origin.isNode ) {
+                lineFeature = this.createNodeLink(origin.center, terminal.center, node);
+                this.customLines[node.properties.origin+'_'+node.properties.terminus] = lineFeature;
+              } else {
+                // if this line already exists, a null value will be returned
+                lineFeature = this.createCustomLink(origin, terminal, node);
               }
 
-              /*this.renderState.lines.push({
-                "type" : "Feature",
-                "geometry" : {
-                  "type" : "LineString",
-                  coordinates : [origin, terminal]
-                },
-                properties : node.properties
-              });*/
-              var lineFeature = {
-                geojson : {
-                  "type" : "Feature",
-                  "geometry" : {
-                    "type" : "LineString",
-                    coordinates : [origin, terminal]
-                  },
-                  properties : $.extend(true, {}, node.properties)
-                },
-                render : function(ctx, xyPoints, map) {
-                  // TODO: need to render lines
-                  // Also need to group between features.
-
-                  self.render(ctx, xyPoints, map, this);
-                }
-              };
-              lineFeature.geojson.properties.debug = true;
-
-              this.customLines.push(lineFeature);
-              this.renderState.lines.push(lineFeature.geojson);
-              this.markerLayer.addFeature(lineFeature);
+              if( lineFeature ) {
+                this.renderState.lines.push(lineFeature.geojson);
+                this.markerLayer.addFeature(lineFeature, index);
+              }
 
             } else {
-
               this.renderState.points.push(node);
-
             }
           }
         },
 
+        createNodeLink : function(origin, terminal, node) {
+          var self = this;
+          return {
+            geojson : {
+              "type" : "Feature",
+              "geometry" : {
+                "type" : "LineString",
+                coordinates : [origin, terminal]
+              },
+              properties : $.extend(true, {}, node.properties)
+            },
+            render : function(ctx, xyPoints, map) {
+              // TODO: need to render lines
+              // Also need to group between features.
+
+              self.render(ctx, xyPoints, map, this);
+            }
+          };
+        },
+
+        createCustomLink : function(origin, terminal, node) {
+          var self = this;
+
+          var feature = null;
+          if( this.customLines[origin.name+'_'+terminal.name] ) {
+            feature = this.customLines[origin.name+'_'+terminal.name];
+          } else if ( this.customLines[terminal.name+'_'+origin.name] ) {
+            feature = this.customLines[terminal.name+'_'+origin.name];
+          }
+
+          if( !feature ) {
+            feature = {
+              geojson : {
+                "type" : "Feature",
+                "geometry" : {
+                  "type" : "LineString",
+                  coordinates : [origin.center, terminal.center]
+                },
+                properties : {
+                  lines : [$.extend(true, {}, node.properties)]
+                }
+              },
+              render : function(ctx, xyPoints, map) {
+                self.renderRegionLine(ctx, xyPoints, map, this);
+              }
+            }
+
+            this.customLines[origin.name+'_'+terminal.name] = feature;
+
+            return feature;
+          }
+
+          feature.geojson.properties.lines.push($.extend(true, {}, node.properties));
+        },
+
         clearCustomLines : function() {
-          for( var i = this.customLines.length; i >= 0; i-- ) {
-            var index = this.markerLayer.features.indexOf(this.customLines[i]);
+          for( var key in this.customLines ) {
+            var index = this.markerLayer.features.indexOf(this.customLines[key]);
             if( index > -1 ) this.markerLayer.features.splice(index, 1);
           }
-          this.customLines = [];
+          this.customLines = {};
         },
 
         _getStateNodeLocation : function(name, state) {
@@ -612,12 +602,20 @@
           for( var i = 0; i < node.properties.regions.length; i++ ) {
             if( state.disabled.indexOf(node.properties.regions[i]) > -1 ) {
               if( CWN.ds.regionLookupMap[node.properties.regions[i]].center ) {
-                return CWN.ds.regionLookupMap[node.properties.regions[i]].center;
+                return {
+                  center: CWN.ds.regionLookupMap[node.properties.regions[i]].center,
+                  name: node.properties.regions[i],
+                  isRegion : true
+                };
               }
             }
           }
 
-          return node.geometry.coordinates || [0,0];
+          return {
+            center : node.geometry.coordinates || [0,0],
+            name : name,
+            isNode : true
+          }
         },
 
         onMenuRegionHover : function(e) {
