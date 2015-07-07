@@ -54,7 +54,7 @@
             <div>Filtering...</div>
         </div>
 
-        <!--<cwn-region-selector id="selector"></cwn-region-selector>-->
+        <cwn-region-selector id="selector"></cwn-region-selector>
     </template>
 </dom-module>
 
@@ -101,13 +101,19 @@
               }
             },
             onClick : function(features) {
-              if( features.length > 0 ) {
+              if( features.length == 0 ) return;
+
+              if( features.length == 1 && features[0].geometry.type == 'Polygon' ) {
                 ref.onRegionClick(features[0].properties.id);
+                return;
               }
-            }
+
+              this.$.selector.onClick(features);
+            }.bind(this)
           });
           this.markerLayer.addTo(this.map);
 
+          this.$.selector.init(this, this.markerLayer);
 
           CWN.ds.on('load', this.process.bind(this));
           if( !CWN.ds.loading ) this.process();

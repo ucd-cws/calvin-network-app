@@ -1,7 +1,6 @@
 <dom-module id="cwn-region-selector">
   <template>
     <cwn-popup id="popup" style="z-index: 10000">
-      <div class="popup-title">Select Region</div>
       <div class="popup-body" id="body"></div>
     </cwn-popup>
   </template>
@@ -12,64 +11,62 @@
     is : 'cwn-region-selector',
 
     ready : function() {
-
+      this.$.popup.header = 'Select';
     },
 
     init : function(map, markerLayer) {
       this.map = map;
       this.markerLayer = markerLayer;
-
-      this.map.on('click', function(e){
-        var features = this.markerLayer.getAllIntersectingGeometry(e.latlng);
-        var regions = this.getRegionsFromList(features);
-        this.show(regions);
-
-        this.markerLayer.render();
-      }.bind(this));
-
     },
 
-    getRegionsFromList : function(list) {
-      var regions = [];
-
-      for( var i = 0; i < list.length; i++ ) {
-        if( !CWN.ds.regionLookupMap[list[i].geojson.properties.id] ) continue;
-        regions.push(CWN.ds.regionLookupMap[list[i].geojson.properties.id]);
-      }
-
-      // now sort
-      regions.sort(function(a, b){
-        if( a.parents && a.parents.indexOf(b.name) ) return -1;
-        if( b.parents && b.parents.indexOf(a.name) ) return 1;
-        return 0;
-      });
-
-      return regions;
+    onClick : function(features) {
+      this.features = features;
+      this.renderFeatures();
+      this.$.popup.show();
     },
 
-    show : function(regions) {
+    renderFeatures : function() {
       var table = '<table class="table">';
 
-      for (var i = 0; i < regions.length; i++) {
-        var r = regions[i];
+      for (var i = 0; i < this.features.length; i++) {
+        var f = this.features[i];
+
+        var type = '';
+        if( f.geometry.type == 'Point' ) type = 'Node';
+        else if( f.geometry.type == 'LineString' ) type = 'Link';
+        else if( f.geometry.type == 'Polygon' ) type = 'Region';
+
+
         table +=
           '<tr>' +
-            '<td>Show</td>' +
+            '<td>'+type+'</td>' +
             '<td style="text-align:center">'+
-              (r.geo.properties.name ? r.geo.properties.name : r.geo.properties.id )+'<br />' +
-              (i != regions.length-1 ? '<i style="font-size: 26px" class="fa fa-arrow-down"></i>' : '')+
-              JSON.stringify(r.parents)+
+              (f.properties.prmname || f.properties.name || 'Region to Region') +
             '</td>' +
+            '<td>'+
+              (type == 'Region' ?
+                '<a class="btn btn-link" index="'+i+'">Expand</a>' :
+                '<a class="btn btn-link" index="'+i+'">Info</a>') +
+            '</td>'
           '</tr>';
       }
 
       this.$.body.innerHTML = table+'</table>';
 
-      this.$.popup.show();
+      $(this.$.body)
+        .find('a')
+        .on('click', function(e){
+          var index = parseInt(e.currentTarget.getAttribute('index'));
+          var feature = this.features[index];
 
-      console.log(regions);
-    },
+          if( feature.geometry.type == 'Polygon') {
+            this.map.onRegionClick(feature.properties.id);
+            this.$.popup.hide();
+          } else {
+            alert("Not implemented yet :(");
+          }
 
-
+        }.bind(this));
+    }
   })
 </script>
