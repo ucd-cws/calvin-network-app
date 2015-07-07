@@ -54,7 +54,7 @@
             <div>Filtering...</div>
         </div>
 
-        <cwn-region-selector id="selector"></cwn-region-selector>
+        <!--<cwn-region-selector id="selector"></cwn-region-selector>-->
     </template>
 </dom-module>
 
@@ -62,16 +62,9 @@
     Polymer({
         is : 'cwn-map',
 
-        /*ready : function() {
-            if( !this.tid ) this.tid = 1;
-            else this.tid += 1;
-
-            console.log('ready: '+this.tid);
+        ready : function() {
+          this.customLines = [];
         },
-
-        attached : function() {
-            console.log('attached '+this.tid);
-        },*/
 
         init : function(legend, filters) {
             //console.log('init '+this.tid);
@@ -125,7 +118,7 @@
             */
 
             this.markerLayer = new L.CanvasGeojsonLayer({
-              /*onMouseOver : function(features) {
+              onMouseOver : function(features) {
                 for( var i = 0; i < features.length; i++ ) {
                   if( !features[i].properties._render ) features[i].properties._render = {};
                   features[i].properties._render.hover = true;
@@ -136,11 +129,16 @@
                   if( !features[i].properties._render ) features[i].properties._render = {};
                   features[i].properties._render.hover = false;
                 }
-              }*/
+              },
+              onClick : function(features) {
+                if( features.length > 0 ) {
+                  ref.onRegionClick(features[0].properties.id);
+                }
+              }
             });
             this.markerLayer.addTo(this.map);
 
-            this.$.selector.init(this.map, this.markerLayer);
+            //this.$.selector.init(this.map, this.markerLayer);
 
             CWN.ds.on('load', this.process.bind(this));
             if( !CWN.ds.loading ) this.process();
@@ -192,134 +190,6 @@
         //  }.bind(this), 50);
         },
 
-
-        /*
-        _onMouseMove : function(e) {
-            var node = this.getMouseOverNode(e);
-
-            if( !node ) {
-                this.unselectHover();
-
-                this.$.leaflet.style.cursor = 'default';
-                this.popup.hide();
-                return;
-            }
-
-            this.$.leaflet.style.cursor = 'pointer';
-
-            var point = node.properties._render.point;
-            var buffer = node.properties._render.buffer;
-
-            this.selectHover(node);
-
-            this.popup
-                .css('top', point.y + buffer + 60)
-                .css('left', point.x - buffer - 10)
-                .text(node.properties.prmname)
-                .show();
-        },
-        */
-
-        /*
-        getMouseOverNode : function(e) {
-            var p = e.containerPoint, np, buffer;
-
-            for( var i = 0; i < this.renderState.points.length; i++ ) {
-                node = this.renderState.points[i];
-
-                if( !(node.properties._render.show ||
-                    (node.properties._render.oneStep && this.mapFilters.oneStepMode)) ) {
-                    continue;
-                }
-
-                np = node.properties._render.point;
-                if( !np ) continue;
-
-                buffer = node.properties._render.buffer;
-
-                if( p.x > np.x - buffer && p.x < np.x + buffer ) {
-                    if( p.y > np.y - buffer && p.y < np.y + buffer ) {
-                        return node;
-                    }
-                }
-            }
-
-            return null;
-        },
-        */
-
-        /*
-        getMouseOverRegion : function(e) {
-          var point = {
-            type : "Point",
-            "coordinates": [e.latlng.lng, e.latlng.lat]
-          }
-
-          for( var i = 0; i < this.renderState.polygons.length; i++ ) {
-            if( !this.renderState.polygons[i].geo.geometry ) continue;
-
-            if( GeoJSONUtils.pointInPolygon(point, this.renderState.polygons[i].geo.geometry) ) {
-              return this.renderState.polygons[i];
-            }
-          }
-
-          return null;
-        },
-
-        selectHover : function(node) {
-            if( this.hoverNode == node ) return;
-            if( this.hoverNode ) this.unselectHover();
-
-            node.properties._render.multipier = 2;
-            node.properties._render.stroke = 'blue';
-            node.properties._render.lineWidth = 3;
-
-            if( CWN.ds.originLookupMap[node.properties.prmname] ) {
-                var arr = CWN.ds.originLookupMap[node.properties.prmname];
-                for( var i = 0; i < arr.length; i++ ) {
-                    arr[i].properties._render.highlight = 'origin';
-                }
-            }
-            if( CWN.ds.terminalLookupMap[node.properties.prmname] ) {
-                var arr = CWN.ds.terminalLookupMap[node.properties.prmname];
-                for( var i = 0; i < arr.length; i++ ) {
-                    arr[i].properties._render.highlight = 'terminal';
-                }
-            }
-
-
-            this.hoverNode = node;
-            this.markerLayer.render();
-        },
-        */
-
-        /*
-        unselectHover : function() {
-            if( !this.hoverNode ) return;
-
-            this.hoverNode.properties._render.stroke = null;
-            this.hoverNode.properties._render.lineWidth = null;
-            this.hoverNode.properties._render.multipier = null;
-
-            if( CWN.ds.originLookupMap[this.hoverNode.properties.prmname] ) {
-                var arr = CWN.ds.originLookupMap[this.hoverNode.properties.prmname];
-                for( var i = 0; i < arr.length; i++ ) {
-                    arr[i].properties._render.highlight = null;
-                }
-            }
-            if( CWN.ds.terminalLookupMap[this.hoverNode.properties.prmname] ) {
-                var arr = CWN.ds.terminalLookupMap[this.hoverNode.properties.prmname];
-                for( var i = 0; i < arr.length; i++ ) {
-                    arr[i].properties._render.highlight = null;
-                }
-            }
-
-            this.hoverNode = null;
-            this.markerLayer.render();
-        },
-        */
-
-
         render : function(ctx, xyPoints, map, feature) {
           var render = feature.geojson.properties._render || {};
 
@@ -346,7 +216,7 @@
 
             color = 'white';
             if( render.highlight ) {
-                if( ender.highlight == 'origin' ) color = 'green';
+                if( render.highlight == 'origin' ) color = 'green';
                 else color = 'red';
             }
 
@@ -385,7 +255,7 @@
           }
           ctx.lineTo(xyPoints[0].x, xyPoints[0].y);
 
-          ctx.strokeStyle = config.strokeStyle ? config.strokeStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
+          ctx.strokeStyle = config.hover ? 'red' : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
           ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
           ctx.lineWidth = 4;
 
@@ -617,6 +487,10 @@
             return false;
         },
 
+        onRegionClick : function(name) {
+          $('.menu-item[name="'+name+'"]').trigger('click');
+        },
+
         onRegionSelect : function(e) {
           this.updateRenderState();
           this.markerLayer.render();
@@ -628,6 +502,7 @@
             lines : [],
             polygons : []
           }
+          this.clearCustomLines();
 
           this._updateRenderState('California');
 
@@ -638,9 +513,9 @@
             if( this.renderState.points.indexOf(f.geojson) > -1 ||
               this.renderState.lines.indexOf(f.geojson) > -1 ||
               this.renderState.polygons.indexOf(f.geojson) > -1  ) {
-                //f.visible = true;
+                f.visible = true;
             } else {
-              //f.visible = false;
+              f.visible = false;
             }
           }
           console.log('set render state');
@@ -666,6 +541,8 @@
         },
 
         _addStateNodes : function(nodes, state) {
+          var self = this;
+
           for( var i = 0; i < nodes.length; i++ ) {
             var node = CWN.ds.filenameLookupMap[nodes[i]];
 
@@ -683,14 +560,35 @@
                 continue;
               }
 
-              this.renderState.lines.push({
+              /*this.renderState.lines.push({
                 "type" : "Feature",
                 "geometry" : {
                   "type" : "LineString",
                   coordinates : [origin, terminal]
                 },
                 properties : node.properties
-              });
+              });*/
+              var lineFeature = {
+                geojson : {
+                  "type" : "Feature",
+                  "geometry" : {
+                    "type" : "LineString",
+                    coordinates : [origin, terminal]
+                  },
+                  properties : $.extend(true, {}, node.properties)
+                },
+                render : function(ctx, xyPoints, map) {
+                  // TODO: need to render lines
+                  // Also need to group between features.
+
+                  self.render(ctx, xyPoints, map, this);
+                }
+              };
+              lineFeature.geojson.properties.debug = true;
+
+              this.customLines.push(lineFeature);
+              this.renderState.lines.push(lineFeature.geojson);
+              this.markerLayer.addFeature(lineFeature);
 
             } else {
 
@@ -698,6 +596,14 @@
 
             }
           }
+        },
+
+        clearCustomLines : function() {
+          for( var i = this.customLines.length; i >= 0; i-- ) {
+            var index = this.markerLayer.features.indexOf(this.customLines[i]);
+            if( index > -1 ) this.markerLayer.features.splice(index, 1);
+          }
+          this.customLines = [];
         },
 
         _getStateNodeLocation : function(name, state) {
