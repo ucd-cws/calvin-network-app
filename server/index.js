@@ -5,12 +5,19 @@ var bodyParser = require('body-parser');
 var mongo = require('./lib/mongo');
 
 
-mongo.connect(function(err){
-  if( err ) {
-    console.log(err);
-    console.log('Error connecting to mongo :(');
-    return;
-  }
+// global ns provided by mqe
+var app = global.app;
+var mqe = global.mqe;
+var config = global.appConfig;
+var express = global.express;
+var logger = global.logger;
+
+
+// express app
+exports.bootstrap = function() {
+  var db = global.db;
+
+  mongo.connect(db, config);
 
   var dir = __dirname + '/../dist';
   process.argv.forEach(function(val){
@@ -18,7 +25,7 @@ mongo.connect(function(err){
   });
 
   app.use(express.static(dir));
-  app.use(bodyParser.json());
+  //app.use(bodyParser.json());
 
   app.get('/rest/getRegions', function(req, resp){
     resp.header("Access-Control-Allow-Origin", "*");
@@ -52,9 +59,9 @@ mongo.connect(function(err){
     });
   });
 
-  app.listen(3007);
+
   console.log('Serving '+dir+' @ http://localhost:3007');
-});
+};
 
 function sendError(resp, msg) {
     resp.send({error:true, message: msg});

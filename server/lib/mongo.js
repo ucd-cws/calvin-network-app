@@ -21,16 +21,16 @@ var regionIgnore = {
   _id : 0
 }
 
-exports.connect = function(callback) {
-    MongoClient.connect(connUrl, function(err, database) {
-        if( err ) return callback(err);
+exports.connect = function(database, config) {
+    //MongoClient.connect(connUrl, function(err, database) {
+    //    if( err ) return callback(err);
         db = database;
 
-        collection = db.collection(collectionName);
-        regionCollection = db.collection(regionCollectionName);
+        collection = db.collection(config.db.mainCollection);
+        regionCollection = db.collection(config.db.regionCollection);
 
-        callback();
-    });
+    //    callback();
+    //});
 }
 
 exports.getNetwork = function(callback) {
