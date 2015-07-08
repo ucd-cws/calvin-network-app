@@ -1,7 +1,7 @@
 Polymer({
     is : 'cwn-info-page',
 
-    mixins : [new InfoPageDomControllers()],
+    behaviors : [InfoPageDomControllers],
 
     properties : {
       hasTimeSeries : {
@@ -15,33 +15,32 @@ Polymer({
       }
     },
 
-    configure : function() {
-      return {
-        feature : null,
+    ready : function() {
+      this.feature = null;
 
-        hack : '',
-        islocal : false,
+      this.hack = '';
+      this.islocal = false;
 
-        tableProperties : ['prmname'],
+      this.tableProperties = ['prmname'];
 
-        // loading flags
-        climateLoadError : false,
-        costLoadError : false,
-        climateLoading : false,
-        costLoading : false,
-        loading : false,
+      // loading flags
+      this.climateLoadError = false;
+      this.costLoadError = false;
+      this.climateLoading = false;
+      this.costLoading = false;
+      this.loading = false;
 
         // have to do long lookup right now, is there are better way?
-        origins : [],
-        terminals : [],
+      this.origins = [];
+      this.terminals = [];
 
-        // render data.  Data in a format ready to draw above
-        inflows : [],
+      // render data.  Data in a format ready to draw above
+      this.inflows = [],
 
-        map : {},
+      this.map = {};
 
         // Elevation / Area / Capacity charts
-        eacChart : {
+        this.eacChart = {
           type : 'ComboChart',
           cols : [
             {id: 'capacity', label: 'capacity', type: 'number'},
@@ -70,20 +69,20 @@ Polymer({
               position: 'top'
             }
           }
-        },
+        };
 
         // date filtering
-        filters : {
+        this.filters = {
           start : null,
           stop : null
         },
 
         // dom controller stuff
-        hasTimeSeries : false,
-        showDateRangeSlider : false,
-        showClimateData : false,
-        charts : {}
-      }
+        this.hasTimeSeries = false;
+        this.showDateRangeSlider = false;
+        this.showClimateData = false;
+        this.charts = {};
+
     },
 
     init : function(map) {
@@ -108,7 +107,7 @@ Polymer({
 
     update : function() {
       if( CWN.ds.loading ) return;
-      debugger;
+
       if( this.feature == null ) return alert('Feature not found');
 
       this.climateLoadError = false;
@@ -142,7 +141,7 @@ Polymer({
           success : function(resp) {
             this.climateLoading = false;
             if( !resp.climate ) return this.climateLoadError = true;
-            
+
             this.showClimateData = true;
             this.renderClimateData(JSON.parse(resp.climate));
 
@@ -173,7 +172,7 @@ Polymer({
 
       this.eacChart.data = [];
       if( data.el_ar_cap ) {
-        
+
         var max = 0;
         for( var i = 0; i < data.el_ar_cap.length; i++ ) {
           this.eacChart.data.push([
@@ -219,7 +218,7 @@ Polymer({
 
       this.setPathValue('filters.start', e.detail.start);
       this.setPathValue('filters.stop', e.detail.end);
-    },  
+    },
 
     back : function() {
       window.location.hash = 'map'

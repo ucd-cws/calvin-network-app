@@ -108,6 +108,11 @@
                 return;
               }
 
+              if( features.length == 1 && features[0].geometry.type == 'Point' ) {
+                window.location.href = '#info/' + features[0].properties.prmname;
+                return;
+              }
+
               this.$.selector.onClick(features);
             }.bind(this)
           });

@@ -20,9 +20,7 @@ exports.bootstrap = function() {
   mongo.connect(db, config);
 
   var dir = __dirname + '/../dist';
-  process.argv.forEach(function(val){
-      if( val == '--dev' ) dir = __dirname + '/../app';
-  });
+  if( config.dev ) dir = __dirname + '/../app';
 
   app.use(express.static(dir));
   //app.use(bodyParser.json());
@@ -60,7 +58,7 @@ exports.bootstrap = function() {
   });
 
 
-  console.log('Serving '+dir+' @ http://localhost:3007');
+  console.log('Serving '+dir);
 };
 
 function sendError(resp, msg) {

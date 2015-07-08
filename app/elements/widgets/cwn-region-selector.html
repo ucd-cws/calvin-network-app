@@ -45,8 +45,8 @@
             '</td>' +
             '<td>'+
               (type == 'Region' ?
-                '<a class="btn btn-link" index="'+i+'">Expand</a>' :
-                '<a class="btn btn-link" index="'+i+'">Info</a>') +
+                '<a class="btn btn-link region" index="'+i+'">Expand</a>' :
+                '<a class="btn btn-link" index="'+i+'" href="#info/'+f.properties.prmname+'">Info</a>') +
             '</td>'
           '</tr>';
       }
@@ -56,6 +56,11 @@
       $(this.$.body)
         .find('a')
         .on('click', function(e){
+          if( !$(e.currentTarget).hasClass('region') ) {
+            this.$.popup.hide();
+            return;
+          }
+
           var index = parseInt(e.currentTarget.getAttribute('index'));
           var feature = this.features[index];
 

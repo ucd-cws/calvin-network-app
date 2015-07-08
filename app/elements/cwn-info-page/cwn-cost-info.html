@@ -17,17 +17,17 @@
 
             <div class="btn-group">
               <template is="x-repeat" items="{{costsMonths}}">
-                <a class="btn btn-xs btn-primary" 
-                  index$="{{item.index}}" 
+                <a class="btn btn-xs btn-primary"
+                  index$="{{item.index}}"
                   on-click="_setMonth">{{item.label}}</a>
               </template>
             </div>
 
-            <cwn-linechart 
+            <cwn-linechart
               id="lineChart"
-              label="{{costChartLabel}}" 
-              xlabel="Capacity (kAF)" 
-              ylabel="Cost ($/kAF)" 
+              label="{{costChartLabel}}"
+              xlabel="Capacity (kAF)"
+              ylabel="Cost ($/kAF)"
               animate>
             </cwn-linechart>
           </div>
@@ -51,7 +51,7 @@
             data="{{data}}"
             cols="{{cols}}"
             options="{{options}}"
-            start="{{start}}" 
+            start="{{start}}"
             stop="{{stop}}"
             animate>
           </cwn-date-linechart>
@@ -82,51 +82,49 @@
             }
         },
 
-        configure : function() {
-            return {
-                costsMonths : [],
-                costs : {
-                  label : '',
-                  data : {},
-                  cost : 0, // for constant costs
-                  selected : 0
-                },
+        ready : function() {
+          this.costsMonths = [];
+          this.costs = {
+            label : '',
+            data : {},
+            cost : 0, // for constant costs
+            selected : 0
+          };
 
-                constraintChart : {
-                    constant: -1,
-                    label : '',
-                    isTimeSeries : false,
-                    cols : [
-                        {id:'date', type:'string'},
-                        {id:'upper_value', type:'number'},
-                        {id:'upper_interval', type:'number', role:'interval'},
-                        {id:'lower_interval', type:'number', role:'interval'},
-                        {id: 'tooltip', type: 'string', role:'tooltip'}
-                    ],
-                    data : [],
-                    options : {
-                        series: [{'color': '#F1CA3A'}],
-                        intervals: { 'style':'area' },
-                        vAxis : {
-                          viewWindow:{ min: 0 }
-                        }
-                    }
-                },
+          this.constraintChart = {
+              constant: -1,
+              label : '',
+              isTimeSeries : false,
+              cols : [
+                  {id:'date', type:'string'},
+                  {id:'upper_value', type:'number'},
+                  {id:'upper_interval', type:'number', role:'interval'},
+                  {id:'lower_interval', type:'number', role:'interval'},
+                  {id: 'tooltip', type: 'string', role:'tooltip'}
+              ],
+              data : [],
+              options : {
+                  series: [{'color': '#F1CA3A'}],
+                  intervals: { 'style':'area' },
+                  vAxis : {
+                    viewWindow:{ min: 0 }
+                  }
+              }
+          };
 
-                months : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+          this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
 
-                showCostData : false,
-                showMonthlyVariableCost : false,
-                showConstantCost : false,
-                costChartLabel : '',
-                costChartData : [],
-                showConstraints : false,
-                showConstantConstraints : false,
-                showTimeSeriesConstraints : false,
-                showChartConstraints : false,
-                hasTimeSeries : false,
-                charts : {}
-            }
+          this.showCostData = false;
+          this.showMonthlyVariableCost = false;
+          this.showConstantCost = false;
+          this.costChartLabel = '';
+          this.costChartData = [];
+          this.showConstraints = false;
+          this.showConstantConstraints = false;
+          this.showTimeSeriesConstraints = false;
+          this.showChartConstraints = false;
+          this.hasTimeSeries = false;
+          this.charts = {};
         },
 
         update : function() {
@@ -329,7 +327,7 @@
                tooltip += ', Lower: Unknown';
             }
 
-          } 
+          }
 
           while(row.length < 4) row.push(null);
 
@@ -384,14 +382,14 @@
             if( this.constraintChart.constant != -1 ) {
                 this.showConstantConstraints = true;
             }
-            
+
             this.$.constraintChartAnchor.innerHTML = '';
             this.charts.constraintChart = null;
 
 
             if( this.constraintChart.data.length != 0 ) {
                 var isline = false;
-                
+
                 if( this.constraintChart.isTimeSeries ) {
                     this.hasTimeSeries = true;
                     this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
