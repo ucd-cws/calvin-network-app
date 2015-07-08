@@ -36,7 +36,9 @@ var Region = function(root, name) {
 
         } else if ( stat.isFile() && file.match('\.geojson$') ) {
           this.isARegion = true;
-          this.nodes.push(file.replace(/\.geojson/, ''));
+          //console.log('-- '+dir+' '+file);
+          //this.nodes.push(file.replace(/\.geojson/, ''));
+          this.nodes.push(dir.replace(/.*\//, ''));
         }
     }.bind(this));
 

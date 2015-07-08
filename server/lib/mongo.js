@@ -33,6 +33,19 @@ exports.connect = function(database, config) {
     //});
 }
 
+exports.connectForImport = function(connUrl, callback
+) {
+    MongoClient.connect(connUrl, function(err, database) {
+        if( err ) return callback(err);
+        db = database;
+
+        collection = db.collection('network');
+        regionCollection = db.collection('regions');
+
+        callback();
+    });
+}
+
 exports.getNetwork = function(callback) {
   collection.find({}, defaultIgnore).toArray(callback);
 }

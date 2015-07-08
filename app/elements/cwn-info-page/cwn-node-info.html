@@ -73,6 +73,7 @@
                     </td><td>
                       <h2>{{feature.properties.prmname}}</h2>
                       <div><b>{{feature.properties.type}}</b></div>
+
                     </td>
                   </tr>
                 </table>
@@ -80,6 +81,7 @@
                 <div hidden$="{{!showNavLinks}}">
                   <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
                   <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
+                  <div id="githubLink"></div>
                 </div>
                 <div hidden$="{{!islocal}}">
                     <div>
@@ -185,17 +187,17 @@
                   link = this._lookupLink(this.feature.properties.origins[i], this.feature.properties.prmname);
                   if( link ) {
                     this.origins.push({
-                      name: this.feature.properties.origins[i], 
+                      name: this.feature.properties.origins[i],
                       link: '#info/'+link.properties.prmname,
-                      hasLink : true, 
-                      description: CWN.ds.lookupMap[this.feature.properties.origins[i]] ? 
+                      hasLink : true,
+                      description: CWN.ds.lookupMap[this.feature.properties.origins[i]] ?
                                     CWN.ds.lookupMap[this.feature.properties.origins[i]].properties.description : ''
                     });
                   } else {
                     this.origins.push({
                         name: this.feature.properties.origins[i],
-                        hasLink : false, 
-                        link: '', 
+                        hasLink : false,
+                        link: '',
                         description: ''
                     });
                   }
@@ -207,21 +209,26 @@
                   link = this._lookupLink(this.feature.properties.prmname, this.feature.properties.terminals[i]);
                   if( link ) {
                     this.terminals.push({
-                      name: this.feature.properties.terminals[i], 
+                      name: this.feature.properties.terminals[i],
                       link: '#info/'+link.properties.prmname,
-                      hasLink : true, 
-                      description: CWN.ds.lookupMap[this.feature.properties.terminals[i]] ? 
+                      hasLink : true,
+                      description: CWN.ds.lookupMap[this.feature.properties.terminals[i]] ?
                                     CWN.ds.lookupMap[this.feature.properties.terminals[i]].properties.description : ''
                     });
                   } else {
                     this.terminals.push({
-                        name: this.feature.properties.terminals[i], 
-                        link: '', 
+                        name: this.feature.properties.terminals[i],
+                        link: '',
                         description: '',
-                        hasLink : false, 
+                        hasLink : false,
                     });
                   }
                 }
+            }
+
+            if( this.feature.properties.repo ) {
+              this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/blob/'+
+                this.feature.properties.repo.branch+'/'+this.feature.properties.repo.dir+'" target="_blank">Open in data repo on GitHub.</a>';
             }
 
             $(window).on('resize', this.updateSize.bind(this));
@@ -234,8 +241,8 @@
         onOriginUpdate : function() {
             if( !CWN.ds ) return;
 
-            if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none'; 
-            else this.$.origin.style.display = 'block'; 
+            if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none';
+            else this.$.origin.style.display = 'block';
 
             this.hasOriginDescription = false;
             this.originDescription = '';
@@ -249,8 +256,8 @@
         onTerminalUpdate : function() {
             if( !CWN.ds ) return;
 
-            if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none'; 
-            else this.$.terminal.style.display = 'block'; 
+            if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none';
+            else this.$.terminal.style.display = 'block';
 
             this.hasTerminalDescription = false;
             this.terminalDescription = '';
@@ -287,9 +294,9 @@
             this.$.middleCol.style.marginTop = '0px';
             return;
           }
-          
+
           var ele = $(this.$.middleCol);
-          
+
           var h = ele.next().height();
           if( h < ele.prev().height() ) h = ele.prev().height();
           if( h < ele.height() ) h = ele.height();

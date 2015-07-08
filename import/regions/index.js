@@ -2,7 +2,7 @@ var Region = require('./Region');
 var mongo = require('../../server/lib/mongo');
 var fs = require('fs');
 
-var dir = process.argv[2], files;
+var dir = process.argv[2], branch = process.argv[3], files;
 
 var nodes = [];
 var regions = [];
@@ -17,7 +17,8 @@ readNodes(dir);
 var lookup = {};
 
 nodes.forEach(function(node){
-  lookup[node.properties.filename] = node;
+  node.properties.repo.branch = branch
+  lookup[node.properties.repo.dirNodeName] = node;
   lookup[node.properties.prmname] = node;
 });
 
@@ -25,7 +26,7 @@ processLinks();
 
 setRegions(json, '');
 
-mongo.connect(function(err){
+mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
   if( err ) {
     return console.log('Unabled to connect to mongo');
   }
@@ -41,8 +42,6 @@ mongo.connect(function(err){
     });
   });
 });
-
-
 
 function readNodes(dir) {
   files = fs.readdirSync(dir);
@@ -63,11 +62,14 @@ function readNodes(dir) {
 
         if( d.type == 'FeatureCollection' ) return;
 
-        d.properties.dir = dir;
-        d.properties.filename = file.replace('\.geojson', '');
+        d.properties.repo = {
+          dir : dir,
+          dirNodeName : dir.replace(/.*\//,''),
+          filename : file
+        };
 
-
-        readRefs(d.properties.dir, d.properties.filename, d, 'properties');
+        readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties');
+        d.properties.repo.dir = dir.replace(/.*calvin-network-data/,'');
 
         nodes.push(d);
       }
@@ -150,17 +152,25 @@ function readRefs(dir, filename, parent, attr) {
 
     if( key === '$ref' ) {
       try {
-        var file;
+        var file, parts = [];
         if( parent[attr].$ref.match(/^\.\/.*/) ) {
           file = dir+'/'+parent[attr].$ref.replace(/^\.\//,'');
+          parts.push(parent[attr].$ref.replace(/^\.\//,''));
           //console.log('Reading: '+file+' from '+filename+'.geojson');
           parent[attr] = fs.readFileSync(file, 'utf-8');
         } else {
-          file = dir+'/'+filename+'/'+parent[attr].$ref;
+          //file = dir+'/'+filename+'/'+parent[attr].$ref;
+
+          file = dir+'/'+parent[attr].$ref;
+          parts.push(filename);
+
+          parts.push(parent[attr].$ref);
           //console.log('Reading: '+file);
           parent[attr] = fs.readFileSync(file, 'utf-8');
         }
       } catch(e) {
+        //console.log(e);
+        console.log('Unabled to read: "'+file+'" '+JSON.stringify(parts));
         parent[attr] = 'Unabled to read: '+file;
       }
 
