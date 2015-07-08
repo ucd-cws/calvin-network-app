@@ -772,6 +772,7 @@ Copyright (c) 2015 Daniel Eden
                     </td><td>
                       <h2>{{feature.properties.prmname}}</h2>
                       <div><b>{{feature.properties.type}}</b></div>
+
                     </td>
                   </tr>
                 </tbody></table>
@@ -779,6 +780,7 @@ Copyright (c) 2015 Daniel Eden
                 <div hidden$="{{!showNavLinks}}">
                   <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
                   <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
+                  <div id="githubLink"></div>
                 </div>
                 <div hidden$="{{!islocal}}">
                     <div>
@@ -829,6 +831,7 @@ Copyright (c) 2015 Daniel Eden
         </div>
     </template>
 </dom-module>
+
 
 
 <dom-module id="cwn-cost-info">
@@ -883,6 +886,7 @@ Copyright (c) 2015 Daniel Eden
         </template>
     </template>
 </dom-module>
+
 
 <dom-module id="cwn-info-page">
     <style>

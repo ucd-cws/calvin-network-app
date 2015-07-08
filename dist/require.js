@@ -6404,8 +6404,8 @@ this._removeChildren();
             '</td>' +
             '<td>'+
               (type == 'Region' ?
-                '<a class="btn btn-link" index="'+i+'">Expand</a>' :
-                '<a class="btn btn-link" index="'+i+'">Info</a>') +
+                '<a class="btn btn-link region" index="'+i+'">Expand</a>' :
+                '<a class="btn btn-link" index="'+i+'" href="#info/'+f.properties.prmname+'">Info</a>') +
             '</td>'
           '</tr>';
       }
@@ -6415,6 +6415,11 @@ this._removeChildren();
       $(this.$.body)
         .find('a')
         .on('click', function(e){
+          if( !$(e.currentTarget).hasClass('region') ) {
+            this.$.popup.hide();
+            return;
+          }
+
           var index = parseInt(e.currentTarget.getAttribute('index'));
           var feature = this.features[index];
 
@@ -6574,17 +6579,17 @@ this._removeChildren();
                   link = this._lookupLink(this.feature.properties.origins[i], this.feature.properties.prmname);
                   if( link ) {
                     this.origins.push({
-                      name: this.feature.properties.origins[i], 
+                      name: this.feature.properties.origins[i],
                       link: '#info/'+link.properties.prmname,
-                      hasLink : true, 
-                      description: CWN.ds.lookupMap[this.feature.properties.origins[i]] ? 
+                      hasLink : true,
+                      description: CWN.ds.lookupMap[this.feature.properties.origins[i]] ?
                                     CWN.ds.lookupMap[this.feature.properties.origins[i]].properties.description : ''
                     });
                   } else {
                     this.origins.push({
                         name: this.feature.properties.origins[i],
-                        hasLink : false, 
-                        link: '', 
+                        hasLink : false,
+                        link: '',
                         description: ''
                     });
                   }
@@ -6596,21 +6601,26 @@ this._removeChildren();
                   link = this._lookupLink(this.feature.properties.prmname, this.feature.properties.terminals[i]);
                   if( link ) {
                     this.terminals.push({
-                      name: this.feature.properties.terminals[i], 
+                      name: this.feature.properties.terminals[i],
                       link: '#info/'+link.properties.prmname,
-                      hasLink : true, 
-                      description: CWN.ds.lookupMap[this.feature.properties.terminals[i]] ? 
+                      hasLink : true,
+                      description: CWN.ds.lookupMap[this.feature.properties.terminals[i]] ?
                                     CWN.ds.lookupMap[this.feature.properties.terminals[i]].properties.description : ''
                     });
                   } else {
                     this.terminals.push({
-                        name: this.feature.properties.terminals[i], 
-                        link: '', 
+                        name: this.feature.properties.terminals[i],
+                        link: '',
                         description: '',
-                        hasLink : false, 
+                        hasLink : false,
                     });
                   }
                 }
+            }
+
+            if( this.feature.properties.repo ) {
+              this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/blob/'+
+                this.feature.properties.repo.branch+'/'+this.feature.properties.repo.dir+'" target="_blank">Open in data repo on GitHub.</a>';
             }
 
             $(window).on('resize', this.updateSize.bind(this));
@@ -6623,8 +6633,8 @@ this._removeChildren();
         onOriginUpdate : function() {
             if( !CWN.ds ) return;
 
-            if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none'; 
-            else this.$.origin.style.display = 'block'; 
+            if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none';
+            else this.$.origin.style.display = 'block';
 
             this.hasOriginDescription = false;
             this.originDescription = '';
@@ -6638,8 +6648,8 @@ this._removeChildren();
         onTerminalUpdate : function() {
             if( !CWN.ds ) return;
 
-            if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none'; 
-            else this.$.terminal.style.display = 'block'; 
+            if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none';
+            else this.$.terminal.style.display = 'block';
 
             this.hasTerminalDescription = false;
             this.terminalDescription = '';
@@ -6676,9 +6686,9 @@ this._removeChildren();
             this.$.middleCol.style.marginTop = '0px';
             return;
           }
-          
+
           var ele = $(this.$.middleCol);
-          
+
           var h = ele.next().height();
           if( h < ele.prev().height() ) h = ele.prev().height();
           if( h < ele.height() ) h = ele.height();
@@ -6715,51 +6725,49 @@ this._removeChildren();
             }
         },
 
-        configure : function() {
-            return {
-                costsMonths : [],
-                costs : {
-                  label : '',
-                  data : {},
-                  cost : 0, // for constant costs
-                  selected : 0
-                },
+        ready : function() {
+          this.costsMonths = [];
+          this.costs = {
+            label : '',
+            data : {},
+            cost : 0, // for constant costs
+            selected : 0
+          };
 
-                constraintChart : {
-                    constant: -1,
-                    label : '',
-                    isTimeSeries : false,
-                    cols : [
-                        {id:'date', type:'string'},
-                        {id:'upper_value', type:'number'},
-                        {id:'upper_interval', type:'number', role:'interval'},
-                        {id:'lower_interval', type:'number', role:'interval'},
-                        {id: 'tooltip', type: 'string', role:'tooltip'}
-                    ],
-                    data : [],
-                    options : {
-                        series: [{'color': '#F1CA3A'}],
-                        intervals: { 'style':'area' },
-                        vAxis : {
-                          viewWindow:{ min: 0 }
-                        }
-                    }
-                },
+          this.constraintChart = {
+              constant: -1,
+              label : '',
+              isTimeSeries : false,
+              cols : [
+                  {id:'date', type:'string'},
+                  {id:'upper_value', type:'number'},
+                  {id:'upper_interval', type:'number', role:'interval'},
+                  {id:'lower_interval', type:'number', role:'interval'},
+                  {id: 'tooltip', type: 'string', role:'tooltip'}
+              ],
+              data : [],
+              options : {
+                  series: [{'color': '#F1CA3A'}],
+                  intervals: { 'style':'area' },
+                  vAxis : {
+                    viewWindow:{ min: 0 }
+                  }
+              }
+          };
 
-                months : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+          this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
 
-                showCostData : false,
-                showMonthlyVariableCost : false,
-                showConstantCost : false,
-                costChartLabel : '',
-                costChartData : [],
-                showConstraints : false,
-                showConstantConstraints : false,
-                showTimeSeriesConstraints : false,
-                showChartConstraints : false,
-                hasTimeSeries : false,
-                charts : {}
-            }
+          this.showCostData = false;
+          this.showMonthlyVariableCost = false;
+          this.showConstantCost = false;
+          this.costChartLabel = '';
+          this.costChartData = [];
+          this.showConstraints = false;
+          this.showConstantConstraints = false;
+          this.showTimeSeriesConstraints = false;
+          this.showChartConstraints = false;
+          this.hasTimeSeries = false;
+          this.charts = {};
         },
 
         update : function() {
@@ -6962,7 +6970,7 @@ this._removeChildren();
                tooltip += ', Lower: Unknown';
             }
 
-          } 
+          }
 
           while(row.length < 4) row.push(null);
 
@@ -7017,14 +7025,14 @@ this._removeChildren();
             if( this.constraintChart.constant != -1 ) {
                 this.showConstantConstraints = true;
             }
-            
+
             this.$.constraintChartAnchor.innerHTML = '';
             this.charts.constraintChart = null;
 
 
             if( this.constraintChart.data.length != 0 ) {
                 var isline = false;
-                
+
                 if( this.constraintChart.isTimeSeries ) {
                     this.hasTimeSeries = true;
                     this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
@@ -7048,13 +7056,15 @@ this._removeChildren();
 /*
     And the visibility of various panels and charts based on given features
 */
-var InfoPageDomControllers = function() {
+var InfoPageDomControllers = {
 
-    function updateDateSliderVisibility() {
+    updateDateSliderVisibility : function() {
+      if( !this.inflows ) return;
         this.showDateRangeSlider = this.inflows.length > 0 || this.hasTimeSeries
-    }
+    },
 
-    function stampEacChart() {
+    stampEacChart : function() {
+      if( !this.eacChart ) return;
 
         if( this.eacChart.data.length == 0 ) {
 
@@ -7071,17 +7081,12 @@ var InfoPageDomControllers = function() {
             });
         }
     }
-
-    return {
-        updateDateSliderVisibility : updateDateSliderVisibility,
-        stampEacChart : stampEacChart
-    }
 }
 ;
 Polymer({
     is : 'cwn-info-page',
 
-    mixins : [new InfoPageDomControllers()],
+    behaviors : [InfoPageDomControllers],
 
     properties : {
       hasTimeSeries : {
@@ -7095,33 +7100,32 @@ Polymer({
       }
     },
 
-    configure : function() {
-      return {
-        feature : null,
+    ready : function() {
+      this.feature = null;
 
-        hack : '',
-        islocal : false,
+      this.hack = '';
+      this.islocal = false;
 
-        tableProperties : ['prmname'],
+      this.tableProperties = ['prmname'];
 
-        // loading flags
-        climateLoadError : false,
-        costLoadError : false,
-        climateLoading : false,
-        costLoading : false,
-        loading : false,
+      // loading flags
+      this.climateLoadError = false;
+      this.costLoadError = false;
+      this.climateLoading = false;
+      this.costLoading = false;
+      this.loading = false;
 
         // have to do long lookup right now, is there are better way?
-        origins : [],
-        terminals : [],
+      this.origins = [];
+      this.terminals = [];
 
-        // render data.  Data in a format ready to draw above
-        inflows : [],
+      // render data.  Data in a format ready to draw above
+      this.inflows = [],
 
-        map : {},
+      this.map = {};
 
         // Elevation / Area / Capacity charts
-        eacChart : {
+        this.eacChart = {
           type : 'ComboChart',
           cols : [
             {id: 'capacity', label: 'capacity', type: 'number'},
@@ -7150,20 +7154,20 @@ Polymer({
               position: 'top'
             }
           }
-        },
+        };
 
         // date filtering
-        filters : {
+        this.filters = {
           start : null,
           stop : null
         },
 
         // dom controller stuff
-        hasTimeSeries : false,
-        showDateRangeSlider : false,
-        showClimateData : false,
-        charts : {}
-      }
+        this.hasTimeSeries = false;
+        this.showDateRangeSlider = false;
+        this.showClimateData = false;
+        this.charts = {};
+
     },
 
     init : function(map) {
@@ -7188,7 +7192,7 @@ Polymer({
 
     update : function() {
       if( CWN.ds.loading ) return;
-      debugger;
+
       if( this.feature == null ) return alert('Feature not found');
 
       this.climateLoadError = false;
@@ -7222,7 +7226,7 @@ Polymer({
           success : function(resp) {
             this.climateLoading = false;
             if( !resp.climate ) return this.climateLoadError = true;
-            
+
             this.showClimateData = true;
             this.renderClimateData(JSON.parse(resp.climate));
 
@@ -7253,7 +7257,7 @@ Polymer({
 
       this.eacChart.data = [];
       if( data.el_ar_cap ) {
-        
+
         var max = 0;
         for( var i = 0; i < data.el_ar_cap.length; i++ ) {
           this.eacChart.data.push([
@@ -7299,7 +7303,7 @@ Polymer({
 
       this.setPathValue('filters.start', e.detail.start);
       this.setPathValue('filters.stop', e.detail.end);
-    },  
+    },
 
     back : function() {
       window.location.hash = 'map'
@@ -7309,7 +7313,8 @@ Polymer({
       this.$.costInfo.setMonth(parseInt(e.currentTarget.getAttribute('index')));
     }
 
-});;
+});
+;
 
     Polymer({
         is : 'cwn-graph',
@@ -7872,6 +7877,11 @@ Polymer({
 
               if( features.length == 1 && features[0].geometry.type == 'Polygon' ) {
                 ref.onRegionClick(features[0].properties.id);
+                return;
+              }
+
+              if( features.length == 1 && features[0].geometry.type == 'Point' ) {
+                window.location.href = '#info/' + features[0].properties.prmname;
                 return;
               }
 
@@ -8474,7 +8484,6 @@ Polymer({
           $(window).on('hashchange', function(){
             this.setLocation();
           }.bind(this));
-
 
           this.$.map.init(this.legend, this.$.filters.filters);
           this.$.info.init(this.$.map.map);
