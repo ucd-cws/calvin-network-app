@@ -1,4 +1,4 @@
-var Region = require('./Region');
+var Region = require('./region');
 var mongo = require('../../server/lib/mongo');
 var fs = require('fs');
 var parse = require('csv-parse');
