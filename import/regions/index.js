@@ -263,7 +263,7 @@ function processLinks() {
 }
 
 function setOriginsTerminals(node) {
-  if( node.properties.type == 'Diversion' && node.properties.type == 'Return Flow' ) return;
+  if( node.properties.type == 'Diversion' || node.properties.type == 'Return Flow' ) return;
 
   var origins = [];
   var terminals = [];
