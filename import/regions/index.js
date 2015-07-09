@@ -18,13 +18,18 @@ var json = ca.toJSON();
 readNodes(dir, function(){
   nodes.forEach(function(node){
     node.properties.repo.branch = branch
+    node.properties.repo.github = 'https://github.com/ucd-cws/calvin-network-data/tree/'+
+      branch + node.properties.repo.dir;
+
     lookup[node.properties.repo.dirNodeName] = node;
     lookup[node.properties.prmname] = node;
+
+    setOriginsTerminals(node);
   });
 
   processLinks();
 
-  setRegions(json, '');
+  setRegions(json, '', branch);
 
   mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
     if( err ) {
@@ -255,6 +260,29 @@ function processLinks() {
   removeList.forEach(function(node){
     nodes.splice(nodes.indexOf(node), 1);
   });
+}
+
+function setOriginsTerminals(node) {
+  if( node.properties.type == 'Diversion' && node.properties.type == 'Return Flow' ) return;
+
+  var origins = [];
+  var terminals = [];
+  for( var i = 0; i < nodes.length; i++ ) {
+    if( nodes[i].properties.terminus == node.properties.prmname ) {
+      origins.push({
+        prmname : nodes[i].properties.origin,
+        link_prmname : nodes[i].properties.prmname
+      });
+    } else if ( nodes[i].properties.origin == node.properties.prmname ) {
+      terminals.push({
+        prmname : nodes[i].properties.terminus,
+        link_prmname : nodes[i].properties.prmname
+      });
+    }
+  }
+
+  node.properties.origins = origins;
+  node.properties.terminals = terminals;
 }
 
 // find the min / max for a region.  if the region does not contain a geometry

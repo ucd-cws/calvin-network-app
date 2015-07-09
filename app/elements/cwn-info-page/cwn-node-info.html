@@ -20,6 +20,9 @@
         :host {
             display: block;
         }
+        [hidden] {
+          display:none;
+        }
     </style>
 
     <template>
@@ -33,7 +36,7 @@
               <div id="origin">
                 <div style="text-align:right">
                   <div>
-                    <cwn-info-link name="{{feature.properties.origin}}"></cwn-info-link>
+                    <cwn-info-link prmname$="{{feature.properties.origin}}"></cwn-info-link>
                   </div>
                   <div hidden$="{{!hasOriginDescription}}">
                     <div class="description">{{originDescription}}</div>
@@ -42,10 +45,10 @@
               </div>
 
 
-              <template is="x-repeat" items="{{origins}}">
+              <template is="dom-repeat" items="{{origins}}">
                 <div style="text-align:right;margin-bottom:20px">
                   <div>
-                    <cwn-info-link name="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
+                    <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
 
                     <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
                       <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
@@ -69,7 +72,7 @@
                 <table style="margin: 0 auto">
                   <tr>
                     <td>
-                      <cwn-app-icon type="{{feature.properties.type}}" width="72" height="72" fillFromType="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
+                      <cwn-app-icon type$="{{type}}" width="72" height="72" fillFromType="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
                     </td><td>
                       <h2>{{feature.properties.prmname}}</h2>
                       <div><b>{{feature.properties.type}}</b></div>
@@ -99,14 +102,14 @@
 
             <div id="terminal">
               <div>
-                <cwn-info-link name="{{feature.properties.terminus}}"></cwn-info-link>
+                <cwn-info-link prmname$="{{feature.properties.terminus}}"></cwn-info-link>
               </div>
               <div hidden$="{{!hasTerminalDescription}}">
                 <div class="description">{{terminalDescription}}</div>
               </div>
             </div>
 
-            <template is="x-repeat" items="{{terminals}}">
+            <template is="dom-repeat" items="{{terminals}}">
               <div style="margin-bottom:20px">
                 <div>
 
@@ -118,7 +121,7 @@
                       <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
                   </span>
 
-                  &nbsp;&nbsp;&nbsp;<cwn-info-link name="{{item.name}}"></cwn-info-link>
+                  &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
 
                 </div>
                 <div hidden$="{{!item.description}}">
@@ -154,28 +157,26 @@
             }
         },
 
-        configure : function() {
-            return {
-                hasOriginDescription : false,
-                originDescription : '',
-                editUrl : '',
-                originUrl : '',
-                terminalUrl : '',
-                showNavLinks : false,
-                hasTerminalDescription : false,
-                terminalDescription : '',
-                origins : [],
-                terminals : []
-            }
-        },
-
         ready : function() {
-            $(window).on('resize', this.updateSize.bind(this));
+          this.hasOriginDescription = false;
+          this.originDescription = '';
+          this.editUrl = '';
+          this.originUrl = '';
+          this.terminalUrl = '';
+          this.showNavLinks = false;
+          this.hasTerminalDescription = false;
+          this.terminalDescription = '';
+          this.type = '';
+          this.origins = [];
+          this.terminals = [];
+
+          $(window).on('resize', this.updateSize.bind(this));
         },
 
         update : function() {
             if( !CWN.ds || !this.feature ) return;
 
+            this.type = this.feature.properties.type;
             this.editUrl = '#edit/'+this.feature.properties.prmname;
 
             this.origins = [];
@@ -236,6 +237,26 @@
             this.onTypeUpdate();
             this.onOriginUpdate();
             this.onTerminalUpdate();
+        },
+
+        createRenderLinks : function(name) {
+          var link, i, tmp = [];
+          var links = this[name];
+          if(!links) return;
+
+          for( i = 0; i < links.length; i++ ) {
+            link = links[i];
+
+            tmp.push({
+              name: link.properties.prmname,
+              link: '#info/'+link.properties.prmname,
+              hasLink : true,
+              description: link.properties.description ? link.properties.description : ''
+            });
+          }
+
+          // stupid polymer... when will this crap work right!?
+          this[name] = tmp;
         },
 
         onOriginUpdate : function() {

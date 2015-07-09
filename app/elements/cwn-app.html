@@ -137,8 +137,12 @@
         },
 
         onLoadingChange : function() {
-          if( CWN.ds.loading ) this.$.splash.style.display = 'block';
-          else this.$.splash.style.display = 'none';
+          if( CWN.ds.loading ) {
+            this.$.splash.style.display = 'block';
+          } else {
+            this.$.splash.style.display = 'none';
+            this.onDataLoad();
+          }
         },
 
         setLocation : function() {
@@ -176,7 +180,7 @@
         setInfoFeature : function() {
           var name = window.location.hash.replace('#','').split('/')[1];
           name = decodeURIComponent(name);
-          this.$.info.feature = CWN.ds.lookupMap[name];
+          this.$.info.setFeature(CWN.ds.lookupMap[name]);
         },
 
         onDataLoad : function() {

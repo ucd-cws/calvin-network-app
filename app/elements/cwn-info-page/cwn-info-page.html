@@ -34,13 +34,14 @@
       <div class="card" hidden$="{{loading}}">
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
+      
       <!-- End Header Card -->
       <div hidden$="{{!showDateRangeSlider}}">
         <div style="padding:20px 50px 5px 50px">
           <h4>Date Range</h4>
-          <cwn-dateslider 
-            id="dateslider" 
-            start="1920-01-01" 
+          <cwn-dateslider
+            id="dateslider"
+            start="1920-01-01"
             on-values-changed="updateDateFilters">
           </cwn-dateslider>
         </div>
@@ -70,9 +71,9 @@
               </div>
 
               <template is="x-repeat" items="{{inflows}}">
-                <cwn-date-linechart 
-                  label="{{item.label}}" 
-                  ylabel="Flow (kaf)" 
+                <cwn-date-linechart
+                  label="{{item.label}}"
+                  ylabel="Flow (kaf)"
                   data="{{item.data}}"
                   animate>
                 </cwn-date-linechart>
@@ -88,7 +89,7 @@
                   type="{{type}}">
                 </cwn-linechart>
               </template>
-  
+
             </div>
           </div>
           <!-- End Climate -->
@@ -98,8 +99,8 @@
 
           <!-- Start Costs -->
           <div class="card">
-            <cwn-cost-info 
-              feature="{{feature}}" 
+            <cwn-cost-info
+              feature="{{feature}}"
               has-time-series="{{hasTimeSeries}}">
             </cwn-cost-info>
           </div>
@@ -107,8 +108,8 @@
 
         </div>
       </div>
- 
-      
+
+
     </template>
 </dom-module>
 

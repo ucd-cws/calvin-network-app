@@ -15,11 +15,11 @@
     </style>
     <template>
         <span hidden$="{{!valid}}">
-            <cwn-app-icon type="{{type}}" width="22" height="22" fillFromType="true"></cwn-app-icon> 
-            <a href="{{link}}">{{name}}</a>
+            <cwn-app-icon type$="{{type}}" width="22" height="22" fillFromType="true"></cwn-app-icon>
+            <a href="{{link}}">{{prmname}}</a>
         </span>
 
-        <span class="invalid" hidden$="{{valid}}">{{name}}</span>
+        <span hidden$="{{valid}}">{{prmname}}</span>
     </template>
 </dom-module>
 
@@ -27,37 +27,38 @@
 <script>
     Polymer({
         is : 'cwn-info-link',
-        
+
         properties : {
-            name : {
-                type : String,
-                observer : 'update'
+            prmname : {
+              notify : true,
+              type : String,
+              observer : 'update'
             }
         },
 
-        configure : function() {
-            return {
-                link : '',
-                type : '',
-                valid : false,
-            }
+        ready : function() {
+          this.prmname = '';
+          this.link = '';
+          this.type = '';
+          this.valid = false;
         },
-        
+
         attached : function() {
-            CWN.ds.on('load', this.update.bind(this));
+          CWN.ds.on('load', this.update.bind(this));
         },
 
         update : function() {
-            if( !CWN.ds.loading ) return;
+          if( CWN.ds.loading ) return;
 
-            if( !CWN.ds.lookupMap[this.name] ) {
-                this.valid = false;
-                return;
-            }
+          if( !CWN.ds.lookupMap[this.prmname] ) {
+              this.valid = false;
+              return;
+          }
 
-            this.valid = true;
-            this.type = CWN.ds.lookupMap[this.name].properties.type;
-            this.link = '#info/'+ this.name;
+          this.valid = true;
+
+          this.type = CWN.ds.lookupMap[this.prmname].properties.type;
+          this.link = '#info/'+ this.prmname;
         }
 
     });

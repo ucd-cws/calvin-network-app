@@ -1,6 +1,6 @@
 var fs = require('fs');
 
-var Region = function(root, name) {
+var Region = function(root, name, branch) {
 
     this.subregions = [];
     this.nodes = [];
@@ -33,7 +33,7 @@ var Region = function(root, name) {
 
         if( stat.isDirectory() && !childIsNode && !childIsLink ) {
 
-          var r = new Region(dir, file);
+          var r = new Region(dir, file, branch);
           if( r.isARegion ) {
             this.subregions.push(r);
             this.isARegion = true;
@@ -58,6 +58,16 @@ var Region = function(root, name) {
         for (var i = this.subregions.length - 1; i >= 0; i--) {
             sub.push(this.subregions[i].toJSON());
         };
+
+        var repoDir = this.root.replace(/.*calvin-network-data/, '')+'/'+this.name;
+
+
+        if( this.geo && this.geo.properties ) {
+          this.geo.properties.repo = {
+            dir : repoDir,
+            github : 'https://github.com/ucd-cws/calvin-network-data/tree/'+branch + repoDir
+          };
+        }
 
         var json = {
             name : this.name,

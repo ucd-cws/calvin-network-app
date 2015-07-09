@@ -8,10 +8,6 @@ Polymer({
         type : Boolean,
         notify : true,
         observer : 'updateDateSliderVisibility'
-      },
-      feature : {
-        type : Object,
-        observer : 'update'
       }
     },
 
@@ -103,6 +99,11 @@ Polymer({
           this.feature = CWN.ds.lookupMap[loc[1]];
         }
       }
+    },
+
+    setFeature : function(feature) {
+      this.feature = feature;
+      this.update();
     },
 
     update : function() {

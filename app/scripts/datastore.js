@@ -77,6 +77,7 @@ function Datastore() {
                   }
                 }
 
+                this.setNodeLookups();
 
                 done();
             }.bind(this),
@@ -128,6 +129,30 @@ function Datastore() {
             callback();
         }.bind(this));
     }
+
+    this.setNodeLookups = function() {
+      for( var key in this.originLookupMap ) {
+        var node = this.lookupMap[key];
+        if(!node) continue;
+
+        var arr = this.originLookupMap[key];
+        node.properties.origins = [];
+        for( var i = 0; i < arr.length; i++ ) {
+          node.properties.origins.push(arr[i].properties.terminus);
+        }
+      }
+
+      for( var key in this.terminalLookupMap ) {
+        var node = this.lookupMap[key];
+        if(!node) continue;
+
+        var arr = this.terminalLookupMap[key];
+        node.properties.terminals = [];
+        for( var i = 0; i < arr.length; i++ ) {
+          node.properties.terminals.push(arr[i].properties.origin);
+        }
+      }
+    },
 
     this.processNode = function(node) {
         if( !node ) return;
