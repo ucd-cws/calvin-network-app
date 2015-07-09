@@ -128,64 +128,7 @@
           }.bind(this), 200);
         },
 
-        render : function(ctx, xyPoints, map, feature) {
-          var render = feature.geojson.properties._render || {};
-
-          if( feature.geojson.geometry.type == 'Point' ) {
-            console.log('point');
-
-            o = render.oneStep ? .3 : .7;
-
-            render.point = xyPoints;
-            ms = (feature.size || 20) * (render.multipier || 1);
-            buffer = ms / 2;
-
-            // TODO: set feature.size and you want have to worry about -10 offset here
-            CWN.render[feature.geojson.properties.type](ctx, {
-                x: xyPoints.x - 10,
-                y: xyPoints.y - 10,
-                width: ms,
-                height: ms,
-                opacity: o,
-                fill : render.fill,
-                stroke : render.stroke,
-                lineWidth : render.lineWidth,
-            });
-
-          } else if ( feature.geojson.geometry.type == 'LineString' ) {
-            console.log('line');
-
-            color = 'white';
-            if( render.highlight ) {
-                if( render.highlight == 'origin' ) color = 'green';
-                else color = 'red';
-            }
-
-            ctx.beginPath();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 4;
-            ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
-            ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.strokeStyle = this.getLineColor(feature.geojson);
-            ctx.lineWidth = 2;
-            ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
-            ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
-            ctx.stroke();
-
-          } else if ( feature.geojson.geometry.type == 'Polygon' ) {
-            console.log('polygon');
-
-            this.drawRegion(ctx, xyPoints, render, this);
-
-          }
-
-        },
-
         renderRegionLine : function(ctx, xyPoints, config, feature) {
-          console.log('line')
           color = 'orange';
 
           ctx.beginPath();
@@ -201,45 +144,6 @@
           ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
           ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
           ctx.stroke();
-        },
-
-        drawRegion : function(ctx, xyPoints, config, feature) {
-          var point;
-          if( xyPoints.length <= 1 ) return;
-
-          ctx.beginPath();
-
-          point = xyPoints[0];
-          ctx.moveTo(point.x, point.y);
-          for( var i = 1; i < xyPoints.length; i++ ) {
-            ctx.lineTo(xyPoints[i].x, xyPoints[i].y);
-          }
-          ctx.lineTo(xyPoints[0].x, xyPoints[0].y);
-
-          ctx.strokeStyle = config.hover ? 'red' : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
-          ctx.fillStyle = config.fillStyle ? config.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
-          ctx.lineWidth = 4;
-
-          ctx.stroke();
-          ctx.fill();
-
-          // draw center
-          /*if( !config.noCenteriod ) {
-            ctx.beginPath();
-            try {
-              point = this.map.latLngToContainerPoint([region.center[1], region.center[0]]);
-            } catch(e) {
-              debugger;
-            }
-            ctx.arc(point.x, point.y, 25, 0, 2*Math.PI);
-            ctx.stroke();
-            ctx.fill();
-
-            // add name
-            ctx.fillStyle = '#333333';
-            ctx.font="14px \"Helvetica Neue\",Helvetica,Arial,sans-serif";
-            ctx.fillText(region.name, point.x - 20, point.y + 40 );
-          }*/
         },
 
 
@@ -259,31 +163,24 @@
                 }
             }*/
 
-            var self = this;
             for( var i = 0; i < CWN.ds.data.regions.length; i++ ) {
               this.markerLayer.addFeature({
                 geojson: CWN.ds.data.regions[i].geo,
-                render: function(ctx, xyPoints, map){
-                  self.render(ctx, xyPoints, map, this);
-                }
+                render: CWN.map.renderer.basic
               })
             }
 
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
               this.markerLayer.addFeature({
                 geojson: CWN.ds.data.links[i],
-                render: function(ctx, xyPoints, map){
-                  self.render(ctx, xyPoints, map, this);
-                }
+                render: CWN.map.renderer.basic
               })
             }
 
             for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
               this.markerLayer.addFeature({
                 geojson: CWN.ds.data.nodes[i],
-                render: function(ctx, xyPoint, map){
-                  self.render(ctx, xyPoint, map, this);
-                }
+                render: CWN.map.renderer.basic
               })
             }
 
@@ -293,34 +190,6 @@
 
             this.updateRenderState();
             this.update();
-        },
-
-        getLineColor : function(feature) {
-            var color = CWN.colors.salmon;
-            if( feature.properties.renderInfo ) {
-                if( feature.properties.renderInfo.type == 'flowToSink' ) {
-                  color = CWN.colors.lightGrey;
-                } else if( feature.properties.renderInfo.type == 'returnFlowFromDemand' ) {
-                    color = CWN.colors.red;
-                } else if( feature.properties.renderInfo.type == 'gwToDemand' ) {
-                    color = CWN.colors.black;
-                } else if( feature.properties.renderInfo.type == 'artificalRecharge' ) {
-                    color = CWN.colors.purple;
-                }
-            }
-
-            var line = {
-                color: color,
-                weight: 3,
-                opacity: 0.4,
-                smoothFactor: 1
-            }
-
-            if( feature.properties.calibrationNode && this.mapFilters.calibrationMode ) {
-                line.color = 'blue';
-            }
-
-            return color;
         },
 
         update : function() {
@@ -545,7 +414,6 @@
         },
 
         createNodeLink : function(origin, terminal, node) {
-          var self = this;
           return {
             geojson : {
               "type" : "Feature",
@@ -555,12 +423,7 @@
               },
               properties : $.extend(true, {}, node.properties)
             },
-            render : function(ctx, xyPoints, map) {
-              // TODO: need to render lines
-              // Also need to group between features.
-
-              self.render(ctx, xyPoints, map, this);
-            }
+            render : CWN.map.renderer.basic
           };
         },
 

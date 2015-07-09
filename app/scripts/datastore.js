@@ -141,7 +141,7 @@ function Datastore() {
         }
 
         this.lookupMap[node.properties.prmname] = node;
-        this.filenameLookupMap[node.properties.filename] = node;
+        this.filenameLookupMap[node.properties.repo.dirNodeName] = node;
     }
 
     this.processLink = function(link) {
@@ -160,7 +160,7 @@ function Datastore() {
         }
 
         this.lookupMap[link.properties.prmname] = link;
-        this.filenameLookupMap[link.properties.filename] = link;
+        this.filenameLookupMap[link.properties.repo.dirNodeName] = link;
 
         // set the origin lookup map
         if( !this.originLookupMap[link.properties.origin] ) {

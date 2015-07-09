@@ -1,66 +1,68 @@
 var Region = require('./Region');
 var mongo = require('../../server/lib/mongo');
 var fs = require('fs');
+var parse = require('csv-parse');
+var async = require('async');
 
 var dir = process.argv[2], branch = process.argv[3], files;
 
 var nodes = [];
 var regions = [];
 var regionNames = {};
+var lookup = {};
 
 var ca = new Region(dir);
 ca.name = 'California';
 
 var json = ca.toJSON();
-readNodes(dir);
+readNodes(dir, function(){
+  nodes.forEach(function(node){
+    node.properties.repo.branch = branch
+    lookup[node.properties.repo.dirNodeName] = node;
+    lookup[node.properties.prmname] = node;
+  });
 
-var lookup = {};
+  processLinks();
 
-nodes.forEach(function(node){
-  node.properties.repo.branch = branch
-  lookup[node.properties.repo.dirNodeName] = node;
-  lookup[node.properties.prmname] = node;
-});
+  setRegions(json, '');
 
-processLinks();
+  mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
+    if( err ) {
+      return console.log('Unabled to connect to mongo');
+    }
 
-setRegions(json, '');
+    mongo.updateNetwork(nodes, function(err){
+      if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
 
-mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
-  if( err ) {
-    return console.log('Unabled to connect to mongo');
-  }
+      mongo.updateRegions(regions, function(err){
 
-  mongo.updateNetwork(nodes, function(err){
-    if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
-
-    mongo.updateRegions(regions, function(err){
-
-      if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
-      console.log('done.');
-      process.exit(1);
+        if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
+        console.log('done.');
+        process.exit(1);
+      });
     });
   });
 });
 
-function readNodes(dir) {
+function readNodes(dir, callback) {
   files = fs.readdirSync(dir);
 
-  files.forEach(function(file){
-      if( file.match(/^\./) ) return;
-      if( file === 'region.geojson' ) return;
+  async.eachSeries(files,
+    function(file, next){
+      if( file.match(/^\./) ) return next();
+      if( file === 'region.geojson' ) return next();
 
       var stat = fs.statSync(dir+'/'+file);
 
       if( stat.isDirectory() ) {
-        readNodes(dir+'/'+file);
+        return readNodes(dir+'/'+file, next);
 
       } else if ( stat.isFile() && file.match('\.geojson$') ) {
 
         var d = fs.readFileSync(dir+'/'+file, 'utf-8').replace(/[\r\n]/g,'');
         d = JSON.parse(d);
 
-        if( d.type == 'FeatureCollection' ) return;
+        if( d.type == 'FeatureCollection' ) return next();
 
         d.properties.repo = {
           dir : dir,
@@ -68,12 +70,23 @@ function readNodes(dir) {
           filename : file
         };
 
-        readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties');
-        d.properties.repo.dir = dir.replace(/.*calvin-network-data/,'');
+        readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties', function(){
 
-        nodes.push(d);
+          d.properties.repo.dir = dir.replace(/.*calvin-network-data/,'');
+          nodes.push(d);
+          async.nextTick(next);
+
+        });
+        return;
       }
-  }.bind(this));
+
+      async.nextTick(next);
+    },
+    function(err){
+      if( err ) console.log(err);
+      callback();
+    }
+  );
 }
 
 // set the regions array
@@ -147,37 +160,68 @@ function setRegions(region, path) {
 }
 
 // process $ref pointers
-function readRefs(dir, filename, parent, attr) {
-  for( var key in parent[attr] ) {
+function readRefs(dir, filename, parent, attr, callback) {
+  //for( var key in parent[attr] ) {
+  var keys = Object.keys(parent[attr]);
 
-    if( key === '$ref' ) {
-      try {
-        var file, parts = [];
-        if( parent[attr].$ref.match(/^\.\/.*/) ) {
-          file = dir+'/'+parent[attr].$ref.replace(/^\.\//,'');
-          parts.push(parent[attr].$ref.replace(/^\.\//,''));
-          //console.log('Reading: '+file+' from '+filename+'.geojson');
-          parent[attr] = fs.readFileSync(file, 'utf-8');
-        } else {
-          //file = dir+'/'+filename+'/'+parent[attr].$ref;
+  async.eachSeries(keys,
+    function(key, next) {
 
-          file = dir+'/'+parent[attr].$ref;
-          parts.push(filename);
+      if( key === '$ref' ) {
+        try {
+          var file, parts = [];
+          if( parent[attr].$ref.match(/^\.\/.*/) ) {
+            file = dir+'/'+parent[attr].$ref.replace(/^\.\//,'');
+            parts.push(parent[attr].$ref.replace(/^\.\//,''));
+            readFile(file, parent, attr, next);
+            return;
+          } else {
+            file = dir+'/'+parent[attr].$ref;
+            parts.push(filename);
+            parts.push(parent[attr].$ref);
 
-          parts.push(parent[attr].$ref);
-          //console.log('Reading: '+file);
-          parent[attr] = fs.readFileSync(file, 'utf-8');
+            readFile(file, parent, attr, next);
+            return;
+          }
+        } catch(e) {
+          console.log('Unabled to read: "'+file+'" '+JSON.stringify(parts));
+          parent[attr] = 'Unabled to read: '+file;
         }
-      } catch(e) {
-        //console.log(e);
-        console.log('Unabled to read: "'+file+'" '+JSON.stringify(parts));
-        parent[attr] = 'Unabled to read: '+file;
+
+      } else if( typeof parent[attr][key] === 'object' && parent[attr][key] !== null ) {
+        return readRefs(dir, filename, parent[attr], key, next);
       }
 
-    } else if( typeof parent[attr][key] === 'object' && parent[attr][key] !== null ) {
-      readRefs(dir, filename, parent[attr], key);
+      next();
+    },
+    callback
+  );
+}
+
+function readFile(file, object, attr, callback) {
+  if( file.match(/.*\.csv$/i) ) {
+    object[attr] = fs.readFileSync(file, 'utf-8');
+    parse(object[attr], {comment: '#', delimiter: ','}, function(err, data){
+      if( err ) object[attr] = err;
+      else object[attr] = parseInts(data);
+      callback();
+    });
+  } else {
+    object[attr] = fs.readFileSync(file, 'utf-8');
+    callback();
+  }
+}
+
+function parseInts(data) {
+  for( var i = 0; i < data.length; i++ ) {
+    for( var j = 0; j < data[i].length; j++ ) {
+      if( data[i][j].match(/^-?\d+\.?\d*$/) || data[i][j].match(/^-?\d*\.\d+$/) ) {
+        var t = parseFloat(data[i][j]);
+        if( !isNaN(t) ) data[i][j] = t;
+      }
     }
   }
+  return data;
 }
 
 // process links.  currently they have no geometry information
