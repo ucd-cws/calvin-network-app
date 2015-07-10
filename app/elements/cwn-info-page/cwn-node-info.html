@@ -84,14 +84,16 @@
                 <div hidden$="{{!showNavLinks}}">
                   <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
                   <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
-                  <div id="githubLink"></div>
                 </div>
+                <div id="githubLink"></div>
+                <!--
                 <div hidden$="{{!islocal}}">
                     <div>
                       <a class="btn btn-link" href="{{editUrl}}">
                       <i class="fa fa-pencil"></i> Edit</a>
                     </div>
                 </div>
+              -->
               </div>
           </div>
           <!-- End Feature -->
@@ -182,55 +184,41 @@
             this.origins = [];
             this.terminals = [];
 
-            var link;
-            if( this.feature && this.feature.properties.origins ) {
-                for( var i = 0; i < this.feature.properties.origins.length; i++ ) {
-                  link = this._lookupLink(this.feature.properties.origins[i], this.feature.properties.prmname);
+            var link, node, types = ['origins', 'terminals'];
+            types.forEach(function(type){
+              if( this.feature && this.feature.properties[type] ) {
+                for( var i = 0; i < this.feature.properties[type].length; i++ ) {
+                  link = CWN.ds.lookupMap[this.feature.properties[type][i].link_prmname];
+                  node = CWN.ds.lookupMap[this.feature.properties[type][i].prmname];
+
                   if( link ) {
-                    this.origins.push({
-                      name: this.feature.properties.origins[i],
+                    this[type].push({
+                      name: node.properties.prmname,
                       link: '#info/'+link.properties.prmname,
                       hasLink : true,
-                      description: CWN.ds.lookupMap[this.feature.properties.origins[i]] ?
-                                    CWN.ds.lookupMap[this.feature.properties.origins[i]].properties.description : ''
+                      description: node ? node.properties.description : ''
                     });
                   } else {
                     this.origins.push({
-                        name: this.feature.properties.origins[i],
+                        name: this.feature.properties.origins[i].prmname,
                         hasLink : false,
                         link: '',
                         description: ''
                     });
                   }
                 }
-            }
-
-            if( this.feature && this.feature.properties.terminals ) {
-                for( var i = 0; i < this.feature.properties.terminals.length; i++ ) {
-                  link = this._lookupLink(this.feature.properties.prmname, this.feature.properties.terminals[i]);
-                  if( link ) {
-                    this.terminals.push({
-                      name: this.feature.properties.terminals[i],
-                      link: '#info/'+link.properties.prmname,
-                      hasLink : true,
-                      description: CWN.ds.lookupMap[this.feature.properties.terminals[i]] ?
-                                    CWN.ds.lookupMap[this.feature.properties.terminals[i]].properties.description : ''
-                    });
-                  } else {
-                    this.terminals.push({
-                        name: this.feature.properties.terminals[i],
-                        link: '',
-                        description: '',
-                        hasLink : false,
-                    });
-                  }
-                }
-            }
+              }
+            }.bind(this));
 
             if( this.feature.properties.repo ) {
-              this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/blob/'+
-                this.feature.properties.repo.branch+'/'+this.feature.properties.repo.dir+'" target="_blank">Open in data repo on GitHub.</a>';
+              this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/tree/'+
+                this.feature.properties.repo.branch+this.feature.properties.repo.dir+'" target="_blank">'+
+                '<i class="fa fa-github"></i> Show on GitHub</a>';
             }
+
+            // stupid polymer hack! when will this stop!!!!!!!!!!
+            this.origins = $.extend(true, [], this.origins);
+            this.terminals = $.extend(true, [], this.terminals);
 
             $(window).on('resize', this.updateSize.bind(this));
 
@@ -297,15 +285,6 @@
             if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
                 this.showNavLinks = false;
             }
-        },
-
-        _lookupLink : function(origin, terminal) {
-          for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
-            if( CWN.ds.data.links[i].properties.origin == origin && CWN.ds.data.links[i].properties.terminus == terminal ) {
-              return CWN.ds.data.links[i];
-            }
-          }
-          return null;
         },
 
         updateSize : function() {
