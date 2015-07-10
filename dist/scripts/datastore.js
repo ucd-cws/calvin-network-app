@@ -77,7 +77,6 @@ function Datastore() {
                   }
                 }
 
-
                 done();
             }.bind(this),
             error : function(resp) {
