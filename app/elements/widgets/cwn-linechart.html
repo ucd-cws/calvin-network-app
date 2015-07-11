@@ -21,7 +21,10 @@
             xlabel : String,
             ylabel : String,
             height : Number,
-            animate : Boolean,
+            animate : {
+              notify: true,
+              type: Boolean
+            },
             options : Object,
             cols : Object,
             type : String
@@ -32,7 +35,6 @@
           this.dt = null;
           this.chart = null;
           this.height = 400;
-          this.animate = false;
           this.updateTimer = -1;
           this.options = null;
           this.cols = null;

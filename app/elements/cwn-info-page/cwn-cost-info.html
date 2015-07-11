@@ -10,10 +10,9 @@
           <div hidden$="{{!showMonthlyVariableCost}}">
 
             <div class="btn-group">
-              <template is="dom-repeat" items="{{costsMonths}}">
+              <template is="dom-repeat" items="{{months}}">
                 <a class="btn btn-xs btn-primary"
-                  index$="{{item.index}}"
-                  on-click="_setMonth">{{item.label}}</a>
+                  on-click="setMonth">{{item}}</a>
               </template>
             </div>
 
@@ -22,7 +21,7 @@
               label="{{costChartLabel}}"
               xlabel="Capacity (kAF)"
               ylabel="Cost ($/kAF)"
-              animate>
+              animate="true">
             </cwn-linechart>
           </div>
 
@@ -154,9 +153,9 @@
 
           if( !d.costs ) return;
 
-          this.costs.label = d.costs.type;
+          this.costs.label = d.type;
           this.costs.data = {};
-          this.costsMonths = [];
+          this.costsMonths = {};
           this.costs.selected = 0;
 
           this.costs.cost = d.costs.cost;
@@ -165,40 +164,13 @@
           if( !d.costs ) return;
 
           if( d.costs.data ) {
-            costArr = d.costs.data;
+            this.costMonths = d.costs.data;
           } else {
-            costArr = d.costs;
+            this.costMonths = d.costs;
           }
+          this.showMonthlyVariableCost = true;
 
-          if( costArr.length == 0 ) return;
-
-          for( var i = 0; i < costArr.length; i++ ) {
-            var m = costArr[i];
-
-            var label = m.label;
-            if( (!label || label == '') && i < 12 ) label = this.months[i];
-
-            this.costs.data[label] = [];
-            this.costsMonths.push({
-              index : i,
-              label : label
-            });
-
-            for( var j = 0; j < m.costs.length; j++ ) {
-              this.costs.data[label].push([
-                m.costs[j].capacity,
-                m.costs[j].cost
-              ]);
-            }
-
-            this.costs.data[label].sort(function(a, b){
-              if( a[0] > b[0] ) return 1;
-              if( a[0] < b[0] ) return -1;
-              return 0;
-            });
-            this.costs.data[label].splice(0,0, ['Capacity','Cost']);
-          };
-          this._setMonth(0);
+          this.setMonth('JAN');
 
           if( this.costs.label == 'Monthly Variable' ) this.showMonthlyVariableCost = true;
           if( this.costs.label == 'Constant' ) this.showConstantCost = true;
@@ -341,12 +313,14 @@
           return l;
         },
 
-        _setMonth : function(index) {
-          this.costs.selected = (typeof index == 'object') ? parseInt(index.currentTarget.getAttribute('index')) : index;
+        setMonth : function(month) {
+          if( typeof month == 'object' ) month = month.currentTarget.innerHTML;
+          month = month.toUpperCase();
 
-          this.costChartLabel = this.costs.label+' - '+this.costsMonths[this.costs.selected].label;
-          this.costChartData = this.costs.data[this.costsMonths[this.costs.selected].label];
-debugger;
+          //this.costs.selected = (typeof index == 'object') ? parseInt(index.currentTarget.getAttribute('index')) : index;
+
+          this.costChartLabel = this.costs.label+' - '+month;
+          this.costChartData = this.costMonths[month];
           this.$.lineChart.update(this.costChartData);
         },
 
