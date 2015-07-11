@@ -189,7 +189,7 @@ function readRefs(dir, filename, parent, attr, callback) {
             return;
           }
         } catch(e) {
-          console.log('Unabled to read: "'+file+'" '+JSON.stringify(parts));
+          console.log('Unabled to read: "'+file+'" ('+parent[attr].$ref+') '+JSON.stringify(parts));
           parent[attr] = 'Unabled to read: '+file;
         }
 
@@ -206,7 +206,14 @@ function readRefs(dir, filename, parent, attr, callback) {
 function readFile(file, object, attr, callback) {
   if( file.match(/.*\.csv$/i) ) {
     object[attr] = fs.readFileSync(file, 'utf-8');
+
     parse(object[attr], {comment: '#', delimiter: ','}, function(err, data){
+      if( attr == '' ) { // hack need to fix
+        console.log('Attempting to set empty attr name, switching to "data": '+file);
+        delete object[attr];
+        attr = 'data';
+      }
+
       if( err ) object[attr] = err;
       else object[attr] = parseInts(data);
       callback();

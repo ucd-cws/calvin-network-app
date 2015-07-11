@@ -61,7 +61,6 @@ var Region = function(root, name, branch) {
 
         var repoDir = this.root.replace(/.*calvin-network-data/, '')+'/'+this.name;
 
-
         if( this.geo && this.geo.properties ) {
           this.geo.properties.repo = {
             dir : repoDir,

@@ -2,21 +2,15 @@
     <template>
         <h2 class="page-header">Costs</h2>
 
-        <div class="alert alert-info" hidden$="{{feature.properties.hasCosts}}">
+        <div class="alert alert-info" hidden$="{{!noCostData}}">
           This node has no cost data associated with it.
-        </div>
-        <div class="alert alert-error" hidden$="{{!costLoadError}}">
-          Error loading cost data.
-        </div>
-        <div hidden$="{{!costLoading}}" style="color:#888">
-          Loading cost data...
         </div>
 
         <div hidden$="{{!showCostData}}">
           <div hidden$="{{!showMonthlyVariableCost}}">
 
             <div class="btn-group">
-              <template is="x-repeat" items="{{costsMonths}}">
+              <template is="dom-repeat" items="{{costsMonths}}">
                 <a class="btn btn-xs btn-primary"
                   index$="{{item.index}}"
                   on-click="_setMonth">{{item.label}}</a>
@@ -32,7 +26,7 @@
             </cwn-linechart>
           </div>
 
-          <div hidden$="{{showConstantCost}}">
+          <div hidden$="{{!showConstantCost}}">
             <h5>Constant: $<span>{{costs.cost}}</span></h5>
           </div>
 
@@ -46,7 +40,7 @@
 
 
         <div id="constraintChartAnchor"></div>
-        <template is="x-template" id="constraintChartTimeSeries">
+        <template is="dom-template" id="constraintChartTimeSeries">
           <cwn-date-linechart
             data="{{data}}"
             cols="{{cols}}"
@@ -57,7 +51,7 @@
           </cwn-date-linechart>
         </template>
 
-        <template is="x-template" id="constraintChart">
+        <template is="dom-template" id="constraintChart">
           <cwn-linechart
             cols="{{cols}}"
             options="{{options}}"
@@ -83,6 +77,7 @@
         },
 
         ready : function() {
+          this.noCostData = true;
           this.costsMonths = [];
           this.costs = {
             label : '',
@@ -129,9 +124,9 @@
 
         update : function() {
             if( !this.feature ) return;
+            console.log(this.feature.properties.costs);
 
-            this.costLoading = false;
-            this.costLoadError = false;
+            this.noCostData = true;
 
             this.constraintChart.data = [];
             this.constraintChart.isTimeSeries = false;
@@ -139,46 +134,19 @@
             this.constraintChart.constant = -1;
             this.constraintChart.label = '';
 
-            this.loadCostData();
-        },
+            this.showCostData = false;
+            this.showMonthlyVariableCost = false;
+            this.showConstantCost = false;
+            this.showConstantConstraints = false;
+            this.$.constraintChartAnchor.innerHTML = '';
+            this.showConstraints = false;
+            this.showConstantConstraints = false;
 
-        loadCostData : function() {
-          this.showCostData = false;
-          this.showMonthlyVariableCost = false;
-          this.showConstantCost = false;
-          this.showConstantConstraints = false;
-          this.$.constraintChartAnchor.innerHTML = '';
-          this.showConstraints = false;
-          this.showConstantConstraints = false;
+            if( !this.feature.properties.costs ) return;
+            this.noCostData = false;
+            this.showCostData = true;
 
-          if( !this.feature.properties.hasCosts ) return;
-          this.costLoading = true;
-          this.costLoadError = false;
-
-          var type;
-          if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-            type = 'link';
-          } else {
-            type = 'node';
-          }
-
-          var params = '?prmname='+ this.feature.properties.prmname +
-            '&type=' + type + '&attribute=costs'
-
-          $.ajax({
-              url : '/rest/getAttribute'+params,
-              success : function(resp) {
-                this.costLoading = false;
-                if( !resp.costs ) return this.costLoadError = true;
-
-                this.showCostData = true;
-
-                this.renderCostData(JSON.parse(resp.costs));
-              }.bind(this),
-              error : function(resp) {
-                this.costLoadError = true;
-              }.bind(this)
-          });
+            this.renderCostData(this.feature.properties.costs);
         },
 
         renderCostData : function(d) {
@@ -193,11 +161,19 @@
 
           this.costs.cost = d.costs.cost;
 
-          if( !d.costs.costs ) return;
-          if( d.costs.costs.length == 0 ) return;
+          var costArr;
+          if( !d.costs ) return;
 
-          for( var i = 0; i < d.costs.costs.length; i++ ) {
-            var m = d.costs.costs[i];
+          if( d.costs.data ) {
+            costArr = d.costs.data;
+          } else {
+            costArr = d.costs;
+          }
+
+          if( costArr.length == 0 ) return;
+
+          for( var i = 0; i < costArr.length; i++ ) {
+            var m = costArr[i];
 
             var label = m.label;
             if( (!label || label == '') && i < 12 ) label = this.months[i];
@@ -370,7 +346,7 @@
 
           this.costChartLabel = this.costs.label+' - '+this.costsMonths[this.costs.selected].label;
           this.costChartData = this.costs.data[this.costsMonths[this.costs.selected].label];
-
+debugger;
           this.$.lineChart.update(this.costChartData);
         },
 

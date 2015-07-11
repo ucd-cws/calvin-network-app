@@ -16,7 +16,7 @@
     Polymer({
         is : 'cwn-linechart',
 
-        published : {
+        properties : {
             label : String,
             xlabel : String,
             ylabel : String,
@@ -27,30 +27,26 @@
             type : String
         },
 
-        configure : function() {
-            return {
-                onLoadHandlerSet : false,
-                dt : null,
-                chart : null,
-                height : 400,
-                animate : false,
-                updateTimer : -1,
-                options : null,
-                cols : null,
-                data : null
-            }
-        },
-
         ready : function() {
-            $(window).on('resize', function(){
-                this.redraw();
-            }.bind(this));
+          this.onLoadHandlerSet = false;
+          this.dt = null;
+          this.chart = null;
+          this.height = 400;
+          this.animate = false;
+          this.updateTimer = -1;
+          this.options = null;
+          this.cols = null;
+          this.data = null;
 
-            this.async(function(){
-                this.redraw();
-            });
+          $(window).on('resize', function(){
+              this.redraw();
+          }.bind(this));
+
+          this.async(function(){
+              this.redraw();
+          });
         },
-        
+
         setHeight : function() {
             if( !this.$ ) return;
 
@@ -66,7 +62,7 @@
                 this.update(this.data);
             }.bind(this));
         },
-        
+
 
         update : function(data) {
             this.data = data;
@@ -98,7 +94,7 @@
             } else {
                 this.dt = google.visualization.arrayToDataTable(data);
             }
-            
+
             this.redraw();
         },
 
