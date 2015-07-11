@@ -149,16 +149,22 @@
         },
 
         renderCostData : function(d) {
+          // TODO: handle 'Annual Variable', ex: SR-SKN
+
           if( d.constraints ) this.renderConstraints(d.constraints);
 
+          if( d.type == 'Constant' ) this.showConstantCost = true;
+          this.costs.cost = d.cost;
+
           if( !d.costs ) return;
+
 
           this.costs.label = d.type;
           this.costs.data = {};
           this.costsMonths = {};
           this.costs.selected = 0;
 
-          this.costs.cost = d.costs.cost;
+
 
           var costArr;
           if( !d.costs ) return;
@@ -173,7 +179,6 @@
           this.setMonth('JAN');
 
           if( this.costs.label == 'Monthly Variable' ) this.showMonthlyVariableCost = true;
-          if( this.costs.label == 'Constant' ) this.showConstantCost = true;
         },
 
         renderConstraints : function(constraints) {
