@@ -22,6 +22,8 @@
     </style>
 
     <template>
+        <cwn-search id="search"></cwn-search>
+
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
             Loading Network...<br />
@@ -29,30 +31,40 @@
         </div>
 
         <cwn-app-layout>
-            <a right-nav on-click="showFilters">
-              <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
-              <span class="visible-xs"><i class="fa fa-filter"></i></span>
-            </a>
+          <a right-nav href="#map" id="backBtn">
+            <span class="hidden-xs"><i class="fa fa-arrow-left"></i> Back</span>
+            <span class="visible-xs"><i class="fa fa-arrow-left"></i></span>
+          </a>
 
-            <cwn-filters
-              id="filters" content
-              legend="{{legend}}"
-              on-update="onFiltersUpdated"></cwn-filters>
+          <a right-nav on-click="search">
+            <span class="hidden-xs"><i class="fa fa-search"></i> Search</span>
+            <span class="visible-xs"><i class="fa fa-search"></i></span>
+          </a>
 
-            <cwn-map content
-              id="map"
-              on-selected="onFeatureSelected"
-              on-filtering-complete="updateGraph">
-            </cwn-map>
+          <a right-nav on-click="showFilters">
+            <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
+            <span class="visible-xs"><i class="fa fa-filter"></i></span>
+          </a>
 
-            <cwn-info-page content
-              id="info">
-            </cwn-info-page>
+          <cwn-filters
+            id="filters" content
+            legend="{{legend}}"
+            on-update="onFiltersUpdated"></cwn-filters>
 
-            <cwn-graph content
-              class="fit"
-              id="graph">
-            </cwn-graph>
+          <cwn-map content
+            id="map"
+            on-selected="onFeatureSelected"
+            on-filtering-complete="updateGraph">
+          </cwn-map>
+
+          <cwn-info-page content
+            id="info">
+          </cwn-info-page>
+
+          <cwn-graph content
+            class="fit"
+            id="graph">
+          </cwn-graph>
 
         </cwn-app-layout>
 
@@ -148,16 +160,18 @@
         setLocation : function() {
           var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
           if( loc == '') loc = 'map';
+          this.$.backBtn.style.display = 'none';
+
 
           if( loc == 'map' ) {
-            //this.$.pages.selected = this.PAGES.MAP;
             this.selectedPage = this.PAGES.map;
             this.async(function(){
               var ele = this.querySelector('cwn-map');
               if( ele && ele.map ) ele.map.invalidateSize();
             });
           } else if ( loc == 'info' ) {
-            //this.$.pages.selected = this.PAGES.INFO;
+            this.$.backBtn.style.display = 'inline-block';
+
             this.selectedPage = this.PAGES.info;
             if( this.dataLoaded ) {
               this.setInfoFeature();
@@ -193,6 +207,10 @@
 
         showFilters : function() {
             this.$.filters.toggle();
+        },
+
+        search : function() {
+          this.$.search.show();
         },
 
         updateGraph : function() {

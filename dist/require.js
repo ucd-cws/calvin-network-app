@@ -6785,648 +6785,741 @@ this._removeChildren();
     });
 ;
 
-    Polymer({
-        is : 'cwn-node-info',
+  Polymer({
+    is : 'cwn-search',
 
-        properties : {
-            feature : {
-              type : Object,
-              observer : 'update'
-            },
-            ds : {
-              type : Object,
-              observer : 'update'
-            },
-            leaflet : {
-              type : Object
-            },
-            islocal : {
-              type : Boolean
-            }
-        },
+    ready : function() {
+      this.$.popup.header = 'Find Node or Link';
+      this.MAX_RESULTS = 50;
+    },
 
-        ready : function() {
-          this.hasOriginDescription = false;
-          this.originDescription = '';
-          this.editUrl = '';
-          this.originUrl = '';
-          this.terminalUrl = '';
-          this.showNavLinks = false;
-          this.hasTerminalDescription = false;
-          this.terminalDescription = '';
-          this.type = '';
-          this.origins = [];
-          this.terminals = [];
+    show : function() {
+      this.$.popup.show();
+      setTimeout(function(){
+        this.$.input.focus();
+      }.bind(this), 200);
 
-          $(window).on('resize', this.updateSize.bind(this));
-        },
+    },
 
-        update : function() {
-            if( !CWN.ds || !this.feature ) return;
+    onKeypress : function(e) {
+      this.search(e.currentTarget.value);
+    },
 
-            this.type = this.feature.properties.type;
-            this.editUrl = '#edit/'+this.feature.properties.prmname;
+    search : function(txt) {
+      txt = txt.toLowerCase();
 
-            this.origins = [];
-            this.terminals = [];
+      var matchCount = 0;
+      this.prmnameMatches = [];
+      this.otherMatches = [];
 
-            var link, node, types = ['origins', 'terminals'];
-            types.forEach(function(type){
-              if( this.feature && this.feature.properties[type] ) {
-                for( var i = 0; i < this.feature.properties[type].length; i++ ) {
-                  link = CWN.ds.lookupMap[this.feature.properties[type][i].link_prmname];
-                  node = CWN.ds.lookupMap[this.feature.properties[type][i].prmname];
 
-                  if( link ) {
-                    this[type].push({
-                      name: node.properties.prmname,
-                      link: '#info/'+link.properties.prmname,
-                      hasLink : true,
-                      description: node ? node.properties.description : ''
-                    });
-                  } else {
-                    this.origins.push({
-                        name: this.feature.properties.origins[i].prmname,
-                        hasLink : false,
-                        link: '',
-                        description: ''
-                    });
-                  }
-                }
-              }
-            }.bind(this));
+      var types = ['nodes', 'links'];
 
-            if( this.feature.properties.repo ) {
-              this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/tree/'+
-                this.feature.properties.repo.branch+this.feature.properties.repo.dir+'" target="_blank">'+
-                '<i class="fa fa-github"></i> Show on GitHub</a>';
-            }
-
-            // stupid polymer hack! when will this stop!!!!!!!!!!
-            this.origins = $.extend(true, [], this.origins);
-            this.terminals = $.extend(true, [], this.terminals);
-
-            $(window).on('resize', this.updateSize.bind(this));
-
-            this.onTypeUpdate();
-            this.onOriginUpdate();
-            this.onTerminalUpdate();
-        },
-
-        createRenderLinks : function(name) {
-          var link, i, tmp = [];
-          var links = this[name];
-          if(!links) return;
-
-          for( i = 0; i < links.length; i++ ) {
-            link = links[i];
-
-            tmp.push({
-              name: link.properties.prmname,
-              link: '#info/'+link.properties.prmname,
-              hasLink : true,
-              description: link.properties.description ? link.properties.description : ''
-            });
+      types.forEach(function(type){
+        var arr = CWN.ds.data[type];
+        for( var i = 0; i < arr.length; i++ ) {
+          if( arr[i].properties.prmname.toLowerCase().indexOf(txt) > -1 ) {
+            if( matchCount > this.MAX_RESULTS ) break;
+            matchCount++;
+            this.prmnameMatches.push(arr[i]);
           }
-
-          // stupid polymer... when will this crap work right!?
-          this[name] = tmp;
-        },
-
-        onOriginUpdate : function() {
-            if( !CWN.ds ) return;
-
-            if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none';
-            else this.$.origin.style.display = 'block';
-
-            this.hasOriginDescription = false;
-            this.originDescription = '';
-
-            if( CWN.ds.lookupMap[this.feature.properties.origin] ) {
-                this.hasOriginDescription = true;
-                this.originDescription = CWN.ds.lookupMap[this.feature.properties.origin].properties.description
-            }
-        },
-
-        onTerminalUpdate : function() {
-            if( !CWN.ds ) return;
-
-            if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none';
-            else this.$.terminal.style.display = 'block';
-
-            this.hasTerminalDescription = false;
-            this.terminalDescription = '';
-
-            if( CWN.ds.lookupMap[this.feature.properties.terminus] ) {
-                this.hasTerminalDescription = true;
-                this.terminalDescription = CWN.ds.lookupMap[this.feature.properties.terminus].properties.description
-            }
-        },
-
-        onTypeUpdate : function() {
-            if( !CWN.ds ) return;
-
-            this.showNavLinks = true;
-
-            if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-                this.showNavLinks = false;
-            }
-        },
-
-        updateSize : function() {
-          var w = $(window).width();
-
-          if( w < 992 ) {
-            this.$.middleCol.style.marginTop = '0px';
-            return;
-          }
-
-          var ele = $(this.$.middleCol);
-
-          var h = ele.next().height();
-          if( h < ele.prev().height() ) h = ele.prev().height();
-          if( h < ele.height() ) h = ele.height();
-
-
-          this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
-        },
-
-        goTo : function() {
-          window.location.hash = 'map';
-          this.async(function() {
-            var pts = this.feature.geometry.coordinates;
-            this.leaflet.setView([pts[1], pts[0]], 12);
-          });
-        },
-
-        goToGraph : function() {
-          window.location.hash = 'graph/'+this.feature.properties.prmname;
         }
-    });
+      }.bind(this));
+
+      var types = ['nodes', 'links'];
+
+      if( matchCount < this.MAX_RESULTS ) {
+        types.forEach(function(type){
+          var arr = CWN.ds.data[type];
+          for( var i = 0; i < arr.length; i++ ) {
+            if( arr[i].properties.description.toLowerCase().indexOf(txt) > -1 ) {
+              if( matchCount > this.MAX_RESULTS ) break;
+              matchCount++;
+              this.otherMatches.push(arr[i]);
+            }
+          }
+        }.bind(this));
+      }
+
+      this.renderResults();
+    },
+
+    renderResults : function() {
+      var list = '';
+      for( var i = 0; i < this.prmnameMatches.length; i++ ) {
+        list += this.renderResult(this.prmnameMatches[i]);
+      }
+      for( var i = 0; i < this.otherMatches.length; i++ ) {
+        list += this.renderResult(this.otherMatches[i]);
+      }
+
+      this.$.results.innerHTML = list;
+      $(this.$.results).find('a').on('click', function(){
+        this.$.popup.hide();
+      }.bind(this));
+    },
+
+    renderResult : function(feature) {
+      return '<div class="layout horizontal">'+
+        '<div style="padding:15px 5px; width: 50px"><cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon></div>'+
+        '<div class="flex">'+
+          '<h4><a style="font-size: 18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a> <small>'+feature.properties.type+'</small></h4>'+
+          (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
+          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+        '</div>'+
+      '</div>'
+    }
+
+  })
+;
+Polymer({
+    is : 'cwn-node-info',
+
+    properties : {
+        feature : {
+          type : Object,
+          observer : 'update'
+        },
+        ds : {
+          type : Object,
+          observer : 'update'
+        },
+        leaflet : {
+          type : Object
+        },
+        islocal : {
+          type : Boolean
+        }
+    },
+
+    ready : function() {
+      this.hasOriginDescription = false;
+      this.originDescription = '';
+      this.editUrl = '';
+      this.originUrl = '';
+      this.terminalUrl = '';
+      this.showNavLinks = false;
+      this.hasTerminalDescription = false;
+      this.terminalDescription = '';
+      this.type = '';
+      this.origins = [];
+      this.terminals = [];
+
+      $(window).on('resize', this.updateSize.bind(this));
+    },
+
+    update : function() {
+        if( !CWN.ds || !this.feature ) return;
+
+        this.type = this.feature.properties.type;
+        this.editUrl = '#edit/'+this.feature.properties.prmname;
+
+        this.label = this.feature.properties.prmname.replace(/_/g, ' ');
+
+        this.$.regions.innerHTML = this.feature.properties.regions ?
+          '<i>'+this.feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</i>' : '';
+
+
+        this.origins = [];
+        this.terminals = [];
+
+        var link, node, types = ['origins', 'terminals'];
+        types.forEach(function(type){
+          if( this.feature && this.feature.properties[type] ) {
+            for( var i = 0; i < this.feature.properties[type].length; i++ ) {
+              link = CWN.ds.lookupMap[this.feature.properties[type][i].link_prmname];
+              node = CWN.ds.lookupMap[this.feature.properties[type][i].prmname];
+
+              if( link ) {
+                this[type].push({
+                  name: node.properties.prmname,
+                  link: '#info/'+link.properties.prmname,
+                  hasLink : true,
+                  description: node ? node.properties.description : ''
+                });
+              } else {
+                this.origins.push({
+                    name: this.feature.properties.origins[i].prmname,
+                    hasLink : false,
+                    link: '',
+                    description: ''
+                });
+              }
+            }
+          }
+        }.bind(this));
+
+        if( this.feature.properties.repo ) {
+          this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/tree/'+
+            this.feature.properties.repo.branch+this.feature.properties.repo.dir+'" target="_blank">'+
+            '<i class="fa fa-github"></i> Show on GitHub</a>';
+        }
+
+        // stupid polymer hack! when will this stop!!!!!!!!!!
+        this.origins = $.extend(true, [], this.origins);
+        this.terminals = $.extend(true, [], this.terminals);
+
+        $(window).on('resize', this.updateSize.bind(this));
+
+        this.onTypeUpdate();
+        this.onOriginUpdate();
+        this.onTerminalUpdate();
+    },
+
+    createRenderLinks : function(name) {
+      var link, i, tmp = [];
+      var links = this[name];
+      if(!links) return;
+
+      for( i = 0; i < links.length; i++ ) {
+        link = links[i];
+
+        tmp.push({
+          name: link.properties.prmname,
+          link: '#info/'+link.properties.prmname,
+          hasLink : true,
+          description: link.properties.description ? link.properties.description : ''
+        });
+      }
+
+      // stupid polymer... when will this crap work right!?
+      this[name] = tmp;
+    },
+
+    onOriginUpdate : function() {
+        if( !CWN.ds ) return;
+
+        if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none';
+        else this.$.origin.style.display = 'block';
+
+        this.hasOriginDescription = false;
+        this.originDescription = '';
+
+        if( CWN.ds.lookupMap[this.feature.properties.origin] ) {
+            this.hasOriginDescription = true;
+            this.originDescription = CWN.ds.lookupMap[this.feature.properties.origin].properties.description
+        }
+    },
+
+    onTerminalUpdate : function() {
+        if( !CWN.ds ) return;
+
+        if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none';
+        else this.$.terminal.style.display = 'block';
+
+        this.hasTerminalDescription = false;
+        this.terminalDescription = '';
+
+        if( CWN.ds.lookupMap[this.feature.properties.terminus] ) {
+            this.hasTerminalDescription = true;
+            this.terminalDescription = CWN.ds.lookupMap[this.feature.properties.terminus].properties.description
+        }
+    },
+
+    onTypeUpdate : function() {
+        if( !CWN.ds ) return;
+
+        this.showNavLinks = true;
+
+        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+            this.showNavLinks = false;
+        }
+    },
+
+    updateSize : function() {
+      var w = $(window).width();
+
+      if( w < 992 ) {
+        this.$.middleCol.style.marginTop = '0px';
+        return;
+      }
+
+      var ele = $(this.$.middleCol);
+
+      var h = ele.next().height();
+      if( h < ele.prev().height() ) h = ele.prev().height();
+      if( h < ele.height() ) h = ele.height();
+
+
+      this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
+    },
+
+    goTo : function() {
+      window.location.hash = 'map';
+      this.async(function() {
+        var pts = this.feature.geometry.coordinates;
+        this.leaflet.setView([pts[1], pts[0]], 12);
+      });
+    },
+
+    goToGraph : function() {
+      window.location.hash = 'graph/'+this.feature.properties.prmname;
+    }
+});
 ;
 
-    Polymer({
-        is : 'cwn-cost-info',
+Polymer({
+    is : 'cwn-cost-info',
 
-        properties : {
-            feature : {
-                type : Object,
-                observer : 'update'
-            },
-            hasTimeSeries : {
-                type : Boolean,
-                notify : true
-            }
+    properties : {
+        feature : {
+            type : Object,
+            observer : 'update'
         },
+        hasTimeSeries : {
+            type : Boolean,
+            notify : true
+        }
+    },
 
-        ready : function() {
-          this.noCostData = true;
-          this.costsMonths = [];
-          this.costs = {
-            label : '',
-            data : {},
-            cost : 0, // for constant costs
-            selected : 0
-          };
+    ready : function() {
+      this.noCostData = true;
+      this.costsMonths = [];
+      this.costs = {
+        label : '',
+        data : {},
+        cost : 0, // for constant costs
+        selected : 0
+      };
 
-          this.constraintChart = {
-              constant: -1,
-              label : '',
-              isTimeSeries : false,
-              /*cols : [
-                  {id:'date', type:'string'},
-                  {id:'upper_value', type:'number'},
-                  {id:'upper_interval', type:'number', role:'interval'},
-                  {id:'lower_interval', type:'number', role:'interval'},
-                  {id: 'tooltip', type: 'string', role:'tooltip'}
-              ],*/
-              data : [],
-              options : {
-                  series: [{'color': '#F1CA3A'}],
-                  intervals: { 'style':'area' },
-                  vAxis : {
-                    viewWindow:{ min: 0 }
-                  }
+      this.constraintChart = {
+          constant: -1,
+          label : '',
+          isTimeSeries : false,
+          /*cols : [
+              {id:'date', type:'string'},
+              {id:'upper_value', type:'number'},
+              {id:'upper_interval', type:'number', role:'interval'},
+              {id:'lower_interval', type:'number', role:'interval'},
+              {id: 'tooltip', type: 'string', role:'tooltip'}
+          ],*/
+          data : [],
+          options : {
+              series: [{'color': '#F1CA3A'}],
+              intervals: { 'style':'area' },
+              vAxis : {
+                viewWindow:{ min: 0 }
               }
-          };
-
-          this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-
-          this.showCostData = false;
-          this.showMonthlyVariableCost = false;
-          this.showConstantCost = false;
-          this.costChartLabel = '';
-          this.costChartData = [];
-          this.showBounds = false;
-          this.showConstantBounds = false;
-          this.showTimeSeriesBounds = false;
-          this.showChartBounds = false;
-          this.hasTimeSeries = false;
-          this.charts = {};
-        },
-
-        update : function() {
-            if( !this.feature ) return;
-            console.log(this.feature.properties.costs);
-
-            this.noCostData = true;
-
-            this.constraintChart.data = [];
-            this.constraintChart.isTimeSeries = false;
-            this.hasTimeSeries = false;
-            this.constraintChart.constant = -1;
-            this.constraintChart.label = '';
-
-            this.showCostData = false;
-            this.showMonthlyVariableCost = false;
-            this.showConstantCost = false;
-            this.showConstantBounds = false;
-            this.$.constraintChartAnchor.innerHTML = '';
-            this.showBounds = false;
-            this.showConstantBounds = false;
-
-            if( !this.feature.properties.costs || !this.feature.properties.bounds ) return;
-
-            this.noCostData = false;
-            this.showCostData = true;
-
-            if( this.feature.properties.bounds ) this.renderBounds(this.feature.properties.bounds);
-
-
-            this.renderCostData(this.feature.properties.costs);
-        },
-
-
-
-        renderCostData : function(d) {
-          this.costs.label = d.type;
-
-
-          if( d.type == 'Constant' ) {
-
-            this.showConstantCost = true;
-            this.costs.cost = d.cost;
-
-
-          } else if( d.type == 'Monthly Variable' ) {
-
-            this.showMonthlyVariableCost = true;
-
-            this.costsMonths = {};
-            var costArr;
-            if( !d.costs ) return;
-
-            if( d.costs.data ) {
-              this.costMonths = d.costs.data;
-            } else {
-              this.costMonths = d.costs;
-            }
-            this.showMonthlyVariableCost = true;
-            this.$.monthSelector.style.display = 'inline-block';
-
-            this.setMonth('JAN');
-
-          } else if( d.type == 'Annual Variable' ) {
-
-            if( !d.costs ) return;
-
-            var keys = Object.keys(d.costs);
-            if( keys.length == 0 ) return;
-            if( keys.length > 1 ) {
-              console.log('! cwn-cost-info found multiple keys for costs data');
-              console.log(keys);
-            }
-
-            this.costChartLabel = d.type+': '+keys[0];
-            this.costChartData = d.costs[keys[0]];
-            this.$.lineChart.update(this.costChartData);
-            this.showMonthlyVariableCost = true;
-            this.$.monthSelector.style.display = 'none';
-
-          } else {
-            alert('Unknown cost type: '+d.type);
           }
-        },
+      };
 
-        /*
-          --LBC (Lower Bound Constant),
-          --LBM (Lower Bound Monthly Varying)
-          --LBT (Lower Bound Time Varying)
-          --UBC (Upper Bound Constant)
-          --UBM (Upper Bound Monthly Varying)
-          --UBT (Upper Bound Time Varying)
-          --EQC (Equality Constraint: constant, this requires a time-series data)
-             -- is upper and lower bound, single line
-          --EQT (Equality Constraint: time, this requires a time-series data)
-            -- is upper and lower bound, single line
-          --NOB (No Bounds)
-        */
-        renderBounds : function(bounds) {
-          var data = {
-            upper: null,
-            lower : null,
-            NOB : false,
-            EQC : false,
-            use : 'constant'
-          }
+      this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
 
-          for( var i = 0; i < bounds.length; i++ ) {
-            if( bounds[i].type == 'LBC' || bounds[i].type == 'LBM' || bounds[i].type == 'LBT') {
-              data.lower = bounds[i];
-              if( bounds[i].type != 'LBC' ) data.use = 'lower';
+      this.showCostData = false;
+      this.showMonthlyVariableCost = false;
+      this.showConstantCost = false;
+      this.costChartLabel = '';
+      this.costChartData = [];
+      this.showBounds = false;
+      this.showConstantBounds = false;
+      this.showTimeSeriesBounds = false;
+      this.showChartBounds = false;
+      this.hasTimeSeries = false;
+      this.charts = {};
+    },
 
-            } else if ( bounds[i].type == 'UBC' || bounds[i].type == 'UBM' || bounds[i].type == 'UBT' ) {
-              data.upper = bounds[i];
-              if( bounds[i].type == 'UBM' || bounds[i].type == 'UBT' ) {
-                // if lower is date, we want to use the date
-                if( !(bounds[i].type != 'UBM' && data.use == 'lower') ) data.use = 'upper';
-              }
+    update : function() {
+        if( !this.feature ) return;
+        console.log(this.feature.properties.costs);
 
-            } else if ( bounds[i].type == 'NOB' ) {
-              data.NOB = true;
+        this.noCostData = true;
 
-            // TODO: this should proly render a special case
-            } else if ( bounds[i].type == 'EQC' || bounds[i].type == 'EQT' ) {
-              data.EQC = true;
-              data.lower = bounds[i];
-              data.upper = bounds[i];
-              data.use = 'upper';
-            }
+        this.constraintChart.data = [];
+        this.constraintChart.isTimeSeries = false;
+        this.hasTimeSeries = false;
+        this.constraintChart.constant = -1;
+        this.constraintChart.label = '';
 
-            if( bounds[i].type == 'UBT' || bounds[i].type == 'LBT' ||
-                bounds[i].type == 'EQC' || bounds[i].type == 'EQT') {
-              this.constraintChart.isTimeSeries = true;
+        this.showCostData = false;
+        this.showMonthlyVariableCost = false;
+        this.showConstantCost = false;
+        this.showConstantBounds = false;
+        this.$.constraintChartAnchor.innerHTML = '';
+        this.showBounds = false;
+        this.showConstantBounds = false;
 
-            }
-          }
+        if( !this.feature.properties.costs || !this.feature.properties.bounds ) return;
 
-          //  TODO: if NOB, just quit?
-          if( data.NOB ) return;
+        this.noCostData = false;
+        this.showCostData = true;
 
-          var chartData = [];
-
-          var length = 1;
-          if( data.upper && data.upper.type != 'UBC') {
-            length = data.upper.bound.length;
-          }
-          if( data.lower && data.lower.type != 'LBC' && data.lower.bounds > length ) {
-            length = data.lower.bound.length;
-          }
-
-          var header = ['Date'];
-          if( data.upper ) header.push('Upper Bound');
-          if( data.lower ) header.push('Lower Bound');
-
-          if( length == 1 ) length = 12;  // TODO: if len == 1, should we just show text?
-          for( var i = 0; i < length; i++ ) {
-            this.appendBoundsRow(data, chartData, i);
-          }
-
-          this.constraintChart.data = chartData;
-          this.updateConstraintUi();
-        },
-
-        appendBoundsRow : function(data, chartData, index) {
-          var row = [], ud, ld;
-
-          if( data.upper ) {
-            ud = this.getBoundsRow(data.upper, index);
-            row.push(ud[1]);
-          }
-          if( data.lower ) {
-            ld = this.getBoundsRow(data.lower, index);
-            row.push(ld[1]);
-          }
-
-          if( data.use == 'constant' ) row.splice(0, 0, index+'');
-          else if( data.use == 'upper' ) row.splice(0, 0, ud[0]);
-          else row.splice(0, 0, ld[0]);
-
-          chartData.push(row);
-        },
-
-        getBoundsRow : function(data, index) {
-          if( data.type == 'LBC' || data.type == 'UBC' ) {
-            if( index == 0 ) return ['Constant Lower', 'Constant Lower']
-            return ['', data.bound];
-          }
-
-          if( index > data.bound.length -1) {
-            index = index % 12;
-          }
-          if( index > data.bound.length -1) {
-            return ['Invalid', 0];
-          }
-
-          return data.bound[index];
-        },
-
-        /*renderBounds : function(bounds) {
-
-          if( bounds.constraint_type == 'Bounded' ) {
-            var length = this.getContraintsLength(bounds);
-            if( length < 12 ) length = 12;
-
-            for( var i = 0; i < length; i++ ) {
-              this.constraintChart.data.push(this.getConstraintRow(bounds, i));
-            }
-
-          } else if( bounds.constraint_type == 'Constrained' ) {
-
-            if( bounds.constraint.bound_type == 'Constant') {
-
-              this.constraintChart.constant = bounds.constraint.bound;
-
-            } else if( bounds.constraint.bound_type == 'Monthly') {
-
-              for( var i = 0; i < 12; i++ ) {
-                this.constraintChart.data.push([
-                  this.months[i],
-                  bounds.constraint.bound[i],
-                  null,
-                  null,
-                  'Constrained: '+bounds.constraint.bound[i]
-                ]);
-              }
-
-            } if( bounds.constraint.bound_type == 'TimeSeries') {
-
-              this.constraintChart.isTimeSeries = true;
-              this.hasTimeSeries = true;
-              for( var i = 0; i < bounds.constraint.bound.length; i++ ) {
-                this.constraintChart.data.push([
-                  bounds.constraint.date[i],
-                  bounds.constraint.bound[i],
-                  null,
-                  null,
-                  'Constrained: '+bounds.constraint.bound[i]
-                ]);
-              }
-
-            }
-
-          } else {
-            console.log('Unknown Constraint Type: '+bounds.constraint_type);
-          }
-
-          this.updateConstraintUi();
-        },
-
-        getConstraintRow : function(bounds, index) {
-          var row = [];
-
-          if( bounds.lower && bounds.lower.bound_type == 'TimeSeries' ) {
-            row.push(bounds.lower.date[index]);
-          } else if ( bounds.upper && bounds.upper.bound_type == 'TimeSeries' ) {
-            row.push(bounds.upper.date[index]);
-          } else {
-            row.push(this.months[index]);
-          }
-
-          var tooltip = row[0]+'\n';
-
-          if( bounds.upper ) {
-            if( bounds.upper.bound_type == 'Constant' ) {
-              row.push(bounds.upper.bound);
-              row.push(bounds.upper.bound);
-              tooltip += 'Upper: '+bounds.upper.bound;
-            } else if ( bounds.upper.bound_type == 'TimeSeries' || bounds.upper.bound_type == 'Monthly') {
-              var i = index;
-              if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
-                i = parseInt(row[0].split("-")[1])-1;
-              }
-
-              row.push(bounds.upper.bound[i]);
-              row.push(bounds.upper.bound[i]);
-              tooltip += 'Upper: '+bounds.upper.bound[i];
-            } else if ( bounds.upper.bound_type == 'None' ) {
-              tooltip += 'Upper: None';
-            }
-          }
-
-          if( bounds.lower ) {
-
-            if( bounds.lower.bound_type == 'Constant' ) {
-              row.push(bounds.lower.bound);
-              tooltip += ', Lower: '+bounds.lower.bound;
-            } else if ( bounds.lower.bound_type == 'TimeSeries' || bounds.lower.bound_type == 'Monthly' ) {
-              var i = index;
-              if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
-                i = parseInt(row[0].split("-")[1])-1;
-              }
-
-              row.push(bounds.lower.bound[i]);
-              tooltip += ', Lower: '+bounds.lower.bound[i];
-            } else if ( bounds.lower.bound_type == 'None' ) {
-              row.push(0);
-              tooltip += ', Lower: 0';
-            } else {
-               tooltip += ', Lower: Unknown';
-            }
-
-          }
-
-          while(row.length < 4) row.push(null);
-
-          row.push(tooltip);
-
-          return row;
-        },*/
-
-        getContraintsLength : function(bounds) {
-          var l = 0;
-          if( bounds.lower ) {
-            if( bounds.lower.bound_type == 'Constant' ) {
-              l = 1;
-            } else if ( bounds.lower.bound_type == 'TimeSeries' ) {
-              this.constraintChart.isTimeSeries = true;
-              this.hasTimeSeries = true;
-
-              l = bounds.lower.bound.length;
-            } else if ( bounds.lower.bound_type == 'Monthly' ) {
-              l = bounds.lower.bound.length;
-            }
-          }
-          if (bounds.upper ) {
-            if( bounds.upper.bound_type == 'Constant' && l == 0 ) {
-              l = 1;
-            } else if(bounds.upper.bound_type == 'TimeSeries' && l < bounds.upper.bound.length ) {
-              this.constraintChart.isTimeSeries = true;
-              this.hasTimeSeries = true;
-
-              l = bounds.upper.bound.length;
-            } else if ( bounds.upper.bound_type == 'Monthly' && l < bounds.upper.bound.length ) {
-              l = bounds.upper.bound.length;
-            }
-          }
-          return l;
-        },
-
-        // used by the month selector to update Monthly Variable chart's current month
-        // buttons for this UI are generated above.  Can take button click event
-        // or month string
-        setMonth : function(month) {
-          if( typeof month == 'object' ) month = month.currentTarget.innerHTML;
-          month = month.toUpperCase();
-
-          this.costChartLabel = this.costs.label+' - '+month;
-          this.costChartData = this.costMonths[month];
-
-          // redraw chart
-          this.$.lineChart.update(this.costChartData);
-        },
+        if( this.feature.properties.bounds ) this.renderBounds(this.feature.properties.bounds);
 
 
-        updateConstraintUi : function() {
-            if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
-                this.showBounds = true;
-            }
-
-            if( this.constraintChart.constant != -1 ) {
-                this.showConstantBounds = true;
-            }
-
-            this.$.constraintChartAnchor.innerHTML = '';
-            this.charts.constraintChart = null;
-
-            if( this.constraintChart.data.length != 0 ) {
-                var isline = false;
-
-                // stamp out cwn-date-linechart instead of just linechart
-                if( this.constraintChart.isTimeSeries ) {
-                    this.hasTimeSeries = true;
-                    this.charts.constraintChart = this._stamp(this.$.constraintChartTimeSeries, 'cwn-date-linechart', this.constraintChart);
-                } else {
-                    isline = true;
-                    this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
-                }
+        this.renderCostData(this.feature.properties.costs);
+    },
 
 
-                this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
 
-                if( isline ) {
-                  this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
-                }
-            }
-        },
+    renderCostData : function(d) {
+      this.costs.label = d.type;
 
-        // dom-template: http://polymer.github.io/polymer/
-        // doesn't seem to take variables when you stamp now :(
-        // setting manually.
-        _stamp : function(ele, query, data) {
-          var template = ele.stamp();
 
-          if( query && data ) {
-            var newEle = template.root.querySelector(query);
-            if( newEle ) {
-              for( var key in data ) newEle[key] = data[key];
-            }
-          }
+      if( d.type == 'Constant' ) {
 
-          return template;
+        this.showConstantCost = true;
+        this.costs.cost = d.cost;
+
+
+      } else if( d.type == 'Monthly Variable' ) {
+
+        this.showMonthlyVariableCost = true;
+
+        this.costsMonths = {};
+        var costArr;
+        if( !d.costs ) return;
+
+        if( d.costs.data ) {
+          this.costMonths = d.costs.data;
+        } else {
+          this.costMonths = d.costs;
+        }
+        this.showMonthlyVariableCost = true;
+        this.$.monthSelector.style.display = 'inline-block';
+
+        this.setMonth('JAN');
+
+      } else if( d.type == 'Annual Variable' ) {
+
+        if( !d.costs ) return;
+
+        var keys = Object.keys(d.costs);
+        if( keys.length == 0 ) return;
+        if( keys.length > 1 ) {
+          console.log('! cwn-cost-info found multiple keys for costs data');
+          console.log(keys);
         }
 
-    })
+        this.costChartLabel = d.type+': '+keys[0];
+        this.costChartData = d.costs[keys[0]];
+        this.$.lineChart.update(this.costChartData);
+        this.showMonthlyVariableCost = true;
+        this.$.monthSelector.style.display = 'none';
+
+      } else {
+        alert('Unknown cost type: '+d.type);
+      }
+    },
+
+    /*
+      --LBC (Lower Bound Constant),
+      --LBM (Lower Bound Monthly Varying)
+      --LBT (Lower Bound Time Varying)
+      --UBC (Upper Bound Constant)
+      --UBM (Upper Bound Monthly Varying)
+      --UBT (Upper Bound Time Varying)
+      --EQC (Equality Constraint: constant, this requires a time-series data)
+         -- is upper and lower bound, single line
+      --EQT (Equality Constraint: time, this requires a time-series data)
+        -- is upper and lower bound, single line
+      --NOB (No Bounds)
+    */
+    renderBounds : function(bounds) {
+      var data = {
+        upper: null,
+        lower : null,
+        NOB : false,
+        EQC : false,
+        use : 'constant'
+      }
+
+      for( var i = 0; i < bounds.length; i++ ) {
+        if( bounds[i].type == 'LBC' || bounds[i].type == 'LBM' || bounds[i].type == 'LBT') {
+          data.lower = bounds[i];
+          if( bounds[i].type != 'LBC' ) data.use = 'lower';
+
+        } else if ( bounds[i].type == 'UBC' || bounds[i].type == 'UBM' || bounds[i].type == 'UBT' ) {
+          data.upper = bounds[i];
+          if( bounds[i].type == 'UBM' || bounds[i].type == 'UBT' ) {
+            // if lower is date, we want to use the date
+            if( !(bounds[i].type != 'UBM' && data.use == 'lower') ) data.use = 'upper';
+          }
+
+        } else if ( bounds[i].type == 'NOB' ) {
+          data.NOB = true;
+
+        // TODO: this should proly render a special case
+        } else if ( bounds[i].type == 'EQC' || bounds[i].type == 'EQT' ) {
+          data.EQC = true;
+          data.lower = bounds[i];
+          data.upper = bounds[i];
+          data.use = 'upper';
+        }
+
+        if( bounds[i].type == 'UBT' || bounds[i].type == 'LBT' ||
+            bounds[i].type == 'EQC' || bounds[i].type == 'EQT') {
+          this.constraintChart.isTimeSeries = true;
+
+        }
+      }
+
+      //  TODO: if NOB, just quit?
+      if( data.NOB ) return;
+
+      var chartData = [];
+
+      var length = 1;
+      if( data.upper && data.upper.type != 'UBC') {
+        length = data.upper.bound.length;
+      }
+      if( data.lower && data.lower.type != 'LBC' && data.lower.bounds > length ) {
+        length = data.lower.bound.length;
+      }
+
+      var header = ['Date'];
+      if( data.upper ) header.push('Upper Bound');
+      if( data.lower ) header.push('Lower Bound');
+
+      if( length == 1 ) length = 12;  // TODO: if len == 1, should we just show text?
+      for( var i = 0; i < length; i++ ) {
+        this.appendBoundsRow(data, chartData, i);
+      }
+
+      this.constraintChart.data = chartData;
+      this.updateConstraintUi();
+    },
+
+    appendBoundsRow : function(data, chartData, index) {
+      var row = [], ud, ld;
+
+      if( data.upper ) {
+        ud = this.getBoundsRow(data.upper, index);
+        row.push(ud[1]);
+      }
+      if( data.lower ) {
+        ld = this.getBoundsRow(data.lower, index);
+        row.push(ld[1]);
+      }
+
+      if( data.use == 'constant' ) row.splice(0, 0, index+'');
+      else if( data.use == 'upper' ) row.splice(0, 0, ud[0]);
+      else row.splice(0, 0, ld[0]);
+
+      chartData.push(row);
+    },
+
+    getBoundsRow : function(data, index) {
+      if( data.type == 'LBC' || data.type == 'UBC' ) {
+        if( index == 0 ) return ['Constant Lower', 'Constant Lower']
+        return ['', data.bound];
+      }
+
+      if( index > data.bound.length -1) {
+        index = index % 12;
+      }
+      if( index > data.bound.length -1) {
+        return ['Invalid', 0];
+      }
+
+      return data.bound[index];
+    },
+
+    /*renderBounds : function(bounds) {
+
+      if( bounds.constraint_type == 'Bounded' ) {
+        var length = this.getContraintsLength(bounds);
+        if( length < 12 ) length = 12;
+
+        for( var i = 0; i < length; i++ ) {
+          this.constraintChart.data.push(this.getConstraintRow(bounds, i));
+        }
+
+      } else if( bounds.constraint_type == 'Constrained' ) {
+
+        if( bounds.constraint.bound_type == 'Constant') {
+
+          this.constraintChart.constant = bounds.constraint.bound;
+
+        } else if( bounds.constraint.bound_type == 'Monthly') {
+
+          for( var i = 0; i < 12; i++ ) {
+            this.constraintChart.data.push([
+              this.months[i],
+              bounds.constraint.bound[i],
+              null,
+              null,
+              'Constrained: '+bounds.constraint.bound[i]
+            ]);
+          }
+
+        } if( bounds.constraint.bound_type == 'TimeSeries') {
+
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+          for( var i = 0; i < bounds.constraint.bound.length; i++ ) {
+            this.constraintChart.data.push([
+              bounds.constraint.date[i],
+              bounds.constraint.bound[i],
+              null,
+              null,
+              'Constrained: '+bounds.constraint.bound[i]
+            ]);
+          }
+
+        }
+
+      } else {
+        console.log('Unknown Constraint Type: '+bounds.constraint_type);
+      }
+
+      this.updateConstraintUi();
+    },
+
+    getConstraintRow : function(bounds, index) {
+      var row = [];
+
+      if( bounds.lower && bounds.lower.bound_type == 'TimeSeries' ) {
+        row.push(bounds.lower.date[index]);
+      } else if ( bounds.upper && bounds.upper.bound_type == 'TimeSeries' ) {
+        row.push(bounds.upper.date[index]);
+      } else {
+        row.push(this.months[index]);
+      }
+
+      var tooltip = row[0]+'\n';
+
+      if( bounds.upper ) {
+        if( bounds.upper.bound_type == 'Constant' ) {
+          row.push(bounds.upper.bound);
+          row.push(bounds.upper.bound);
+          tooltip += 'Upper: '+bounds.upper.bound;
+        } else if ( bounds.upper.bound_type == 'TimeSeries' || bounds.upper.bound_type == 'Monthly') {
+          var i = index;
+          if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
+            i = parseInt(row[0].split("-")[1])-1;
+          }
+
+          row.push(bounds.upper.bound[i]);
+          row.push(bounds.upper.bound[i]);
+          tooltip += 'Upper: '+bounds.upper.bound[i];
+        } else if ( bounds.upper.bound_type == 'None' ) {
+          tooltip += 'Upper: None';
+        }
+      }
+
+      if( bounds.lower ) {
+
+        if( bounds.lower.bound_type == 'Constant' ) {
+          row.push(bounds.lower.bound);
+          tooltip += ', Lower: '+bounds.lower.bound;
+        } else if ( bounds.lower.bound_type == 'TimeSeries' || bounds.lower.bound_type == 'Monthly' ) {
+          var i = index;
+          if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
+            i = parseInt(row[0].split("-")[1])-1;
+          }
+
+          row.push(bounds.lower.bound[i]);
+          tooltip += ', Lower: '+bounds.lower.bound[i];
+        } else if ( bounds.lower.bound_type == 'None' ) {
+          row.push(0);
+          tooltip += ', Lower: 0';
+        } else {
+           tooltip += ', Lower: Unknown';
+        }
+
+      }
+
+      while(row.length < 4) row.push(null);
+
+      row.push(tooltip);
+
+      return row;
+    },*/
+
+    getContraintsLength : function(bounds) {
+      var l = 0;
+      if( bounds.lower ) {
+        if( bounds.lower.bound_type == 'Constant' ) {
+          l = 1;
+        } else if ( bounds.lower.bound_type == 'TimeSeries' ) {
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+
+          l = bounds.lower.bound.length;
+        } else if ( bounds.lower.bound_type == 'Monthly' ) {
+          l = bounds.lower.bound.length;
+        }
+      }
+      if (bounds.upper ) {
+        if( bounds.upper.bound_type == 'Constant' && l == 0 ) {
+          l = 1;
+        } else if(bounds.upper.bound_type == 'TimeSeries' && l < bounds.upper.bound.length ) {
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+
+          l = bounds.upper.bound.length;
+        } else if ( bounds.upper.bound_type == 'Monthly' && l < bounds.upper.bound.length ) {
+          l = bounds.upper.bound.length;
+        }
+      }
+      return l;
+    },
+
+    // used by the month selector to update Monthly Variable chart's current month
+    // buttons for this UI are generated above.  Can take button click event
+    // or month string
+    setMonth : function(month) {
+      if( typeof month == 'object' ) month = month.currentTarget.innerHTML;
+      month = month.toUpperCase();
+
+      this.costChartLabel = this.costs.label+' - '+month;
+      this.costChartData = this.costMonths[month];
+
+      // redraw chart
+      this.$.lineChart.update(this.costChartData);
+    },
+
+
+    updateConstraintUi : function() {
+        if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
+            this.showBounds = true;
+        }
+
+        if( this.constraintChart.constant != -1 ) {
+            this.showConstantBounds = true;
+        }
+
+        this.$.constraintChartAnchor.innerHTML = '';
+        this.charts.constraintChart = null;
+
+        if( this.constraintChart.data.length != 0 ) {
+            var isline = false;
+
+            // stamp out cwn-date-linechart instead of just linechart
+            if( this.constraintChart.isTimeSeries ) {
+                this.hasTimeSeries = true;
+                this.charts.constraintChart = this._stamp(this.$.constraintChartTimeSeries, 'cwn-date-linechart', this.constraintChart);
+            } else {
+                isline = true;
+                this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
+            }
+
+
+            this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
+
+            if( isline ) {
+              this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
+            }
+        }
+    },
+
+    // dom-template: http://polymer.github.io/polymer/
+    // doesn't seem to take variables when you stamp now :(
+    // setting manually.
+    _stamp : function(ele, query, data) {
+      var template = ele.stamp();
+
+      if( query && data ) {
+        var newEle = template.root.querySelector(query);
+        if( newEle ) {
+          for( var key in data ) newEle[key] = data[key];
+        }
+      }
+
+      return template;
+    }
+
+});
 ;
 Polymer({
     is : 'cwn-info-page',
@@ -7658,10 +7751,6 @@ Polymer({
 
       this.notifyPath('filters.start', e.detail.start);
       this.notifyPath('filters.stop', e.detail.end);
-    },
-
-    back : function() {
-      window.location.hash = 'map'
     },
 
     _setCostMonth : function(e) {
@@ -8765,16 +8854,18 @@ Polymer({
         setLocation : function() {
           var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
           if( loc == '') loc = 'map';
+          this.$.backBtn.style.display = 'none';
+
 
           if( loc == 'map' ) {
-            //this.$.pages.selected = this.PAGES.MAP;
             this.selectedPage = this.PAGES.map;
             this.async(function(){
               var ele = this.querySelector('cwn-map');
               if( ele && ele.map ) ele.map.invalidateSize();
             });
           } else if ( loc == 'info' ) {
-            //this.$.pages.selected = this.PAGES.INFO;
+            this.$.backBtn.style.display = 'inline-block';
+
             this.selectedPage = this.PAGES.info;
             if( this.dataLoaded ) {
               this.setInfoFeature();
@@ -8810,6 +8901,10 @@ Polymer({
 
         showFilters : function() {
             this.$.filters.toggle();
+        },
+
+        search : function() {
+          this.$.search.show();
         },
 
         updateGraph : function() {

@@ -1,0 +1,109 @@
+<dom-module id="cwn-search">
+  <template>
+    <cwn-popup id="popup" style="z-index: 10000">
+      <div class="popup-body" id="body">
+
+        <div class="form-horizontal">
+          <div class="form-group">
+            <label for="input" class="col-sm-2 control-label">Search</label>
+            <div class="col-sm-10">
+              <input type="input" class="form-control" id="input" placeholder="Search Text" on-keyup="onKeypress">
+            </div>
+          </div>
+        </div>
+
+        <div id="results"></div>
+
+      </div>
+    </cwn-popup>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is : 'cwn-search',
+
+    ready : function() {
+      this.$.popup.header = 'Find Node or Link';
+      this.MAX_RESULTS = 50;
+    },
+
+    show : function() {
+      this.$.popup.show();
+      setTimeout(function(){
+        this.$.input.focus();
+      }.bind(this), 200);
+
+    },
+
+    onKeypress : function(e) {
+      this.search(e.currentTarget.value);
+    },
+
+    search : function(txt) {
+      txt = txt.toLowerCase();
+
+      var matchCount = 0;
+      this.prmnameMatches = [];
+      this.otherMatches = [];
+
+
+      var types = ['nodes', 'links'];
+
+      types.forEach(function(type){
+        var arr = CWN.ds.data[type];
+        for( var i = 0; i < arr.length; i++ ) {
+          if( arr[i].properties.prmname.toLowerCase().indexOf(txt) > -1 ) {
+            if( matchCount > this.MAX_RESULTS ) break;
+            matchCount++;
+            this.prmnameMatches.push(arr[i]);
+          }
+        }
+      }.bind(this));
+
+      var types = ['nodes', 'links'];
+
+      if( matchCount < this.MAX_RESULTS ) {
+        types.forEach(function(type){
+          var arr = CWN.ds.data[type];
+          for( var i = 0; i < arr.length; i++ ) {
+            if( arr[i].properties.description.toLowerCase().indexOf(txt) > -1 ) {
+              if( matchCount > this.MAX_RESULTS ) break;
+              matchCount++;
+              this.otherMatches.push(arr[i]);
+            }
+          }
+        }.bind(this));
+      }
+
+      this.renderResults();
+    },
+
+    renderResults : function() {
+      var list = '';
+      for( var i = 0; i < this.prmnameMatches.length; i++ ) {
+        list += this.renderResult(this.prmnameMatches[i]);
+      }
+      for( var i = 0; i < this.otherMatches.length; i++ ) {
+        list += this.renderResult(this.otherMatches[i]);
+      }
+
+      this.$.results.innerHTML = list;
+      $(this.$.results).find('a').on('click', function(){
+        this.$.popup.hide();
+      }.bind(this));
+    },
+
+    renderResult : function(feature) {
+      return '<div class="layout horizontal">'+
+        '<div style="padding:15px 5px; width: 50px"><cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon></div>'+
+        '<div class="flex">'+
+          '<h4><a style="font-size: 18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a> <small>'+feature.properties.type+'</small></h4>'+
+          (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
+          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+        '</div>'+
+      '</div>'
+    }
+
+  })
+</script>

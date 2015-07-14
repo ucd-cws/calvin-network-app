@@ -230,10 +230,6 @@ Polymer({
       this.notifyPath('filters.stop', e.detail.end);
     },
 
-    back : function() {
-      window.location.hash = 'map'
-    },
-
     _setCostMonth : function(e) {
       this.$.costInfo.setMonth(parseInt(e.currentTarget.getAttribute('index')));
     },

@@ -1,6 +1,6 @@
 <!--<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">-->
-<link rel="import" href="cwn-node-info.html" />
-<link rel="import" href="cwn-cost-info.html" />
+<link rel="import" href="node/cwn-node-info.html" />
+<link rel="import" href="cost/cwn-cost-info.html" />
 
 <dom-module id="cwn-info-page">
     <style>
@@ -13,25 +13,11 @@
         box-shadow: 0 0 5px #888;
         padding: 15px;
       }
-
-      .back-btn {
-        display: inline-block;
-
-        color: #333 !important;
-        background-color: #ccc;
-        border-radius: 50px;
-        font-size: 40px;
-        padding: 0px 12px;
-        margin: 10px;
-        z-index: 100;
-        cursor: pointer;
-      }
     </style>
 
     <template>
-      <a class="back-btn" on-click="back"><i class="fa fa-arrow-left"></i></a>
 
-      <div class="card" hidden$="{{loading}}">
+      <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
 
@@ -123,5 +109,4 @@
 
     </template>
 </dom-module>
-
 <script src="controller.js"></script>

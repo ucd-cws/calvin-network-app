@@ -349,6 +349,7 @@ Copyright (c) 2015 Daniel Eden
 
 
 
+
 </head><body><div hidden="">
 
 <dom-module id="cwn-info-link">
@@ -535,7 +536,6 @@ Copyright (c) 2015 Daniel Eden
     <style>
         .navbar-inverse {
             box-shadow: 0 0 5px black;
-            z-index: 10000 !important;
         }
         li {
             cursor: pointer;
@@ -713,6 +713,29 @@ Copyright (c) 2015 Daniel Eden
 </dom-module>
 
 
+<dom-module id="cwn-search">
+  <template>
+    <cwn-popup id="popup" style="z-index: 10000">
+      <div class="popup-body" id="body">
+
+        <div class="form-horizontal">
+          <div class="form-group">
+            <label for="input" class="col-sm-2 control-label">Search</label>
+            <div class="col-sm-10">
+              <input type="input" class="form-control" id="input" placeholder="Search Text" on-keyup="onKeypress">
+            </div>
+          </div>
+        </div>
+
+        <div id="results"></div>
+
+      </div>
+    </cwn-popup>
+  </template>
+</dom-module>
+
+
+
 <dom-module id="cwn-node-info">
     <style>
         #middleCol {
@@ -789,14 +812,16 @@ Copyright (c) 2015 Daniel Eden
                     <td>
                       <cwn-app-icon type$="{{type}}" width="72" height="72" fillfromtype="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
                     </td><td>
-                      <h2>{{feature.properties.prmname}}</h2>
+                      <h2>{{label}}</h2>
                       <div><b>{{feature.properties.type}}</b></div>
-
                     </td>
                   </tr>
                 </tbody></table>
                 <div style="padding: 10px 10px 0 10px; color: #888">{{feature.properties.description}}</div>
-                <div hidden$="{{!showNavLinks}}">
+
+                <div id="regions"></div>
+
+                <div hidden$="{{!showNavLinks}}" style="margin-top: 15px; border-top: 1px solid #eee">
                   <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
                   <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
                 </div>
@@ -852,7 +877,6 @@ Copyright (c) 2015 Daniel Eden
         </div>
     </template>
 </dom-module>
-
 
 
 <dom-module id="cwn-cost-info">
@@ -914,25 +938,11 @@ Copyright (c) 2015 Daniel Eden
         box-shadow: 0 0 5px #888;
         padding: 15px;
       }
-
-      .back-btn {
-        display: inline-block;
-
-        color: #333 !important;
-        background-color: #ccc;
-        border-radius: 50px;
-        font-size: 40px;
-        padding: 0px 12px;
-        margin: 10px;
-        z-index: 100;
-        cursor: pointer;
-      }
     </style>
 
     <template>
-      <a class="back-btn" on-click="back"><i class="fa fa-arrow-left"></i></a>
 
-      <div class="card" hidden$="{{loading}}">
+      <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
 
@@ -1015,7 +1025,6 @@ Copyright (c) 2015 Daniel Eden
 
     </template>
 </dom-module>
-
 
 
 <dom-module id="cwn-graph">
@@ -1227,6 +1236,8 @@ Copyright (c) 2015 Daniel Eden
     </style>
 
     <template>
+        <cwn-search id="search"></cwn-search>
+
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
             Loading Network...<br>
@@ -1234,21 +1245,31 @@ Copyright (c) 2015 Daniel Eden
         </div>
 
         <cwn-app-layout>
-            <a right-nav="" on-click="showFilters">
-              <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
-              <span class="visible-xs"><i class="fa fa-filter"></i></span>
-            </a>
+          <a right-nav="" href="#map" id="backBtn">
+            <span class="hidden-xs"><i class="fa fa-arrow-left"></i> Back</span>
+            <span class="visible-xs"><i class="fa fa-arrow-left"></i></span>
+          </a>
 
-            <cwn-filters id="filters" content="" legend="{{legend}}" on-update="onFiltersUpdated"></cwn-filters>
+          <a right-nav="" on-click="search">
+            <span class="hidden-xs"><i class="fa fa-search"></i> Search</span>
+            <span class="visible-xs"><i class="fa fa-search"></i></span>
+          </a>
 
-            <cwn-map content="" id="map" on-selected="onFeatureSelected" on-filtering-complete="updateGraph">
-            </cwn-map>
+          <a right-nav="" on-click="showFilters">
+            <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
+            <span class="visible-xs"><i class="fa fa-filter"></i></span>
+          </a>
 
-            <cwn-info-page content="" id="info">
-            </cwn-info-page>
+          <cwn-filters id="filters" content="" legend="{{legend}}" on-update="onFiltersUpdated"></cwn-filters>
 
-            <cwn-graph content="" class="fit" id="graph">
-            </cwn-graph>
+          <cwn-map content="" id="map" on-selected="onFeatureSelected" on-filtering-complete="updateGraph">
+          </cwn-map>
+
+          <cwn-info-page content="" id="info">
+          </cwn-info-page>
+
+          <cwn-graph content="" class="fit" id="graph">
+          </cwn-graph>
 
         </cwn-app-layout>
 

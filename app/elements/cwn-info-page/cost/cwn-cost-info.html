@@ -1,0 +1,57 @@
+<dom-module id="cwn-cost-info">
+    <template>
+        <h2 class="page-header">Costs</h2>
+
+        <div class="alert alert-info" hidden$="{{!noCostData}}">
+          This node has no cost data associated with it.
+        </div>
+
+        <div hidden$="{{!showCostData}}">
+          <div hidden$="{{!showMonthlyVariableCost}}">
+
+            <div class="btn-group" id="monthSelector">
+              <template is="dom-repeat" items="{{months}}">
+                <a class="btn btn-xs btn-primary"
+                  on-click="setMonth">{{item}}</a>
+              </template>
+            </div>
+
+            <cwn-linechart
+              id="lineChart"
+              label="{{costChartLabel}}"
+              xlabel="Capacity (kAF)"
+              ylabel="Cost ($/kAF)"
+              animate="true">
+            </cwn-linechart>
+          </div>
+
+          <div hidden$="{{!showConstantCost}}">
+            <h5>Constant: $<span>{{costs.cost}}</span></h5>
+          </div>
+
+        </div>
+
+        <h4 hidden$="{{!showBounds}}">Bounds</h4>
+
+        <h5 hidden$="{{!showConstantBounds}}">
+          Constant: $<span>{{constraintChart.constant}}</span>
+        </h5>
+
+
+        <div id="constraintChartAnchor"></div>
+
+        <template is="dom-template" id="constraintChartTimeSeries">
+          <cwn-date-linechart animate></cwn-date-linechart>
+        </template>
+
+        <template is="dom-template" id="constraintChart">
+          <cwn-linechart
+            cols="{{cols}}"
+            options="{{options}}"
+            animate>
+          </cwn-linechart>
+        </template>
+    </template>
+</dom-module>
+
+<script src="controller.js"></script>
