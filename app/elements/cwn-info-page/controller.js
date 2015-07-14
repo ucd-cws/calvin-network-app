@@ -117,73 +117,48 @@ Polymer({
 
       this.eacChart.data = [];
 
-      this.loadClimateData();
-    },
+      var props = this.feature.properties;
+      if( !props.inflows && !props.el_ar_cap ) return;
 
-    loadClimateData : function() {
-      this.showClimateData = false;
-      if( !this.feature.properties.hasClimate ) return;
 
-      this.climateLoading = true;
-      this.inflows = [];
+      this.showClimateData = true;
+      this.renderClimateData(props.inflows, props.el_ar_cap);
 
-      var type;
-      if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-        type = 'link';
-      } else {
-        type = 'node';
-      }
-
-      var params = '?prmname='+ this.feature.properties.prmname +
-        '&type=' + type + '&attribute=climate'
-
-      $.ajax({
-          url : '/rest/getAttribute'+params,
-          success : function(resp) {
-            this.climateLoading = false;
-            if( !resp.climate ) return this.climateLoadError = true;
-
-            this.showClimateData = true;
-            this.renderClimateData(JSON.parse(resp.climate));
-
-            this.async(function(){
-              this.$.dateslider.resize();
-            });
-          }.bind(this),
-          error : function(resp) {
-            this.climateLoadError = true;
-          }.bind(this)
+      this.async(function(){
+        this.$.dateslider.resize();
       });
+
     },
 
-    renderClimateData : function(data) {
+    renderClimateData : function(inflows, el_ar_cap) {
 
-      if( data.inflows ) {
-        for( var i = 0; i < data.inflows.length; i++ ) {
+      if( inflows ) {
+        for( var name in inflows ) {
           var inflow = {
-            label : data.inflows[i].name,
-            data : []
+            label : name,
+            description : inflows[name].description || '',
+            data : inflows[name].inflow
           };
-          for( var j = 0; j < data.inflows[i].date.length; j++ ) {
-            inflow.data.push([data.inflows[i].date[j], data.inflows[i].inflow[j]]);
-          }
+          //for( var j = 0; j < inflows[i].date.length; j++ ) {
+          //  inflow.data.push([inflows[i].date[j], inflows[i].inflow[j]]);
+          //}
           this.inflows.push(inflow);
         }
       }
 
       this.eacChart.data = [];
-      if( data.el_ar_cap ) {
+      if( el_ar_cap ) {
 
         var max = 0;
-        for( var i = 0; i < data.el_ar_cap.length; i++ ) {
+        for( var i = 0; i < el_ar_cap.length; i++ ) {
           this.eacChart.data.push([
-            data.el_ar_cap[i].capacity,
-            data.el_ar_cap[i].elevation,
-            data.el_ar_cap[i].area,
+            el_ar_cap[i].capacity,
+            el_ar_cap[i].elevation,
+            el_ar_cap[i].area,
             null,
             null
           ]);
-          if( data.el_ar_cap[i].elevation > max ) max = data.el_ar_cap[i].elevation;
+          if( el_ar_cap[i].elevation > max ) max = el_ar_cap[i].elevation;
         }
 
         if( this.feature.properties.initialstorage ) {

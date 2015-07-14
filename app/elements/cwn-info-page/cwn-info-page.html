@@ -34,7 +34,7 @@
       <div class="card" hidden$="{{loading}}">
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
-      
+
       <!-- End Header Card -->
       <div hidden$="{{!showDateRangeSlider}}">
         <div style="padding:20px 50px 5px 50px">
@@ -54,7 +54,7 @@
           <div class="card">
             <h2 class="page-header">Climate</h2>
 
-            <div class="alert alert-info" hidden$="{{feature.properties.hasClimate}}">
+            <div class="alert alert-info" hidden$="{{showClimateData}}">
               This node has no climate data associated with it.
             </div>
             <div class="alert alert-error" hidden$="{{!climateLoadError}}">
@@ -70,7 +70,7 @@
                 <h4>Inflows</h4>
               </div>
 
-              <template is="x-repeat" items="{{inflows}}">
+              <template is="dom-repeat" items="{{inflows}}">
                 <cwn-date-linechart
                   label="{{item.label}}"
                   ylabel="Flow (kaf)"
@@ -80,7 +80,7 @@
               </template>
 
               <div id="eacChartRoot"></div>
-              <template id="eacChart" is="x-template">
+              <template id="eacChart" is="dom-template">
                 <h4>Elevation / Area / Capacity</h4>
                 <cwn-linechart
                   data="{{data}}"
