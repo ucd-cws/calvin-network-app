@@ -1,8 +1,6 @@
 Polymer({
     is : 'cwn-info-page',
 
-    behaviors : [InfoPageDomControllers],
-
     properties : {
       hasTimeSeries : {
         type : Boolean,
@@ -116,13 +114,14 @@ Polymer({
       this.updateDateSliderVisibility();
 
       this.eacChart.data = [];
+      this.evaporationData = null;
 
       var props = this.feature.properties;
-      if( !props.inflows && !props.el_ar_cap ) return;
+      if( !props.inflows && !props.el_ar_cap && !props.evaporation) return;
 
 
       this.showClimateData = true;
-      this.renderClimateData(props.inflows, props.el_ar_cap);
+      this.renderClimateData(props.inflows, props.el_ar_cap, props.evaporation);
 
       this.async(function(){
         this.$.dateslider.resize();
@@ -130,35 +129,62 @@ Polymer({
 
     },
 
-    renderClimateData : function(inflows, el_ar_cap) {
-
+    renderClimateData : function(inflows, el_ar_cap, evaporation) {
+debugger;
       if( inflows ) {
+        this.$.inflowCharts.innerHTML = '';
+
         for( var name in inflows ) {
-          var inflow = {
+          /*var inflow = {
             label : name,
             description : inflows[name].description || '',
             data : inflows[name].inflow
-          };
-          //for( var j = 0; j < inflows[i].date.length; j++ ) {
-          //  inflow.data.push([inflows[i].date[j], inflows[i].inflow[j]]);
-          //}
-          this.inflows.push(inflow);
+          };*/
+
+          var chart = document.createElement('cwn-date-linechart');
+          chart.label = (inflows[name].description || name || ''),
+          chart.data = inflows[name].inflow;
+
+          this.$.inflowCharts.appendChild(chart);
         }
+
+        this.$.inflows.style.display = 'block';
+      } else {
+        this.$.inflows.style.display = 'none';
+      }
+
+      if( evaporation ) {
+        this.$.evaporationChart.update(evaporation);
+        this.evaporationData = evaporation;
+        this.$.evaporation.style.display = 'block';
+      } else {
+        this.$.evaporation.style.display = 'none';
       }
 
       this.eacChart.data = [];
       if( el_ar_cap ) {
-
         var max = 0;
+        var elevationCol = 0, capacityCol = 0, areaCol = 0;
+
         for( var i = 0; i < el_ar_cap.length; i++ ) {
-          this.eacChart.data.push([
-            el_ar_cap[i].capacity,
-            el_ar_cap[i].elevation,
-            el_ar_cap[i].area,
-            null,
-            null
-          ]);
-          if( el_ar_cap[i].elevation > max ) max = el_ar_cap[i].elevation;
+          // make sure col labels are set correctly
+          if( i == 0 ) {
+            for( var j = 0; j < el_ar_cap[i].length; j ++ ) {
+              if( el_ar_cap[i][j].toLowerCase() == 'elevation' ) elevationCol = j;
+              else if( el_ar_cap[i][j].toLowerCase() == 'capacity' ) capacityCol = j;
+              else if( el_ar_cap[i][j].toLowerCase() == 'area' ) areaCol = j;
+            }
+          } else {
+            this.eacChart.data.push([
+              el_ar_cap[i][capacityCol],
+              el_ar_cap[i][elevationCol],
+              el_ar_cap[i][areaCol],
+              null,
+              null
+            ]);
+          }
+
+          if( el_ar_cap[i][elevationCol] > max ) max = el_ar_cap[i][elevationCol];
         }
 
         if( this.feature.properties.initialstorage ) {
@@ -172,8 +198,8 @@ Polymer({
         }
 
         this.eacChart.data.sort(function(a,b){
-          if( a[0] > b[0] ) return 1;
-          if( a[0] < b[0] ) return -1;
+          if( a[capacityCol] > b[capacityCol] ) return 1;
+          if( a[capacityCol] < b[capacityCol] ) return -1;
           return 0;
         });
       }
@@ -192,8 +218,8 @@ Polymer({
         eles[i].update();
       }
 
-      this.setPathValue('filters.start', e.detail.start);
-      this.setPathValue('filters.stop', e.detail.end);
+      this.notifyPath('filters.start', e.detail.start);
+      this.notifyPath('filters.stop', e.detail.end);
     },
 
     back : function() {
@@ -202,6 +228,46 @@ Polymer({
 
     _setCostMonth : function(e) {
       this.$.costInfo.setMonth(parseInt(e.currentTarget.getAttribute('index')));
+    },
+
+    // dom-template: http://polymer.github.io/polymer/
+    // doesn't seem to take variables when you stamp now :(
+    // setting manually.
+    _stamp : function(ele, query, data) {
+      var template = ele.stamp();
+
+      if( query && data ) {
+        var newEle = template.root.querySelector(query);
+        if( newEle ) {
+          for( var key in data ) newEle[key] = data[key];
+        }
+      }
+
+      return template;
+    },
+
+    updateDateSliderVisibility : function() {
+      if( !this.inflows ) return;
+        this.showDateRangeSlider = this.inflows.length > 0 || this.hasTimeSeries
+    },
+
+    stampEacChart : function() {
+      if( !this.eacChart ) return;
+
+        if( this.eacChart.data.length == 0 ) {
+
+            this.charts.eacChart = null;
+            this.$.eacChartRoot.innerHTML = '';
+
+        } else if( !this.charts.eacChart ) {
+
+            this.charts.eacChart = this._stamp(this.$.eacChart, 'cwn-linechart', this.eacChart);
+            this.$.eacChartRoot.appendChild(this.charts.eacChart.root);
+
+            this.async(function(){
+                this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
+            });
+        }
     }
 
 });

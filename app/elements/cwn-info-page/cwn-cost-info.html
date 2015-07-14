@@ -41,14 +41,7 @@
         <div id="constraintChartAnchor"></div>
 
         <template is="dom-template" id="constraintChartTimeSeries">
-          <cwn-date-linechart
-            data="{{data}}"
-            cols="{{cols}}"
-            options="{{options}}"
-            start="{{start}}"
-            stop="{{stop}}"
-            animate>
-          </cwn-date-linechart>
+          <cwn-date-linechart animate></cwn-date-linechart>
         </template>
 
         <template is="dom-template" id="constraintChart">
@@ -90,13 +83,13 @@
               constant: -1,
               label : '',
               isTimeSeries : false,
-              cols : [
+              /*cols : [
                   {id:'date', type:'string'},
                   {id:'upper_value', type:'number'},
                   {id:'upper_interval', type:'number', role:'interval'},
                   {id:'lower_interval', type:'number', role:'interval'},
                   {id: 'tooltip', type: 'string', role:'tooltip'}
-              ],
+              ],*/
               data : [],
               options : {
                   series: [{'color': '#F1CA3A'}],
@@ -179,7 +172,7 @@
               this.costMonths = d.costs;
             }
             this.showMonthlyVariableCost = true;
-            this.$.monthSelector.style.display = 'block';
+            this.$.monthSelector.style.display = 'inline-block';
 
             this.setMonth('JAN');
 
@@ -213,6 +206,7 @@
           --UBM (Upper Bound Monthly Varying)
           --UBT (Upper Bound Time Varying)
           --EQC (Equality Constraint, this requires a time-series data)
+             -- is upper and lower bound, single line
           --NOB (No Bounds)
         */
         renderBounds : function(bounds) {
@@ -241,14 +235,12 @@
             } else if ( bounds[i].type == 'EQC' ) {
               data.EQC = true;
             }
+
+            if( bounds[i].type == 'UBT' || bounds[i].type == 'LBT' ) this.constraintChart.isTimeSeries = true;
           }
 
           //  TODO: if NOB, just quit?
-
           var chartData = [];
-
-          var isTimeSeries = false;
-          var isMonthly = false;
 
           var length = 1;
           if( data.upper && data.upper.type != 'UBC') {
@@ -292,6 +284,7 @@
 
         getBoundsRow : function(data, index) {
           if( data.type == 'LBC' || data.type == 'UBC' ) {
+            if( index == 0 ) return ['Constant Lower', 'Constant Lower']
             return ['', data.bound];
           }
 
@@ -446,16 +439,20 @@
           return l;
         },
 
+        // used by the month selector to update Monthly Variable chart's current month
+        // buttons for this UI are generated above.  Can take button click event
+        // or month string
         setMonth : function(month) {
           if( typeof month == 'object' ) month = month.currentTarget.innerHTML;
           month = month.toUpperCase();
 
-          //this.costs.selected = (typeof index == 'object') ? parseInt(index.currentTarget.getAttribute('index')) : index;
-
           this.costChartLabel = this.costs.label+' - '+month;
           this.costChartData = this.costMonths[month];
+
+          // redraw chart
           this.$.lineChart.update(this.costChartData);
         },
+
 
         updateConstraintUi : function() {
             if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
@@ -469,13 +466,13 @@
             this.$.constraintChartAnchor.innerHTML = '';
             this.charts.constraintChart = null;
 
-
             if( this.constraintChart.data.length != 0 ) {
                 var isline = false;
 
+                // stamp out cwn-date-linechart instead of just linechart
                 if( this.constraintChart.isTimeSeries ) {
                     this.hasTimeSeries = true;
-                    this.charts.constraintChart = this.$.constraintChartTimeSeries.stamp(this.constraintChart);
+                    this.charts.constraintChart = this._stamp(this.$.constraintChartTimeSeries, 'cwn-date-linechart', this.constraintChart);
                 } else {
                     isline = true;
                     this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
@@ -488,8 +485,23 @@
                   this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
                 }
             }
-        }
+        },
 
+        // dom-template: http://polymer.github.io/polymer/
+        // doesn't seem to take variables when you stamp now :(
+        // setting manually.
+        _stamp : function(ele, query, data) {
+          var template = ele.stamp();
+
+          if( query && data ) {
+            var newEle = template.root.querySelector(query);
+            if( newEle ) {
+              for( var key in data ) newEle[key] = data[key];
+            }
+          }
+
+          return template;
+        }
 
     })
 </script>
