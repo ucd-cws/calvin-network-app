@@ -7544,6 +7544,7 @@ Polymer({
       this.eacChart.data = [];
       this.evaporationData = null;
       this.hasInflows = false;
+      this.hasEvaporation = false;
 
       var props = this.feature.properties;
       if( props.inflows || props.el_ar_cap || props.evaporation) {
@@ -7587,6 +7588,7 @@ Polymer({
       }
 
       if( evaporation ) {
+        this.hasEvaporation = true;
         this.$.evaporationChart.update(evaporation);
         this.evaporationData = evaporation;
         this.$.evaporation.style.display = 'block';
@@ -7683,7 +7685,7 @@ Polymer({
     },
 
     updateDateSliderVisibility : function() {
-      this.$.dateRangeSlider.style.display = (this.hasInflows || this.hasTimeSeries) ? 'block' : 'none';
+      this.$.dateRangeSlider.style.display = (this.hasInflows || this.hasTimeSeries || this.hasEvaporation) ? 'block' : 'none';
     },
 
     stampEacChart : function() {
