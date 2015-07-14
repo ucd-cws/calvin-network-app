@@ -107,8 +107,7 @@
 
             var panel = $('<div class="menu-root cwn-map-menu"></div>');
             var input = $('<div class="menu-item cwn-map-menu" name="'+region.name+'">'+
-                          '<input type="checkbox" name="'+region.name+'" ' +
-                            ( region.name == 'California' ? 'checked' : '') +' /> '+region.name+'</div>');
+                          '<input type="checkbox" name="'+region.name+'" /> '+region.name+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
             panel.append(input);

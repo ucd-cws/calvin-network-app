@@ -190,6 +190,10 @@
 
             this.updateRenderState();
             this.update();
+
+            setTimeout(function(){
+              $('.menu-item[name="California"]').trigger('click');
+            }, 200);
         },
 
         update : function() {

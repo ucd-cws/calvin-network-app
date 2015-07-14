@@ -23,6 +23,9 @@
     "animate-css": "~*",
     "d3": "*",
     "sigma.js": "*",
-    "polymer": "Polymer/polymer#^1.0.5"
+    "polymer": "Polymer/polymer#^1.0.5",
+    "bower": "*",
+    "install": "~1.0.4",
+    "bootswatch-dist": "paper"
   }
 }

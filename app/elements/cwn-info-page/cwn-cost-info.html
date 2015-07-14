@@ -205,8 +205,10 @@
           --UBC (Upper Bound Constant)
           --UBM (Upper Bound Monthly Varying)
           --UBT (Upper Bound Time Varying)
-          --EQC (Equality Constraint, this requires a time-series data)
+          --EQC (Equality Constraint: constant, this requires a time-series data)
              -- is upper and lower bound, single line
+          --EQT (Equality Constraint: time, this requires a time-series data)
+            -- is upper and lower bound, single line
           --NOB (No Bounds)
         */
         renderBounds : function(bounds) {
@@ -232,14 +234,25 @@
 
             } else if ( bounds[i].type == 'NOB' ) {
               data.NOB = true;
-            } else if ( bounds[i].type == 'EQC' ) {
+
+            // TODO: this should proly render a special case
+            } else if ( bounds[i].type == 'EQC' || bounds[i].type == 'EQT' ) {
               data.EQC = true;
+              data.lower = bounds[i];
+              data.upper = bounds[i];
+              data.use = 'upper';
             }
 
-            if( bounds[i].type == 'UBT' || bounds[i].type == 'LBT' ) this.constraintChart.isTimeSeries = true;
+            if( bounds[i].type == 'UBT' || bounds[i].type == 'LBT' ||
+                bounds[i].type == 'EQC' || bounds[i].type == 'EQT') {
+              this.constraintChart.isTimeSeries = true;
+
+            }
           }
 
           //  TODO: if NOB, just quit?
+          if( data.NOB ) return;
+
           var chartData = [];
 
           var length = 1;

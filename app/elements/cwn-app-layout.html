@@ -21,7 +21,7 @@
             line-height: 20px;
             position: relative;
             display: inline-block;
-            color: #888 !important;
+            color: white !important;
             cursor: pointer;
 
             background-color: rgba(255,255,255,.1);
@@ -30,17 +30,18 @@
 
         .logo {
             font-size: 16px;
-            padding: 15px 10px;
-            color: #888 !important;
+            padding: 18px 10px;
+            color: white !important;
             display: inline-block;
         }
         .nav-left {
-            padding: 15px 10px;
-            color: #888 !important;
+            padding: 18px 10px;
+            color: white !important;
             display: inline-block;
         }
         .nav-right {
-            color: #888 !important;
+            padding: 6px 0;
+            color: white !important;
             display: inline-block;
             float: right;
         }
@@ -49,7 +50,7 @@
     <template>
         <div class="full-height">
             <div class="vertical layout" style="height:100%">
-                <div style="height:50px">
+                <div style="height:62px">
                     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                         <div class="logo">
                             <span class="hidden-xs"><i class="fa fa-code-fork"></i> California Water Network</span>
@@ -60,7 +61,7 @@
                         <div class="nav-right">
                             <content select="[right-nav]"></content>
                         </div>
-                        
+
                     </nav>
                 </div>
                 <div class="flex" style="position:relative">

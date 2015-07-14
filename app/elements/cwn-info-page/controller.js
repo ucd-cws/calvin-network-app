@@ -73,7 +73,6 @@ Polymer({
 
         // dom controller stuff
         this.hasTimeSeries = false;
-        this.showDateRangeSlider = false;
         this.showClimateData = false;
         this.charts = {};
 
@@ -111,17 +110,20 @@ Polymer({
 
       this.climateLoadError = false;
       this.climateLoading = false;
-      this.updateDateSliderVisibility();
 
       this.eacChart.data = [];
       this.evaporationData = null;
+      this.hasInflows = false;
 
       var props = this.feature.properties;
-      if( !props.inflows && !props.el_ar_cap && !props.evaporation) return;
+      if( props.inflows || props.el_ar_cap || props.evaporation) {
+        this.showClimateData = true;
+      } else {
+        this.showClimateData = false;
+      }
 
-
-      this.showClimateData = true;
       this.renderClimateData(props.inflows, props.el_ar_cap, props.evaporation);
+      this.updateDateSliderVisibility();
 
       this.async(function(){
         this.$.dateslider.resize();
@@ -130,8 +132,9 @@ Polymer({
     },
 
     renderClimateData : function(inflows, el_ar_cap, evaporation) {
-debugger;
+
       if( inflows ) {
+        this.hasInflows = true;
         this.$.inflowCharts.innerHTML = '';
 
         for( var name in inflows ) {
@@ -163,6 +166,7 @@ debugger;
 
       this.eacChart.data = [];
       if( el_ar_cap ) {
+
         var max = 0;
         var elevationCol = 0, capacityCol = 0, areaCol = 0;
 
@@ -202,9 +206,11 @@ debugger;
           if( a[capacityCol] < b[capacityCol] ) return -1;
           return 0;
         });
+
+        this.stampEacChart();
       }
 
-      this.stampEacChart();
+
       this.updateDateSliderVisibility();
     },
 
@@ -247,8 +253,7 @@ debugger;
     },
 
     updateDateSliderVisibility : function() {
-      if( !this.inflows ) return;
-        this.showDateRangeSlider = this.inflows.length > 0 || this.hasTimeSeries
+      this.$.dateRangeSlider.style.display = (this.hasInflows || this.hasTimeSeries) ? 'block' : 'none';
     },
 
     stampEacChart : function() {
