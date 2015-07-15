@@ -26,6 +26,9 @@
     "polymer": "Polymer/polymer#^1.0.5",
     "bower": "*",
     "install": "~1.0.4",
-    "bootswatch-dist": "paper"
+    "bootswatch-dist": "paper",
+    "paper-header-panel": "PolymerElements/paper-header-panel#~1.0.2",
+    "paper-toolbar": "PolymerElements/paper-toolbar#~1.0.4",
+    "paper-drawer-panel": "PolymerElements/paper-drawer-panel#~1.0.3"
   }
 }

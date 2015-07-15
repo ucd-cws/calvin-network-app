@@ -13,9 +13,7 @@
             display: relative;
             z-index: 100;
         }
-        cwn-map-menu {
-            z-index: 101;
-        }
+
         .updating {
             position: absolute;
             height: 100%;
@@ -50,20 +48,12 @@
     </style>
 
     <template>
-        <cwn-map-menu id="menu"
-          on-select="onRegionSelect"
-          on-hover="onMenuRegionHover"
-          on-nohover="onMenuRegionNoHover">
-        </cwn-map-menu>
-        <div id="leaflet">
 
-        </div>
+        <div id="leaflet"></div>
 
         <div hidden$="{{!updating}}" class="updating">
             <div>Filtering...</div>
         </div>
-
-        <cwn-region-selector id="selector"></cwn-region-selector>
 
         <div id="hoverLabel"></div>
     </template>
@@ -117,13 +107,13 @@
                 return;
               }
 
-              this.$.selector.onClick(features);
+              this.selector.onClick(features);
             }.bind(this)
           });
 
           this.markerLayer.addTo(this.map);
 
-          this.$.selector.init(this, this.markerLayer);
+          this.selector.init(this, this.markerLayer);
 
           CWN.ds.on('load', this.process.bind(this));
           if( !CWN.ds.loading ) this.process();
@@ -152,21 +142,19 @@
         },
 
         onMouseMove : function(features, e) {
-          var nodeLabel = '', linkLabel = '', regionLabel = '';
+          var label = [], linkLabel = '', regionLabel = '';
           var i, f;
 
           for( i = 0; i < features.length; i++ ) {
             f = features[i].properties;
 
-            if( f.type == 'Diversion' || f.type == 'Return Flow' ) linkLabel = f.prmname;
-            if( f.type == 'Link Group' ) linkLabel = f.type+', Count: '+f.lines.length;
-            else if ( f.type == 'Region' ) regionLabel = f.name;
-            else nodeLabel = f.prmname;
+            if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.prmname);
+            if( f.type == 'Link Group' ) label.push(f.type+', Count: '+f.lines.length);
+            else if ( f.type == 'Region' ) label.push(f.name);
+            else label.push(f.prmname);
           }
 
-          if( nodeLabel ) this.showHoverLabel(true, nodeLabel, e.containerPoint);
-          else if( linkLabel ) this.showHoverLabel(true, linkLabel, e.containerPoint);
-          else if( regionLabel ) this.showHoverLabel(true, regionLabel, e.containerPoint);
+          if( label.length > 0 ) this.showHoverLabel(true, label.join('<br />'), e.containerPoint);
           else this.showHoverLabel(false);
         },
 
@@ -229,10 +217,7 @@
               })
             }
 
-
-
-            this.$.menu.init();
-
+            this.menu.init();
             this.updateRenderState();
             this.update();
 
@@ -311,7 +296,7 @@
                 d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
                 if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
-                
+
                 if( d.properties.terminals ) {
                     for( var j = 0; j < d.properties.terminals.length; j++ ) {
                         d2 = CWN.ds.lookupMap[d.properties.terminals[j]];
@@ -397,7 +382,7 @@
 
         _updateRenderState : function(name) {
           var region = CWN.ds.regionLookupMap[name];
-          var state = this.$.menu.state;
+          var state = this.menu.state;
 
           if( state.enabled.indexOf(name) > -1 ) {
             this._addStateNodes(region.nodes, state);

@@ -326,6 +326,1854 @@ Copyright (c) 2015 Daniel Eden
 
 </style>
 
+
+
+
+<!--
+`iron-media-query` can be used to data bind to a CSS media query.
+The `query` property is a bare CSS media query.
+The `query-matches` property is a boolean representing whether the page matches that media query.
+
+Example:
+
+    <iron-media-query query="(min-width: 600px)" query-matches="{{queryMatches}}"></iron-media-query>
+
+@group Iron Elements
+@demo demo/index.html
+@hero hero.svg
+@element iron-media-query
+-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
+`paper-drawer-panel` contains a drawer panel and a main panel.  The drawer
+and the main panel are side-by-side with drawer on the left.  When the browser
+window size is smaller than the `responsiveWidth`, `paper-drawer-panel`
+changes to narrow layout.  In narrow layout, the drawer will be stacked on top
+of the main panel.  The drawer will slide in/out to hide/reveal the main
+panel.
+
+Use the attribute `drawer` to indicate that the element is the drawer panel and
+`main` to indicate that the element is the main panel.
+
+Example:
+
+    <paper-drawer-panel>
+      <div drawer> Drawer panel... </div>
+      <div main> Main panel... </div>
+    </paper-drawer-panel>
+
+The drawer and the main panels are not scrollable.  You can set CSS overflow
+property on the elements to make them scrollable or use `paper-header-panel`.
+
+Example:
+
+    <paper-drawer-panel>
+      <paper-header-panel drawer>
+        <paper-toolbar></paper-toolbar>
+        <div> Drawer content... </div>
+      </paper-header-panel>
+      <paper-header-panel main>
+        <paper-toolbar></paper-toolbar>
+        <div> Main content... </div>
+      </paper-header-panel>
+    </paper-drawer-panel>
+
+An element that should toggle the drawer will automatically do so if it's
+given the `paper-drawer-toggle` attribute.  Also this element will automatically
+be hidden in wide layout.
+
+Example:
+
+    <paper-drawer-panel>
+      <paper-header-panel drawer>
+        <paper-toolbar>
+          <div>Application</div>
+        </paper-toolbar>
+        <div> Drawer content... </div>
+      </paper-header-panel>
+      <paper-header-panel main>
+        <paper-toolbar>
+          <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+          <div>Title</div>
+        </paper-toolbar>
+        <div> Main content... </div>
+      </paper-header-panel>
+    </paper-drawer-panel>
+
+To position the drawer to the right, add `right-drawer` attribute.
+
+    <paper-drawer-panel right-drawer>
+      <div drawer> Drawer panel... </div>
+      <div main> Main panel... </div>
+    </paper-drawer-panel>
+
+Styling `paper-drawer-panel`
+
+To change the main container:
+
+    paper-drawer-panel {
+      --paper-drawer-panel-main-container: {
+        background-color: gray;
+      };
+    }
+
+To change the drawer container when it's in the left side:
+
+    paper-drawer-panel {
+      --paper-drawer-panel-left-drawer-container: {
+        background-color: white;
+      };
+    }
+
+To change the drawer container when it's in the right side:
+
+    paper-drawer-panel {
+      --paper-drawer-panel-right-drawer-container: {
+        background-color: white;
+      };
+    }
+
+@group Paper elements
+@element paper-drawer-panel
+@demo demo/index.html
+@hero hero.svg
+-->
+
+
+
+
+
+<style is="custom-style">
+
+  :root {
+
+    --layout: {
+      display: -ms-flexbox;
+      display: -webkit-flex;
+      display: flex;
+    };
+
+    --layout-inline: {
+      display: -ms-inline-flexbox;
+      display: -webkit-inline-flex;
+      display: inline-flex;
+    };
+
+    --layout-horizontal: {
+      /* @apply(--layout); */
+      display: -ms-flexbox;
+      display: -webkit-flex;
+      display: flex;
+
+      -ms-flex-direction: row;
+      -webkit-flex-direction: row;
+      flex-direction: row;
+    };
+
+    --layout-horizontal-reverse: {
+      -ms-flex-direction: row-reverse;
+      -webkit-flex-direction: row-reverse;
+      flex-direction: row-reverse;
+    };
+
+    --layout-vertical: {
+      /* @apply(--layout); */
+      display: -ms-flexbox;
+      display: -webkit-flex;
+      display: flex;
+
+      -ms-flex-direction: column;
+      -webkit-flex-direction: column;
+      flex-direction: column;
+    };
+
+    --layout-vertical-reverse: {
+      -ms-flex-direction: column-reverse;
+      -webkit-flex-direction: column-reverse;
+      flex-direction: column-reverse;
+    };
+
+    --layout-wrap: {
+      -ms-flex-wrap: wrap;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+    };
+
+    --layout-wrap-reverse: {
+      -ms-flex-wrap: wrap-reverse;
+      -webkit-flex-wrap: wrap-reverse;
+      flex-wrap: wrap-reverse;
+    };
+
+    --layout-flex-auto: {
+      -ms-flex: 1 1 auto;
+      -webkit-flex: 1 1 auto;
+      flex: 1 1 auto;
+    };
+
+    --layout-flex-none: {
+      -ms-flex: none;
+      -webkit-flex: none;
+      flex: none;
+    };
+
+    --layout-flex: {
+      -ms-flex: 1 1 0.000000001px;
+      -webkit-flex: 1;
+      flex: 1;
+      -webkit-flex-basis: 0.000000001px;
+      flex-basis: 0.000000001px;
+    };
+
+    --layout-flex-2: {
+      -ms-flex: 2;
+      -webkit-flex: 2;
+      flex: 2;
+    };
+
+    --layout-flex-3: {
+      -ms-flex: 3;
+      -webkit-flex: 3;
+      flex: 3;
+    };
+
+    --layout-flex-4: {
+      -ms-flex: 4;
+      -webkit-flex: 4;
+      flex: 4;
+    };
+
+    --layout-flex-5: {
+      -ms-flex: 5;
+      -webkit-flex: 5;
+      flex: 5;
+    };
+
+    --layout-flex-6: {
+      -ms-flex: 6;
+      -webkit-flex: 6;
+      flex: 6;
+    };
+
+    --layout-flex-7: {
+      -ms-flex: 7;
+      -webkit-flex: 7;
+      flex: 7;
+    };
+
+    --layout-flex-8: {
+      -ms-flex: 8;
+      -webkit-flex: 8;
+      flex: 8;
+    };
+
+    --layout-flex-9: {
+      -ms-flex: 9;
+      -webkit-flex: 9;
+      flex: 9;
+    };
+
+    --layout-flex-10: {
+      -ms-flex: 10;
+      -webkit-flex: 10;
+      flex: 10;
+    };
+
+    --layout-flex-11: {
+      -ms-flex: 11;
+      -webkit-flex: 11;
+      flex: 11;
+    };
+
+    --layout-flex-12: {
+      -ms-flex: 12;
+      -webkit-flex: 12;
+      flex: 12;
+    };
+
+    /* alignment in cross axis */
+
+    --layout-start: {
+      -ms-flex-align: start;
+      -webkit-align-items: flex-start;
+      align-items: flex-start;
+    };
+
+    --layout-center: {
+      -ms-flex-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+    };
+
+    --layout-end: {
+      -ms-flex-align: end;
+      -webkit-align-items: flex-end;
+      align-items: flex-end;
+    };
+
+    /* alignment in main axis */
+
+    --layout-start-justified: {
+      -ms-flex-pack: start;
+      -webkit-justify-content: flex-start;
+      justify-content: flex-start;
+    };
+
+    --layout-center-justified: {
+      -ms-flex-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+    };
+
+    --layout-end-justified: {
+      -ms-flex-pack: end;
+      -webkit-justify-content: flex-end;
+      justify-content: flex-end;
+    };
+
+    --layout-around-justified: {
+      -ms-flex-pack: around;
+      -webkit-justify-content: space-around;
+      justify-content: space-around;
+    };
+
+    --layout-justified: {
+      -ms-flex-pack: justify;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+    };
+
+    --layout-center-center: {
+      /* @apply(--layout-center --layout-center-justified); */
+      -ms-flex-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -ms-flex-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+    };
+
+    /* self alignment */
+
+    --layout-self-start: {
+      -ms-align-self: flex-start;
+      -webkit-align-self: flex-start;
+      align-self: flex-start;
+    };
+
+    --layout-self-center: {
+      -ms-align-self: center;
+      -webkit-align-self: center;
+      align-self: center;
+    };
+
+    --layout-self-end: {
+      -ms-align-self: flex-end;
+      -webkit-align-self: flex-end;
+      align-self: flex-end;
+    };
+
+    --layout-self-stretch: {
+      -ms-align-self: stretch;
+      -webkit-align-self: stretch;
+      align-self: stretch;
+    };
+
+    /*******************************
+              Other Layout
+    *******************************/
+
+    --layout-block: {
+      display: block;
+    };
+
+    --layout-invisible: {
+      visibility: hidden !important;
+    };
+
+    --layout-relative: {
+      position: relative;
+    };
+
+    --layout-fit: {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    };
+
+    --layout-scroll: {
+      -webkit-overflow-scrolling: touch;
+      overflow: auto;
+    };
+
+    /* fixed position */
+
+    --layout-fixed-bottom:,
+    --layout-fixed-left:,
+    --layout-fixed-right:,
+    --layout-fixed-top: {
+      position: fixed;
+    };
+
+    --layout-fixed-top: {
+      top: 0;
+      left: 0;
+      right: 0;
+    };
+
+    --layout-fixed-right: {
+      top: 0;
+      right: 0;
+      bottom: 0;
+    };
+
+    --layout-fixed-bottom: {
+      right: 0;
+      bottom: 0;
+      left: 0;
+    };
+
+    --layout-fixed-left: {
+      top: 0;
+      bottom: 0;
+      left: 0;
+    };
+
+  }
+
+</style>
+
+
+<!--
+`paper-header-panel` contains a header section and a content panel section.
+
+__Important:__ The `paper-header-panel` will not display if its parent does not have a height.
+
+Using layout classes, you can make the `paper-header-panel` fill the screen
+
+    <body class="fullbleed layout vertical">
+      <paper-header-panel class="flex">
+        <paper-toolbar>
+          <div>Hello World!</div>
+        </paper-toolbar>
+      </paper-header-panel>
+    </body>
+
+Special support is provided for scrolling modes when one uses a paper-toolbar or equivalent for the
+header section.
+
+Example:
+
+    <paper-header-panel>
+      <paper-toolbar>Header</paper-toolbar>
+      <div>Content goes here...</div>
+    </paper-header-panel>
+
+If you want to use other than `paper-toolbar` for the header, add `paper-header` class to that
+element.
+
+Example:
+
+    <paper-header-panel>
+      <div class="paper-header">Header</div>
+      <div>Content goes here...</div>
+    </paper-header-panel>
+
+To have the content fit to the main area, use the `fit` class.
+
+    <paper-header-panel>
+      <div class="paper-header">standard</div>
+      <div class="fit">content fits 100% below the header</div>
+    </paper-header-panel>
+
+Modes
+
+Controls header and scrolling behavior. Options are `standard`, `seamed`, `waterfall`, `waterfall-tall`, `scroll` and
+`cover`. Default is `standard`.
+
+Mode | Description
+----------------|-------------
+`standard` | The header is a step above the panel. The header will consume the panel at the point of entry, preventing it from passing through to the opposite side.
+`seamed` | The header is presented as seamed with the panel.
+`waterfall` | Similar to standard mode, but header is initially presented as seamed with panel, but then separates to form the step.
+`waterfall-tall` | The header is initially taller (`tall` class is added to the header). As the user scrolls, the header separates (forming an edge) while condensing (`tall` class is removed from the header).
+`scroll` | The header keeps its seam with the panel, and is pushed off screen.
+`cover` | The panel covers the whole `paper-header-panel` including the header. This allows user to style the panel in such a way that the panel is partially covering the header.
+
+Example:
+
+    <paper-header-panel mode="waterfall">
+      <div class="paper-header">standard</div>
+      <div class="content fit">content fits 100% below the header</div>
+    </paper-header-panel>
+
+
+Styling header panel:
+
+To change the shadow that shows up underneath the header:
+
+    paper-header-panel {
+      --paper-header-panel-shadow: {
+          height: 6px;
+          bottom: -6px;
+          box-shadow: inset 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
+      };
+    }
+
+To change the panel container in different modes:
+
+    paper-slider {
+      --paper-header-panel-standard-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-cover-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-waterfall-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-waterfall-tall-container: {
+        border: 1px solid gray;
+      };
+    }
+
+@group Paper Elements
+@element paper-header-panel
+@demo demo/index.html
+@hero hero.svg
+-->
+
+
+
+
+<style>
+
+  /*******************************
+            Flex Layout
+  *******************************/
+
+  html /deep/ .layout.horizontal,
+  html /deep/ .layout.horizontal-reverse,
+  html /deep/ .layout.vertical,
+  html /deep/ .layout.vertical-reverse {
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+  }
+
+  html /deep/ .layout.inline {
+    display: -ms-inline-flexbox;
+    display: -webkit-inline-flex;
+    display: inline-flex;
+  }
+
+  html /deep/ .layout.horizontal {
+    -ms-flex-direction: row;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+  }
+
+  html /deep/ .layout.horizontal-reverse {
+    -ms-flex-direction: row-reverse;
+    -webkit-flex-direction: row-reverse;
+    flex-direction: row-reverse;
+  }
+
+  html /deep/ .layout.vertical {
+    -ms-flex-direction: column;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  html /deep/ .layout.vertical-reverse {
+    -ms-flex-direction: column-reverse;
+    -webkit-flex-direction: column-reverse;
+    flex-direction: column-reverse;
+  }
+
+  html /deep/ .layout.wrap {
+    -ms-flex-wrap: wrap;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+  }
+
+  html /deep/ .layout.wrap-reverse {
+    -ms-flex-wrap: wrap-reverse;
+    -webkit-flex-wrap: wrap-reverse;
+    flex-wrap: wrap-reverse;
+  }
+
+  html /deep/ .flex-auto {
+    -ms-flex: 1 1 auto;
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+  }
+
+  html /deep/ .flex-none {
+    -ms-flex: none;
+    -webkit-flex: none;
+    flex: none;
+  }
+
+  html /deep/ .flex,
+  html /deep/ .flex-1 {
+    -ms-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+  }
+
+  html /deep/ .flex-2 {
+    -ms-flex: 2;
+    -webkit-flex: 2;
+    flex: 2;
+  }
+
+  html /deep/ .flex-3 {
+    -ms-flex: 3;
+    -webkit-flex: 3;
+    flex: 3;
+  }
+
+  html /deep/ .flex-4 {
+    -ms-flex: 4;
+    -webkit-flex: 4;
+    flex: 4;
+  }
+
+  html /deep/ .flex-5 {
+    -ms-flex: 5;
+    -webkit-flex: 5;
+    flex: 5;
+  }
+
+  html /deep/ .flex-6 {
+    -ms-flex: 6;
+    -webkit-flex: 6;
+    flex: 6;
+  }
+
+  html /deep/ .flex-7 {
+    -ms-flex: 7;
+    -webkit-flex: 7;
+    flex: 7;
+  }
+
+  html /deep/ .flex-8 {
+    -ms-flex: 8;
+    -webkit-flex: 8;
+    flex: 8;
+  }
+
+  html /deep/ .flex-9 {
+    -ms-flex: 9;
+    -webkit-flex: 9;
+    flex: 9;
+  }
+
+  html /deep/ .flex-10 {
+    -ms-flex: 10;
+    -webkit-flex: 10;
+    flex: 10;
+  }
+
+  html /deep/ .flex-11 {
+    -ms-flex: 11;
+    -webkit-flex: 11;
+    flex: 11;
+  }
+
+  html /deep/ .flex-12 {
+    -ms-flex: 12;
+    -webkit-flex: 12;
+    flex: 12;
+  }
+
+  /* alignment in cross axis */
+
+  html /deep/ .layout.start {
+    -ms-flex-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  html /deep/ .layout.center,
+  html /deep/ .layout.center-center {
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+  }
+
+  html /deep/ .layout.end {
+    -ms-flex-align: end;
+    -webkit-align-items: flex-end;
+    align-items: flex-end;
+  }
+
+  /* alignment in main axis */
+
+  html /deep/ .layout.start-justified {
+    -ms-flex-pack: start;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+  }
+
+  html /deep/ .layout.center-justified,
+  html /deep/ .layout.center-center {
+    -ms-flex-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  html /deep/ .layout.end-justified {
+    -ms-flex-pack: end;
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+  }
+
+  html /deep/ .layout.around-justified {
+    -ms-flex-pack: around;
+    -webkit-justify-content: space-around;
+    justify-content: space-around;
+  }
+
+  html /deep/ .layout.justified {
+    -ms-flex-pack: justify;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+  }
+
+  /* self alignment */
+
+  html /deep/ .self-start {
+    -ms-align-self: flex-start;
+    -webkit-align-self: flex-start;
+    align-self: flex-start;
+  }
+
+  html /deep/ .self-center {
+    -ms-align-self: center;
+    -webkit-align-self: center;
+    align-self: center;
+  }
+
+  html /deep/ .self-end {
+    -ms-align-self: flex-end;
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+  }
+
+  html /deep/ .self-stretch {
+    -ms-align-self: stretch;
+    -webkit-align-self: stretch;
+    align-self: stretch;
+  }
+
+  /*******************************
+            Other Layout
+  *******************************/
+
+  html /deep/ .block {
+    display: block;
+  }
+
+  /* IE 10 support for HTML5 hidden attr */
+  html /deep/ [hidden] {
+    display: none !important;
+  }
+
+  html /deep/ .invisible {
+    visibility: hidden !important;
+  }
+
+  html /deep/ .relative {
+    position: relative;
+  }
+
+  html /deep/ .fit {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  body.fullbleed {
+    margin: 0;
+    height: 100vh;
+  }
+
+  html /deep/ .scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+  }
+
+  .fixed-bottom,
+  .fixed-left,
+  .fixed-right,
+  .fixed-top {
+    position: fixed;
+  }
+
+  html /deep/ .fixed-top {
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  html /deep/ .fixed-right {
+    top: 0;
+    right: 0;
+    botttom: 0;
+  }
+
+  html /deep/ .fixed-bottom {
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  html /deep/ .fixed-left {
+    top: 0;
+    botttom: 0;
+    left: 0;
+  }
+
+</style>
+
+
+<style>
+
+  /*******************************
+            Flex Layout
+  *******************************/
+
+  .layout.horizontal,
+  .layout.horizontal-reverse,
+  .layout.vertical,
+  .layout.vertical-reverse {
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+  }
+
+  .layout.inline {
+    display: -ms-inline-flexbox;
+    display: -webkit-inline-flex;
+    display: inline-flex;
+  }
+
+  .layout.horizontal {
+    -ms-flex-direction: row;
+    -webkit-flex-direction: row;
+    flex-direction: row;
+  }
+
+  .layout.horizontal-reverse {
+    -ms-flex-direction: row-reverse;
+    -webkit-flex-direction: row-reverse;
+    flex-direction: row-reverse;
+  }
+
+  .layout.vertical {
+    -ms-flex-direction: column;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  .layout.vertical-reverse {
+    -ms-flex-direction: column-reverse;
+    -webkit-flex-direction: column-reverse;
+    flex-direction: column-reverse;
+  }
+
+  .layout.wrap {
+    -ms-flex-wrap: wrap;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+  }
+
+  .layout.wrap-reverse {
+    -ms-flex-wrap: wrap-reverse;
+    -webkit-flex-wrap: wrap-reverse;
+    flex-wrap: wrap-reverse;
+  }
+
+  .flex-auto {
+    -ms-flex: 1 1 auto;
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+  }
+
+  .flex-none {
+    -ms-flex: none;
+    -webkit-flex: none;
+    flex: none;
+  }
+
+  .flex,
+  .flex-1 {
+    -ms-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+  }
+
+  .flex-2 {
+    -ms-flex: 2;
+    -webkit-flex: 2;
+    flex: 2;
+  }
+
+  .flex-3 {
+    -ms-flex: 3;
+    -webkit-flex: 3;
+    flex: 3;
+  }
+
+  .flex-4 {
+    -ms-flex: 4;
+    -webkit-flex: 4;
+    flex: 4;
+  }
+
+  .flex-5 {
+    -ms-flex: 5;
+    -webkit-flex: 5;
+    flex: 5;
+  }
+
+  .flex-6 {
+    -ms-flex: 6;
+    -webkit-flex: 6;
+    flex: 6;
+  }
+
+  .flex-7 {
+    -ms-flex: 7;
+    -webkit-flex: 7;
+    flex: 7;
+  }
+
+  .flex-8 {
+    -ms-flex: 8;
+    -webkit-flex: 8;
+    flex: 8;
+  }
+
+  .flex-9 {
+    -ms-flex: 9;
+    -webkit-flex: 9;
+    flex: 9;
+  }
+
+  .flex-10 {
+    -ms-flex: 10;
+    -webkit-flex: 10;
+    flex: 10;
+  }
+
+  .flex-11 {
+    -ms-flex: 11;
+    -webkit-flex: 11;
+    flex: 11;
+  }
+
+  .flex-12 {
+    -ms-flex: 12;
+    -webkit-flex: 12;
+    flex: 12;
+  }
+
+  /* alignment in cross axis */
+
+  .layout.start {
+    -ms-flex-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  .layout.center,
+  .layout.center-center {
+    -ms-flex-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+  }
+
+  .layout.end {
+    -ms-flex-align: end;
+    -webkit-align-items: flex-end;
+    align-items: flex-end;
+  }
+
+  /* alignment in main axis */
+
+  .layout.start-justified {
+    -ms-flex-pack: start;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+  }
+
+  .layout.center-justified,
+  .layout.center-center {
+    -ms-flex-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  .layout.end-justified {
+    -ms-flex-pack: end;
+    -webkit-justify-content: flex-end;
+    justify-content: flex-end;
+  }
+
+  .layout.around-justified {
+    -ms-flex-pack: around;
+    -webkit-justify-content: space-around;
+    justify-content: space-around;
+  }
+
+  .layout.justified {
+    -ms-flex-pack: justify;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+  }
+
+  /* self alignment */
+
+  .self-start {
+    -ms-align-self: flex-start;
+    -webkit-align-self: flex-start;
+    align-self: flex-start;
+  }
+
+  .self-center {
+    -ms-align-self: center;
+    -webkit-align-self: center;
+    align-self: center;
+  }
+
+  .self-end {
+    -ms-align-self: flex-end;
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+  }
+
+  .self-stretch {
+    -ms-align-self: stretch;
+    -webkit-align-self: stretch;
+    align-self: stretch;
+  }
+
+  /*******************************
+            Other Layout
+  *******************************/
+
+  .block {
+    display: block;
+  }
+
+  /* IE 10 support for HTML5 hidden attr */
+  [hidden] {
+    display: none !important;
+  }
+
+  .invisible {
+    visibility: hidden !important;
+  }
+
+  .relative {
+    position: relative;
+  }
+
+  .fit {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  body.fullbleed {
+    margin: 0;
+    height: 100vh;
+  }
+
+  .scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+  }
+
+  /* fixed position */
+
+  .fixed-bottom,
+  .fixed-left,
+  .fixed-right,
+  .fixed-top {
+    position: fixed;
+  }
+
+  .fixed-top {
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .fixed-right {
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .fixed-bottom {
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  .fixed-left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+</style>
+
+
+
+
+<style is="custom-style">
+
+  :root {
+
+    /* Material Design color palette for Google products */
+
+    --google-red-100: #f4c7c3;
+    --google-red-300: #e67c73;
+    --google-red-500: #db4437;
+    --google-red-700: #c53929;
+
+    --google-blue-100: #c6dafc;
+    --google-blue-300: #7baaf7;
+    --google-blue-500: #4285f4;
+    --google-blue-700: #3367d6;
+
+    --google-green-100: #b7e1cd;
+    --google-green-300: #57bb8a;
+    --google-green-500: #0f9d58;
+    --google-green-700: #0b8043;
+
+    --google-yellow-100: #fce8b2;
+    --google-yellow-300: #f7cb4d;
+    --google-yellow-500: #f4b400;
+    --google-yellow-700: #f09300;
+
+    --google-grey-100: #f5f5f5;
+    --google-grey-300: #e0e0e0;
+    --google-grey-500: #9e9e9e;
+    --google-grey-700: #616161;
+    
+    /* Material Design color palette from online spec document */
+
+    --paper-red-50: #ffebee;
+    --paper-red-100: #ffcdd2;
+    --paper-red-200: #ef9a9a;
+    --paper-red-300: #e57373;
+    --paper-red-400: #ef5350;
+    --paper-red-500: #f44336;
+    --paper-red-600: #e53935;
+    --paper-red-700: #d32f2f;
+    --paper-red-800: #c62828;
+    --paper-red-900: #b71c1c;
+    --paper-red-a100: #ff8a80;
+    --paper-red-a200: #ff5252;
+    --paper-red-a400: #ff1744;
+    --paper-red-a700: #d50000;
+ 
+    --paper-pink-50: #fce4ec;
+    --paper-pink-100: #f8bbd0;
+    --paper-pink-200: #f48fb1;
+    --paper-pink-300: #f06292;
+    --paper-pink-400: #ec407a;
+    --paper-pink-500: #e91e63;
+    --paper-pink-600: #d81b60;
+    --paper-pink-700: #c2185b;
+    --paper-pink-800: #ad1457;
+    --paper-pink-900: #880e4f;
+    --paper-pink-a100: #ff80ab;
+    --paper-pink-a200: #ff4081;
+    --paper-pink-a400: #f50057;
+    --paper-pink-a700: #c51162;
+ 
+    --paper-purple-50: #f3e5f5;
+    --paper-purple-100: #e1bee7;
+    --paper-purple-200: #ce93d8;
+    --paper-purple-300: #ba68c8;
+    --paper-purple-400: #ab47bc;
+    --paper-purple-500: #9c27b0;
+    --paper-purple-600: #8e24aa;
+    --paper-purple-700: #7b1fa2;
+    --paper-purple-800: #6a1b9a;
+    --paper-purple-900: #4a148c;
+    --paper-purple-a100: #ea80fc;
+    --paper-purple-a200: #e040fb;
+    --paper-purple-a400: #d500f9;
+    --paper-purple-a700: #aa00ff;
+ 
+    --paper-deep-purple-50: #ede7f6;
+    --paper-deep-purple-100: #d1c4e9;
+    --paper-deep-purple-200: #b39ddb;
+    --paper-deep-purple-300: #9575cd;
+    --paper-deep-purple-400: #7e57c2;
+    --paper-deep-purple-500: #673ab7;
+    --paper-deep-purple-600: #5e35b1;
+    --paper-deep-purple-700: #512da8;
+    --paper-deep-purple-800: #4527a0;
+    --paper-deep-purple-900: #311b92;
+    --paper-deep-purple-a100: #b388ff;
+    --paper-deep-purple-a200: #7c4dff;
+    --paper-deep-purple-a400: #651fff;
+    --paper-deep-purple-a700: #6200ea;
+ 
+    --paper-indigo-50: #e8eaf6;
+    --paper-indigo-100: #c5cae9;
+    --paper-indigo-200: #9fa8da;
+    --paper-indigo-300: #7986cb;
+    --paper-indigo-400: #5c6bc0;
+    --paper-indigo-500: #3f51b5;
+    --paper-indigo-600: #3949ab;
+    --paper-indigo-700: #303f9f;
+    --paper-indigo-800: #283593;
+    --paper-indigo-900: #1a237e;
+    --paper-indigo-a100: #8c9eff;
+    --paper-indigo-a200: #536dfe;
+    --paper-indigo-a400: #3d5afe;
+    --paper-indigo-a700: #304ffe;
+ 
+    --paper-blue-50: #e3f2fd;
+    --paper-blue-100: #bbdefb;
+    --paper-blue-200: #90caf9;
+    --paper-blue-300: #64b5f6;
+    --paper-blue-400: #42a5f5;
+    --paper-blue-500: #2196f3;
+    --paper-blue-600: #1e88e5;
+    --paper-blue-700: #1976d2;
+    --paper-blue-800: #1565c0;
+    --paper-blue-900: #0d47a1;
+    --paper-blue-a100: #82b1ff;
+    --paper-blue-a200: #448aff;
+    --paper-blue-a400: #2979ff;
+    --paper-blue-a700: #2962ff;
+ 
+    --paper-light-blue-50: #e1f5fe;
+    --paper-light-blue-100: #b3e5fc;
+    --paper-light-blue-200: #81d4fa;
+    --paper-light-blue-300: #4fc3f7;
+    --paper-light-blue-400: #29b6f6;
+    --paper-light-blue-500: #03a9f4;
+    --paper-light-blue-600: #039be5;
+    --paper-light-blue-700: #0288d1;
+    --paper-light-blue-800: #0277bd;
+    --paper-light-blue-900: #01579b;
+    --paper-light-blue-a100: #80d8ff;
+    --paper-light-blue-a200: #40c4ff;
+    --paper-light-blue-a400: #00b0ff;
+    --paper-light-blue-a700: #0091ea;
+ 
+    --paper-cyan-50: #e0f7fa;
+    --paper-cyan-100: #b2ebf2;
+    --paper-cyan-200: #80deea;
+    --paper-cyan-300: #4dd0e1;
+    --paper-cyan-400: #26c6da;
+    --paper-cyan-500: #00bcd4;
+    --paper-cyan-600: #00acc1;
+    --paper-cyan-700: #0097a7;
+    --paper-cyan-800: #00838f;
+    --paper-cyan-900: #006064;
+    --paper-cyan-a100: #84ffff;
+    --paper-cyan-a200: #18ffff;
+    --paper-cyan-a400: #00e5ff;
+    --paper-cyan-a700: #00b8d4;
+ 
+    --paper-teal-50: #e0f2f1;
+    --paper-teal-100: #b2dfdb;
+    --paper-teal-200: #80cbc4;
+    --paper-teal-300: #4db6ac;
+    --paper-teal-400: #26a69a;
+    --paper-teal-500: #009688;
+    --paper-teal-600: #00897b;
+    --paper-teal-700: #00796b;
+    --paper-teal-800: #00695c;
+    --paper-teal-900: #004d40;
+    --paper-teal-a100: #a7ffeb;
+    --paper-teal-a200: #64ffda;
+    --paper-teal-a400: #1de9b6;
+    --paper-teal-a700: #00bfa5;
+ 
+    --paper-green-50: #e8f5e9;
+    --paper-green-100: #c8e6c9;
+    --paper-green-200: #a5d6a7;
+    --paper-green-300: #81c784;
+    --paper-green-400: #66bb6a;
+    --paper-green-500: #4caf50;
+    --paper-green-600: #43a047;
+    --paper-green-700: #388e3c;
+    --paper-green-800: #2e7d32;
+    --paper-green-900: #1b5e20;
+    --paper-green-a100: #b9f6ca;
+    --paper-green-a200: #69f0ae;
+    --paper-green-a400: #00e676;
+    --paper-green-a700: #00c853;
+ 
+    --paper-light-green-50: #f1f8e9;
+    --paper-light-green-100: #dcedc8;
+    --paper-light-green-200: #c5e1a5;
+    --paper-light-green-300: #aed581;
+    --paper-light-green-400: #9ccc65;
+    --paper-light-green-500: #8bc34a;
+    --paper-light-green-600: #7cb342;
+    --paper-light-green-700: #689f38;
+    --paper-light-green-800: #558b2f;
+    --paper-light-green-900: #33691e;
+    --paper-light-green-a100: #ccff90;
+    --paper-light-green-a200: #b2ff59;
+    --paper-light-green-a400: #76ff03;
+    --paper-light-green-a700: #64dd17;
+ 
+    --paper-lime-50: #f9fbe7;
+    --paper-lime-100: #f0f4c3;
+    --paper-lime-200: #e6ee9c;
+    --paper-lime-300: #dce775;
+    --paper-lime-400: #d4e157;
+    --paper-lime-500: #cddc39;
+    --paper-lime-600: #c0ca33;
+    --paper-lime-700: #afb42b;
+    --paper-lime-800: #9e9d24;
+    --paper-lime-900: #827717;
+    --paper-lime-a100: #f4ff81;
+    --paper-lime-a200: #eeff41;
+    --paper-lime-a400: #c6ff00;
+    --paper-lime-a700: #aeea00;
+ 
+    --paper-yellow-50: #fffde7;
+    --paper-yellow-100: #fff9c4;
+    --paper-yellow-200: #fff59d;
+    --paper-yellow-300: #fff176;
+    --paper-yellow-400: #ffee58;
+    --paper-yellow-500: #ffeb3b;
+    --paper-yellow-600: #fdd835;
+    --paper-yellow-700: #fbc02d;
+    --paper-yellow-800: #f9a825;
+    --paper-yellow-900: #f57f17;
+    --paper-yellow-a100: #ffff8d;
+    --paper-yellow-a200: #ffff00;
+    --paper-yellow-a400: #ffea00;
+    --paper-yellow-a700: #ffd600;
+ 
+    --paper-amber-50: #fff8e1;
+    --paper-amber-100: #ffecb3;
+    --paper-amber-200: #ffe082;
+    --paper-amber-300: #ffd54f;
+    --paper-amber-400: #ffca28;
+    --paper-amber-500: #ffc107;
+    --paper-amber-600: #ffb300;
+    --paper-amber-700: #ffa000;
+    --paper-amber-800: #ff8f00;
+    --paper-amber-900: #ff6f00;
+    --paper-amber-a100: #ffe57f;
+    --paper-amber-a200: #ffd740;
+    --paper-amber-a400: #ffc400;
+    --paper-amber-a700: #ffab00;
+ 
+    --paper-orange-50: #fff3e0;
+    --paper-orange-100: #ffe0b2;
+    --paper-orange-200: #ffcc80;
+    --paper-orange-300: #ffb74d;
+    --paper-orange-400: #ffa726;
+    --paper-orange-500: #ff9800;
+    --paper-orange-600: #fb8c00;
+    --paper-orange-700: #f57c00;
+    --paper-orange-800: #ef6c00;
+    --paper-orange-900: #e65100;
+    --paper-orange-a100: #ffd180;
+    --paper-orange-a200: #ffab40;
+    --paper-orange-a400: #ff9100;
+    --paper-orange-a700: #ff6500;
+ 
+    --paper-deep-orange-50: #ff5722;
+    --paper-deep-orange-100: #fbe9e7;
+    --paper-deep-orange-200: #ffccbc;
+    --paper-deep-orange-300: #ff8a65;
+    --paper-deep-orange-400: #ff7043;
+    --paper-deep-orange-500: #ff5722;
+    --paper-deep-orange-600: #f4511e;
+    --paper-deep-orange-700: #e64a19;
+    --paper-deep-orange-800: #d84315;
+    --paper-deep-orange-900: #bf360c;
+    --paper-deep-orange-a100: #ff9e80;
+    --paper-deep-orange-a200: #ff6e40;
+    --paper-deep-orange-a400: #ff3d00;
+    --paper-deep-orange-a700: #dd2c00;
+ 
+    --paper-brown-50: #efebe9;
+    --paper-brown-100: #d7ccc8;
+    --paper-brown-200: #bcaaa4;
+    --paper-brown-300: #a1887f;
+    --paper-brown-400: #8d6e63;
+    --paper-brown-500: #795548;
+    --paper-brown-600: #6d4c41;
+    --paper-brown-700: #5d4037;
+    --paper-brown-800: #4e342e;
+    --paper-brown-900: #3e2723;
+ 
+    --paper-grey-50: #fafafa;
+    --paper-grey-100: #f5f5f5;
+    --paper-grey-200: #eeeeee;
+    --paper-grey-300: #e0e0e0;
+    --paper-grey-400: #bdbdbd;
+    --paper-grey-500: #9e9e9e;
+    --paper-grey-600: #757575;
+    --paper-grey-700: #616161;
+    --paper-grey-800: #424242;
+    --paper-grey-900: #212121;
+ 
+    --paper-blue-grey-50: #eceff1;
+    --paper-blue-grey-100: #cfd8dc;
+    --paper-blue-grey-200: #b0bec5;
+    --paper-blue-grey-300: #90a4ae;
+    --paper-blue-grey-400: #78909c;
+    --paper-blue-grey-500: #607d8b;
+    --paper-blue-grey-600: #546e7a;
+    --paper-blue-grey-700: #455a64;
+    --paper-blue-grey-800: #37474f;
+    --paper-blue-grey-900: #263238;
+
+    /* opacity for dark text on a light background */
+    --dark-divider-opacity: 0.12;
+    --dark-disabled-opacity: 0.26; /* or hint text */
+    --dark-secondary-opacity: 0.54; /* or icon */
+    --dark-primary-opacity: 0.87;
+
+    /* opacity for light text on a dark background */
+    --light-divider-opacity: 0.12;
+    --light-disabled-opacity: 0.3; /* or hint text */
+    --light-secondary-opacity: 0.7; /* or icon */
+    --light-primary-opacity: 1.0;
+
+  }
+
+</style>
+
+
+
+<style is="custom-style">
+
+  :root {
+
+    --dark-primary-color: #303f9f;
+
+    --default-primary-color: #3f51b5;
+
+    --light-primary-color: #c5cae9;
+
+    --text-primary-color: #ffffff;
+
+    --accent-color: #ff4081;
+
+    --primary-background-color: #ffffff;
+
+    --primary-text-color: #212121;
+
+    --secondary-text-color: #757575;
+
+    --disabled-text-color: #bdbdbd;
+
+    --divider-color: #e0e0e0;
+
+  }
+
+</style>
+
+
+
+<style is="custom-style">
+
+  :root {
+
+    --shadow-transition: {
+      transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    };
+
+    --shadow-none: {
+      box-shadow: none;
+    };
+
+    /* from http://codepen.io/shyndman/pen/c5394ddf2e8b2a5c9185904b57421cdb */
+
+    --shadow-elevation-2dp: {
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 5px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 1px -2px rgba(0, 0, 0, 0.2);
+    };
+
+    --shadow-elevation-3dp: {
+      box-shadow: 0 3px 4px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 8px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 3px -2px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-4dp: {
+      box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 10px 0 rgba(0, 0, 0, 0.12),
+                  0 2px 4px -1px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-6dp: {
+      box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14),
+                  0 1px 18px 0 rgba(0, 0, 0, 0.12),
+                  0 3px 5px -1px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-8dp: {
+      box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+                  0 3px 14px 2px rgba(0, 0, 0, 0.12),
+                  0 5px 5px -3px rgba(0, 0, 0, 0.4);
+    };
+
+    --shadow-elevation-16dp: {
+      box-shadow: 0 16px 24px 2px rgba(0, 0, 0, 0.14),
+                  0  6px 30px 5px rgba(0, 0, 0, 0.12),
+                  0  8px 10px -5px rgba(0, 0, 0, 0.4);
+    };
+
+  }
+
+</style>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,500,500italic,700,700italic">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700">
+
+
+<style is="custom-style">
+
+  :root {
+
+    /* Shared Styles */
+
+    /*
+    Unfortunately, we can't use nested rules
+    See https://github.com/Polymer/polymer/issues/1399
+    */
+    --paper-font-common-base: {
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    };
+
+    --paper-font-common-code: {
+      font-family: 'Roboto Mono', 'Consolas', 'Menlo', monospace;
+      -webkit-font-smoothing: antialiased;
+    };
+
+    --paper-font-common-expensive-kerning: {
+      text-rendering: optimizeLegibility;
+    };
+
+    --paper-font-common-nowrap: {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    };
+
+    /* Material Font Styles */
+
+    --paper-font-display4: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+      /* @apply(--paper-font-common-nowrap); */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      font-size: 112px;
+      font-weight: 300;
+      letter-spacing: -.044em;
+      line-height: 120px;
+    };
+
+    --paper-font-display3: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+      /* @apply(--paper-font-common-nowrap); */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      font-size: 56px;
+      font-weight: 400;
+      letter-spacing: -.026em;
+      line-height: 60px;
+    };
+
+    --paper-font-display2: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+
+      font-size: 45px;
+      font-weight: 400;
+      letter-spacing: -.018em;
+      line-height: 48px;
+    };
+
+    --paper-font-display1: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -.01em;
+      line-height: 40px;
+    };
+
+    --paper-font-headline: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: -.012em;
+      line-height: 32px;
+    };
+
+    --paper-font-title: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+      /* @apply(--paper-font-common-nowrap); */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 28px;
+    };
+
+    --paper-font-subhead: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 24px;
+    };
+
+    --paper-font-body2: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 24px;
+    };
+
+    --paper-font-body1: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 20px;
+    };
+
+    --paper-font-caption: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-nowrap); */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0.011em;
+      line-height: 20px;
+    };
+
+    --paper-font-menu: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+      /* @apply(--paper-font-common-nowrap); */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 24px;
+    };
+
+    --paper-font-button: {
+      /* @apply(--paper-font-common-base) */
+      font-family: 'Roboto', 'Noto', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      /* @apply(--paper-font-common-expensive-kerning); */
+      text-rendering: optimizeLegibility;
+      /* @apply(--paper-font-common-nowrap); */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.018em;
+      line-height: 24px;
+      text-transform: uppercase;
+    };
+
+    --paper-font-code2: {
+      /* @apply(--paper-font-common-code); */
+      font-family: 'Roboto Mono', 'Consolas', 'Menlo', monospace;
+      -webkit-font-smoothing: antialiased;
+
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 20px;
+    };
+
+    --paper-font-code1: {
+      /* @apply(--paper-font-common-code); */
+      font-family: 'Roboto Mono', 'Consolas', 'Menlo', monospace;
+      -webkit-font-smoothing: antialiased;
+
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+    };
+
+  }
+
+</style>
+
+
+
+<!--
+`paper-toolbar` is a horizontal bar containing items that can be used for
+label, navigation, search and actions.  The items place inside the
+`paper-toolbar` are projected into a `class="horizontal center layout"` container inside of
+`paper-toolbar`'s Shadow DOM.  You can use flex attributes to control the items'
+sizing.
+
+Example:
+
+    <paper-toolbar>
+      <paper-icon-button icon="menu" on-tap="menuAction"></paper-icon-button>
+      <div class="title">Title</div>
+      <paper-icon-button icon="more-vert" on-tap="moreAction"></paper-icon-button>
+    </paper-toolbar>
+
+`paper-toolbar` has a standard height, but can made be taller by setting `tall`
+class on the `paper-toolbar`.  This will make the toolbar 3x the normal height.
+
+    <paper-toolbar class="tall">
+      <paper-icon-button icon="menu"></paper-icon-button>
+    </paper-toolbar>
+
+Apply `medium-tall` class to make the toolbar medium tall.  This will make the
+toolbar 2x the normal height.
+
+    <paper-toolbar class="medium-tall">
+      <paper-icon-button icon="menu"></paper-icon-button>
+    </paper-toolbar>
+
+When `tall`, items can pin to either the top (default), middle or bottom.  Use
+`middle` class for middle content and `bottom` class for bottom content.
+
+    <paper-toolbar class="tall">
+      <paper-icon-button icon="menu"></paper-icon-button>
+      <div class="middle title">Middle Title</div>
+      <div class="bottom title">Bottom Title</div>
+    </paper-toolbar>
+
+For `medium-tall` toolbar, the middle and bottom contents overlap and are
+pinned to the bottom.  But `middleJustify` and `bottomJustify` attributes are
+still honored separately.
+
+To make an element completely fit at the bottom of the toolbar, use `fit` along
+with `bottom`.
+
+    <paper-toolbar class="tall">
+      <div id="progressBar" class="bottom fit"></div>
+    </paper-toolbar>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--paper-toolbar-background` | Toolbar background color     | `--default-primary-color`
+`--paper-toolbar-color`      | Toolbar foreground color     | `--text-primary-color`
+`--paper-toolbar`            | Mixin applied to the toolbar | `{}`
+
+### Accessibility
+
+`<paper-toolbar>` has `role="toolbar"` by default. Any elements with the class `title` will
+be used as the label of the toolbar via `aria-labelledby`.
+
+@demo demo/index.html
+-->
+
+
+
 <!-- v0.5
 <link rel="import" href="components/polymer/polymer.html">
 <link rel="import" href="components/core-localstorage/core-localstorage.html">
@@ -352,6 +2200,488 @@ Copyright (c) 2015 Daniel Eden
 
 
 </head><body><div hidden="">
+
+
+
+/**
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+:host {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+iron-selector &gt; #drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: white;
+
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+
+  @apply(--paper-drawer-panel-drawer-container);
+}
+
+.transition &gt; #drawer {
+  transition: -webkit-transform ease-in-out 0.3s, width ease-in-out 0.3s, visibility 0.3s;
+  transition: transform ease-in-out 0.3s, width ease-in-out 0.3s, visibility 0.3s;
+}
+
+.left-drawer &gt; #drawer {
+  @apply(--paper-drawer-panel-left-drawer-container);
+}
+
+.right-drawer &gt; #drawer {
+  left: auto;
+  right: 0;
+
+  @apply(--paper-drawer-panel-right-drawer-container);
+}
+
+iron-selector &gt; #main {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+
+  @apply(--paper-drawer-panel-main-container);
+}
+
+.transition &gt; #main {
+  transition: left ease-in-out 0.3s, padding ease-in-out 0.3s;
+}
+
+.right-drawer &gt; #main {
+  left: 0;
+}
+
+.right-drawer.transition &gt; #main {
+  transition: right ease-in-out 0.3s, padding ease-in-out 0.3s;
+}
+
+#main &gt; ::content &gt; [main] {
+  height: 100%;
+}
+
+#drawer &gt; ::content &gt; [drawer] {
+  height: 100%;
+}
+
+#scrim {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity ease-in-out 0.38s, visibility ease-in-out 0.38s;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.narrow-layout &gt; #drawer {
+  will-change: transform;
+}
+
+.narrow-layout &gt; #drawer.iron-selected {
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.right-drawer.narrow-layout &gt; #drawer.iron-selected {
+  box-shadow: -2px 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.narrow-layout &gt; #drawer &gt; ::content &gt; [drawer] {
+  border: 0;
+}
+
+.left-drawer.narrow-layout &gt; #drawer:not(.iron-selected) {
+  -webkit-transform: translateX(-100%);
+  transform: translateX(-100%);
+}
+
+.right-drawer.narrow-layout &gt; #drawer:not(.iron-selected) {
+  left: auto;
+  visibility: hidden;
+
+  -webkit-transform: translateX(100%);
+  transform: translateX(100%);
+}
+
+.right-drawer.narrow-layout.dragging &gt; #drawer:not(.iron-selected),
+.right-drawer.narrow-layout.peeking &gt; #drawer:not(.iron-selected) {
+  visibility: visible;
+}
+
+.narrow-layout &gt; #main {
+  padding: 0;
+}
+
+.right-drawer.narrow-layout &gt; #main {
+  left: 0;
+  right: 0;
+}
+
+.narrow-layout &gt; #main:not(.iron-selected) &gt; #scrim,
+.dragging &gt; #main &gt; #scrim {
+  visibility: visible;
+  opacity: var(--paper-drawer-panel-scrim-opacity, 1);
+}
+
+.narrow-layout &gt; #main &gt; * {
+  margin: 0;
+  min-height: 100%;
+  left: 0;
+  right: 0;
+
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
+  display: none;
+}<dom-module id="paper-drawer-panel">
+  
+
+  <template>
+    <iron-media-query id="mq" on-query-matches-changed="_onQueryMatchesChanged" query="[[_computeMediaQuery(forceNarrow, responsiveWidth)]]">
+    </iron-media-query>
+
+    <iron-selector attr-for-selected="id" class$="[[_computeIronSelectorClass(narrow, transition, dragging, rightDrawer, peeking)]]" activate-event="" selected="[[selected]]">
+
+      <div id="main" style$="[[_computeMainStyle(narrow, rightDrawer, drawerWidth)]]">
+        <content select="[main]"></content>
+        <div id="scrim" on-tap="closeDrawer"></div>
+      </div>
+
+      <div id="drawer" style$="[[_computeDrawerStyle(drawerWidth)]]">
+        <content select="[drawer]"></content>
+      </div>
+
+    </iron-selector>
+  </template>
+
+</dom-module>
+
+
+
+<dom-module id="paper-header-panel">
+
+  <style>
+    :host {
+      @apply(--layout);
+      @apply(--layout-vertical);
+
+      display: block;
+      position: relative;
+      height: 100%;
+
+      /* Create a stack context, we will need it for the shadow*/
+      z-index: 0;
+    }
+
+    :root {
+      /**
+       * Default paper header panel shadow
+       */
+      --paper-header-panel-shadow: {
+        height: 6px;
+        bottom: -6px;
+        box-shadow: inset 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
+      };
+    }
+
+    #mainContainer {
+      @apply(--layout-flex);
+
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      flex-basis: 0.0001px;
+    }
+
+    /*
+     * mode: scroll
+     */
+    :host([mode=scroll]) #mainContainer {
+      @apply(--paper-header-panel-scroll-container);
+      overflow: visible;
+    }
+
+    :host([mode=scroll]) {
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /*
+     * mode: cover
+     */
+    :host([mode=cover]) #mainContainer {
+      @apply(--paper-header-panel-cover-container);
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
+
+    /*
+     * mode: standard
+     */
+    :host([mode=standard]) #mainContainer {
+      @apply(--paper-header-panel-standard-container);
+    }
+
+    /*
+     * mode: waterfall
+     */
+    :host([mode=waterfall]) #mainContainer {
+      @apply(--paper-header-panel-waterfall-container);
+    }
+
+    /*
+     * mode: waterfall-tall
+     */
+    :host([mode=waterfall-tall]) #mainContainer {
+      @apply(--paper-header-panel-waterfall-tall-container);
+    }
+
+    :host ::content paper-toolbar,
+    :host ::content .paper-header {
+      position: relative;
+      overflow: visible !important;
+    }
+
+    :host ::content paper-toolbar:after,
+    :host ::content .paper-header:after {
+      @apply(--paper-header-panel-shadow);
+
+      -webkit-transition: opacity 0.5s, -webkit-transform 0.5s;
+      transition: opacity 0.5s, transform 0.5s;
+
+      opacity: 0;
+      content: "";
+
+      width: 100%;
+      position: absolute;
+      left: 0px;
+      right: 0px;
+      z-index: 1;
+
+      -webkit-transform: scale3d(1, 0, 1);
+      -webkit-transform-origin: 0% 0%;
+
+      transform: scale3d(1, 0, 1);
+      transform-origin: 0% 0%;
+    }
+
+    :host ::content paper-toolbar.has-shadow:after,
+    :host ::content .paper-header.has-shadow:after {
+      opacity: 1;
+      -webkit-transform: scale3d(1, 1, 1);
+      transform: scale3d(1, 1, 1);
+    }
+  </style>
+
+  <template>
+    <content id="headerContent" select="paper-toolbar, .paper-header"></content>
+    <div id="mainContainer" class$="[[_computeMainContainerClass(mode)]]">
+      <content id="mainContent" select="*"></content>
+    </div>
+  </template>
+
+</dom-module>
+
+
+
+
+
+
+
+<dom-module id="paper-toolbar">
+
+  <style>
+    :host {
+      /* technical */
+      display: block;
+      position: relative;
+      box-sizing: border-box;
+      -moz-box-sizing: border-box;
+
+      /* size */
+      height: 64px;
+
+      background: var(--paper-toolbar-background, --default-primary-color);
+      color: var(--paper-toolbar-color, --text-primary-color);
+
+      @apply(--paper-toolbar);
+    }
+
+    :host(.animate) {
+      /* transition */
+      transition: height 0.18s ease-in;
+    }
+
+    :host(.medium-tall) {
+      height: 128px;
+    }
+
+    :host(.tall) {
+      height: 192px;
+    }
+
+    .toolbar-tools {
+      position: relative;
+      height: 64px;
+      padding: 0 16px;
+      pointer-events: none;
+    }
+
+    /*
+     * TODO: Where should media query breakpoints live so they can be shared between elements?
+     */
+
+    @media (max-width: 639px) {
+      :host {
+        height: 56px;
+      }
+
+      :host(.medium-tall) {
+        height: 112px;
+      }
+
+      :host(.tall) {
+        height: 168px;
+      }
+
+      .toolbar-tools {
+        height: 56px;
+      }
+    }
+
+    #topBar {
+      position: relative;
+    }
+
+    /* middle bar */
+    #middleBar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+    }
+
+    :host(.tall) #middleBar,
+    :host(.medium-tall) #middleBar {
+      -webkit-transform: translateY(100%);
+      transform: translateY(100%);
+    }
+
+    /* bottom bar */
+    #bottomBar {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
+
+    /*
+     * make elements (e.g. buttons) respond to mouse/touch events
+     *
+     * `.toolbar-tools` disables touch events so multiple toolbars can stack and not
+     * absorb events. All children must have pointer events re-enabled to work as
+     * expected.
+     */
+    .toolbar-tools > ::content > *:not([disabled]) {
+      pointer-events: auto;
+    }
+
+    .toolbar-tools > ::content .title {
+      @apply(--paper-font-title);
+      @apply(--layout-flex);
+
+      pointer-events: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+
+      /*
+       * Polymer/polymer/issues/1525
+       * --paper-font-title defines a `font-weight`
+       * let's override its value, but we need `important!`
+       * because all mixins are resolved in rule's selector that has higher precedence
+       * than the current selector.
+       */
+      font-weight: 400 !important;
+    }
+
+    /**
+     * TODO: Refactor these selectors
+     * Work in progress.
+     */
+    .toolbar-tools > ::content paper-icon-button[icon=menu] {
+      margin-right: 24px;
+    }
+
+    .toolbar-tools > ::content > .title,
+    .toolbar-tools > ::content[select=".middle"] > .title,
+    .toolbar-tools > ::content[select=".bottom"] > .title {
+      margin-left: 56px;
+    }
+
+    .toolbar-tools > ::content > paper-icon-button + .title,
+    .toolbar-tools > ::content[select=".middle"] paper-icon-button + .title,
+    .toolbar-tools > ::content[select=".bottom"] paper-icon-button + .title {
+      margin-left: 0;
+    }
+
+    .toolbar-tools > ::content > .fit {
+      position: absolute;
+      top: auto;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      width: auto;
+      margin: 0;
+    }
+
+  </style>
+
+  <template>
+
+    <div id="topBar" class$="[[_computeBarClassName(justify)]]">
+      <content select=":not(.middle):not(.bottom)"></content>
+    </div>
+
+    <div id="middleBar" class$="[[_computeBarClassName(middleJustify)]]">
+      <content select=".middle"></content>
+    </div>
+
+    <div id="bottomBar" class$="[[_computeBarClassName(bottomJustify)]]">
+      <content select=".bottom"></content>
+    </div>
+
+  </template>
+
+</dom-module>
+
+
 
 <dom-module id="cwn-info-link">
     <style>
@@ -577,15 +2907,50 @@ Copyright (c) 2015 Daniel Eden
             padding: 6px 0;
             color: white !important;
             display: inline-block;
-            float: right;
+            text-align: right;
+        }
+
+        .drawer {
+          background-color: white;
+          height: 100%;
         }
     </style>
 
     <template>
+      <paper-drawer-panel id="drawer">
+
+  <paper-header-panel drawer="" class="drawer" responsive-width="768px">
+    <paper-toolbar style="background-color: #2196f3">
+      <div class="hidden-xs">CALVIN Water Network</div>
+    </paper-toolbar>
+
+    <content select="[menu]"></content>
+  </paper-header-panel>
+
+  <paper-header-panel main="" style="height:100%">
+    <paper-toolbar style="background-color: #2196f3">
+      <a class="btn btn-link" paper-drawer-toggle="" style="color:white"><i class="fa fa-bars" paper-drawer-toggle=""></i></a>
+
+      <div class="visible-xs-inline-block">CWN</div>
+
+      <div class="nav-right flex">
+          <content select="[right-nav]"></content>
+      </div>
+    </paper-toolbar>
+
+    <div class="fullbleed">
+      <content select="[content]"></content>
+    </div>
+
+
+  </paper-header-panel>
+</paper-drawer-panel>
+
+      <!--
         <div class="full-height">
             <div class="vertical layout" style="height:100%">
                 <div style="height:62px">
-                    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" >
                         <div class="logo">
                             <span class="hidden-xs"><i class="fa fa-code-fork"></i> CALVIN Water Network</span>
                             <span class="visible-xs"><i class="fa fa-code-fork"></i> CWN</span>
@@ -604,7 +2969,7 @@ Copyright (c) 2015 Daniel Eden
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
     </template>
 </dom-module>
 
@@ -1140,27 +3505,11 @@ Copyright (c) 2015 Daniel Eden
 <dom-module id="cwn-map-menu">
     <style>
         :host {
-            position: absolute;
-            height: 100%;
-            width: 320px;
-            background: rgba(0,0,0,.8);
-            color: white;
-            border: 1px solid black;
-            top: 0;
-            right: 0;
-            bottom: 0;
+            display:block;
             overflow: auto;
-
-            transition: all 250ms linear;
-            -webkit-transition: all 250ms linear;
-            -moz-transition: all 250ms linear;
-            -ms-transition: all 250ms linear;
-        }
-        #content {
-            padding: 5px 5px 5px 15px;
         }
         .menu-root {
-          background-color: rgba(0,0,0,.1);
+          background-color: rgba(200,200,200, .2);
           padding-left: 10px;
           border-radius: 3px;
         }
@@ -1168,25 +3517,9 @@ Copyright (c) 2015 Daniel Eden
           padding: 5px;
           font-size: 14px;
         }
-        .menu-item:hover {
-          color: red;
-          cursor: pointer;
-        }
-        .menu-item.hovered {
-          color: red;
-          background-color: rgba(255,255,255,.2);
-        }
-        :host(.closed) {
-          transform: translateX(290px);
-          -webkit-transform: translateX(290px);
-          -moz-transform: translateX(290px);
-          -ms-transform: translateX(290px);
-        }
+
     </style>
     <template>
-        <div>
-          <a class="btn btn-link" style="color:white" on-click="toggle"><i id="toggle" class="fa fa-arrow-left"></i></a>
-        </div>
         <div id="content"></div>
     </template>
 </dom-module>
@@ -1208,9 +3541,7 @@ Copyright (c) 2015 Daniel Eden
             display: relative;
             z-index: 100;
         }
-        cwn-map-menu {
-            z-index: 101;
-        }
+
         .updating {
             position: absolute;
             height: 100%;
@@ -1245,17 +3576,12 @@ Copyright (c) 2015 Daniel Eden
     </style>
 
     <template>
-        <cwn-map-menu id="menu" on-select="onRegionSelect" on-hover="onMenuRegionHover" on-nohover="onMenuRegionNoHover">
-        </cwn-map-menu>
-        <div id="leaflet">
 
-        </div>
+        <div id="leaflet"></div>
 
         <div hidden$="{{!updating}}" class="updating">
             <div>Filtering...</div>
         </div>
-
-        <cwn-region-selector id="selector"></cwn-region-selector>
 
         <div id="hoverLabel"></div>
     </template>
@@ -1289,6 +3615,7 @@ Copyright (c) 2015 Daniel Eden
     <template>
         <cwn-search id="search"></cwn-search>
         <cwn-about id="about"></cwn-about>
+        <cwn-region-selector id="selector"></cwn-region-selector>
 
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
@@ -1317,6 +3644,9 @@ Copyright (c) 2015 Daniel Eden
             <span class="visible-xs"><i class="fa fa-question"></i></span>
           </a>
 
+          <cwn-map-menu menu="" id="menu" on-select="onRegionSelect">
+          </cwn-map-menu>
+
           <cwn-filters id="filters" content="" on-update="onFiltersUpdated"></cwn-filters>
 
           <cwn-map content="" id="map" on-selected="onFeatureSelected" on-filtering-complete="updateGraph">
@@ -1327,6 +3657,8 @@ Copyright (c) 2015 Daniel Eden
 
           <cwn-graph content="" class="fit" id="graph">
           </cwn-graph>
+
+
 
         </cwn-app-layout>
 

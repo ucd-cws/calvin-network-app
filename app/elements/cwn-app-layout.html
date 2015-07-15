@@ -42,11 +42,46 @@
             padding: 6px 0;
             color: white !important;
             display: inline-block;
-            float: right;
+            text-align: right;
+        }
+
+        .drawer {
+          background-color: white;
+          height: 100%;
         }
     </style>
 
     <template>
+      <paper-drawer-panel id="drawer">
+
+  <paper-header-panel drawer class="drawer" responsive-width="768px">
+    <paper-toolbar style="background-color: #2196f3">
+      <div class="hidden-xs">CALVIN Water Network</div>
+    </paper-toolbar>
+
+    <content select="[menu]"></content>
+  </paper-header-panel>
+
+  <paper-header-panel main style="height:100%">
+    <paper-toolbar style="background-color: #2196f3">
+      <a class="btn btn-link" paper-drawer-toggle style="color:white"><i class="fa fa-bars" paper-drawer-toggle></i></a>
+
+      <div class="visible-xs-inline-block">CWN</div>
+
+      <div class="nav-right flex">
+          <content select="[right-nav]"></content>
+      </div>
+    </paper-toolbar>
+
+    <div class="fullbleed">
+      <content select="[content]"></content>
+    </div>
+
+
+  </paper-header-panel>
+</paper-drawer-panel>
+
+      <!--
         <div class="full-height">
             <div class="vertical layout" style="height:100%">
                 <div style="height:62px">
@@ -69,7 +104,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
     </template>
 </dom-module>
 

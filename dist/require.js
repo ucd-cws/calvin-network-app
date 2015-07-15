@@ -5881,6 +5881,1468 @@ this._removeChildren();
 }
 });;
 
+
+  Polymer({
+
+    is: 'iron-media-query',
+
+    properties: {
+
+      /**
+       * The Boolean return value of the media query.
+       */
+      queryMatches: {
+        type: Boolean,
+        value: false,
+        readOnly: true,
+        notify: true
+      },
+
+      /**
+       * The CSS media query to evaluate.
+       */
+      query: {
+        type: String,
+        observer: 'queryChanged'
+      }
+
+    },
+
+    created: function() {
+      this._mqHandler = this.queryHandler.bind(this);
+    },
+
+    queryChanged: function(query) {
+      if (this._mq) {
+        this._mq.removeListener(this._mqHandler);
+      }
+      if (query[0] !== '(') {
+        query = '(' + query + ')';
+      }
+      this._mq = window.matchMedia(query);
+      this._mq.addListener(this._mqHandler);
+      this.queryHandler(this._mq);
+    },
+
+    queryHandler: function(mq) {
+      this._setQueryMatches(mq.matches);
+    }
+
+  });
+
+;
+
+
+  /**
+   * @param {!Function} selectCallback
+   * @constructor
+   */
+  Polymer.IronSelection = function(selectCallback) {
+    this.selection = [];
+    this.selectCallback = selectCallback;
+  };
+
+  Polymer.IronSelection.prototype = {
+
+    /**
+     * Retrieves the selected item(s).
+     *
+     * @method get
+     * @returns Returns the selected item(s). If the multi property is true,
+     * `get` will return an array, otherwise it will return
+     * the selected item or undefined if there is no selection.
+     */
+    get: function() {
+      return this.multi ? this.selection : this.selection[0];
+    },
+
+    /**
+     * Clears all the selection except the ones indicated.
+     *
+     * @method clear
+     * @param {Array} excludes items to be excluded.
+     */
+    clear: function(excludes) {
+      this.selection.slice().forEach(function(item) {
+        if (!excludes || excludes.indexOf(item) < 0) {
+          this.setItemSelected(item, false);
+        }
+      }, this);
+    },
+
+    /**
+     * Indicates if a given item is selected.
+     *
+     * @method isSelected
+     * @param {*} item The item whose selection state should be checked.
+     * @returns Returns true if `item` is selected.
+     */
+    isSelected: function(item) {
+      return this.selection.indexOf(item) >= 0;
+    },
+
+    /**
+     * Sets the selection state for a given item to either selected or deselected.
+     *
+     * @method setItemSelected
+     * @param {*} item The item to select.
+     * @param {boolean} isSelected True for selected, false for deselected.
+     */
+    setItemSelected: function(item, isSelected) {
+      if (item != null) {
+        if (isSelected) {
+          this.selection.push(item);
+        } else {
+          var i = this.selection.indexOf(item);
+          if (i >= 0) {
+            this.selection.splice(i, 1);
+          }
+        }
+        if (this.selectCallback) {
+          this.selectCallback(item, isSelected);
+        }
+      }
+    },
+
+    /**
+     * Sets the selection state for a given item. If the `multi` property
+     * is true, then the selected state of `item` will be toggled; otherwise
+     * the `item` will be selected.
+     *
+     * @method select
+     * @param {*} item The item to select.
+     */
+    select: function(item) {
+      if (this.multi) {
+        this.toggle(item);
+      } else if (this.get() !== item) {
+        this.setItemSelected(this.get(), false);
+        this.setItemSelected(item, true);
+      }
+    },
+
+    /**
+     * Toggles the selection state for `item`.
+     *
+     * @method toggle
+     * @param {*} item The item to toggle.
+     */
+    toggle: function(item) {
+      this.setItemSelected(item, !this.isSelected(item));
+    }
+
+  };
+
+;
+
+
+  /** @polymerBehavior */
+  Polymer.IronSelectableBehavior = {
+
+    properties: {
+
+      /**
+       * If you want to use the attribute value of an element for `selected` instead of the index,
+       * set this to the name of the attribute.
+       *
+       * @attribute attrForSelected
+       * @type {string}
+       */
+      attrForSelected: {
+        type: String,
+        value: null
+      },
+
+      /**
+       * Gets or sets the selected element. The default is to use the index of the item.
+       *
+       * @attribute selected
+       * @type {string}
+       */
+      selected: {
+        type: String,
+        notify: true
+      },
+
+      /**
+       * Returns the currently selected item.
+       *
+       * @attribute selectedItem
+       * @type {Object}
+       */
+      selectedItem: {
+        type: Object,
+        readOnly: true,
+        notify: true
+      },
+
+      /**
+       * The event that fires from items when they are selected. Selectable
+       * will listen for this event from items and update the selection state.
+       * Set to empty string to listen to no events.
+       *
+       * @attribute activateEvent
+       * @type {string}
+       * @default 'tap'
+       */
+      activateEvent: {
+        type: String,
+        value: 'tap',
+        observer: '_activateEventChanged'
+      },
+
+      /**
+       * This is a CSS selector sting.  If this is set, only items that matches the CSS selector
+       * are selectable.
+       *
+       * @attribute selectable
+       * @type {string}
+       */
+      selectable: String,
+
+      /**
+       * The class to set on elements when selected.
+       *
+       * @attribute selectedClass
+       * @type {string}
+       */
+      selectedClass: {
+        type: String,
+        value: 'iron-selected'
+      },
+
+      /**
+       * The attribute to set on elements when selected.
+       *
+       * @attribute selectedAttribute
+       * @type {string}
+       */
+      selectedAttribute: {
+        type: String,
+        value: null
+      }
+
+    },
+
+    observers: [
+      '_updateSelected(attrForSelected, selected)'
+    ],
+
+    excludedLocalNames: {
+      'template': 1
+    },
+
+    created: function() {
+      this._bindFilterItem = this._filterItem.bind(this);
+      this._selection = new Polymer.IronSelection(this._applySelection.bind(this));
+    },
+
+    attached: function() {
+      this._observer = this._observeItems(this);
+      this._contentObserver = this._observeContent(this);
+    },
+
+    detached: function() {
+      if (this._observer) {
+        this._observer.disconnect();
+      }
+      if (this._contentObserver) {
+        this._contentObserver.disconnect();
+      }
+      this._removeListener(this.activateEvent);
+    },
+
+    /**
+     * Returns an array of selectable items.
+     *
+     * @property items
+     * @type Array
+     */
+    get items() {
+      var nodes = Polymer.dom(this).queryDistributedElements(this.selectable || '*');
+      return Array.prototype.filter.call(nodes, this._bindFilterItem);
+    },
+
+    /**
+     * Returns the index of the given item.
+     *
+     * @method indexOf
+     * @param {Object} item
+     * @returns Returns the index of the item
+     */
+    indexOf: function(item) {
+      return this.items.indexOf(item);
+    },
+
+    /**
+     * Selects the given value.
+     *
+     * @method select
+     * @param {string} value the value to select.
+     */
+    select: function(value) {
+      this.selected = value;
+    },
+
+    /**
+     * Selects the previous item.
+     *
+     * @method selectPrevious
+     */
+    selectPrevious: function() {
+      var length = this.items.length;
+      var index = (Number(this._valueToIndex(this.selected)) - 1 + length) % length;
+      this.selected = this._indexToValue(index);
+    },
+
+    /**
+     * Selects the next item.
+     *
+     * @method selectNext
+     */
+    selectNext: function() {
+      var index = (Number(this._valueToIndex(this.selected)) + 1) % this.items.length;
+      this.selected = this._indexToValue(index);
+    },
+
+    _addListener: function(eventName) {
+      this.listen(this, eventName, '_activateHandler');
+    },
+
+    _removeListener: function(eventName) {
+      // There is no unlisten yet...
+      // https://github.com/Polymer/polymer/issues/1639
+      //this.removeEventListener(eventName, this._bindActivateHandler);
+    },
+
+    _activateEventChanged: function(eventName, old) {
+      this._removeListener(old);
+      this._addListener(eventName);
+    },
+
+    _updateSelected: function() {
+      this._selectSelected(this.selected);
+    },
+
+    _selectSelected: function(selected) {
+      this._selection.select(this._valueToItem(this.selected));
+    },
+
+    _filterItem: function(node) {
+      return !this.excludedLocalNames[node.localName];
+    },
+
+    _valueToItem: function(value) {
+      return (value == null) ? null : this.items[this._valueToIndex(value)];
+    },
+
+    _valueToIndex: function(value) {
+      if (this.attrForSelected) {
+        for (var i = 0, item; item = this.items[i]; i++) {
+          if (this._valueForItem(item) == value) {
+            return i;
+          }
+        }
+      } else {
+        return Number(value);
+      }
+    },
+
+    _indexToValue: function(index) {
+      if (this.attrForSelected) {
+        var item = this.items[index];
+        if (item) {
+          return this._valueForItem(item);
+        }
+      } else {
+        return index;
+      }
+    },
+
+    _valueForItem: function(item) {
+      return item[this.attrForSelected] || item.getAttribute(this.attrForSelected);
+    },
+
+    _applySelection: function(item, isSelected) {
+      if (this.selectedClass) {
+        this.toggleClass(this.selectedClass, isSelected, item);
+      }
+      if (this.selectedAttribute) {
+        this.toggleAttribute(this.selectedAttribute, isSelected, item);
+      }
+      this._selectionChange();
+      this.fire('iron-' + (isSelected ? 'select' : 'deselect'), {item: item});
+    },
+
+    _selectionChange: function() {
+      this._setSelectedItem(this._selection.get());
+    },
+
+    // observe content changes under the given node.
+    _observeContent: function(node) {
+      var content = node.querySelector('content');
+      if (content && content.parentElement === node) {
+        return this._observeItems(node.domHost);
+      }
+    },
+
+    // observe items change under the given node.
+    _observeItems: function(node) {
+      var observer = new MutationObserver(function() {
+        if (this.selected != null) {
+          this._updateSelected();
+        }
+      }.bind(this));
+      observer.observe(node, {
+        childList: true,
+        subtree: true
+      });
+      return observer;
+    },
+
+    _activateHandler: function(e) {
+      // TODO: remove this when https://github.com/Polymer/polymer/issues/1639 is fixed so we
+      // can just remove the old event listener.
+      if (e.type !== this.activateEvent) {
+        return;
+      }
+      var t = e.target;
+      var items = this.items;
+      while (t && t != this) {
+        var i = items.indexOf(t);
+        if (i >= 0) {
+          var value = this._indexToValue(i);
+          this._itemActivate(value, t);
+          return;
+        }
+        t = t.parentNode;
+      }
+    },
+
+    _itemActivate: function(value, item) {
+      if (!this.fire('iron-activate',
+          {selected: value, item: item}, {cancelable: true}).defaultPrevented) {
+        this.select(value);
+      }
+    }
+
+  };
+
+;
+
+  /** @polymerBehavior Polymer.IronMultiSelectableBehavior */
+  Polymer.IronMultiSelectableBehaviorImpl = {
+    properties: {
+
+      /**
+       * If true, multiple selections are allowed.
+       */
+      multi: {
+        type: Boolean,
+        value: false,
+        observer: 'multiChanged'
+      },
+
+      /**
+       * Gets or sets the selected elements. This is used instead of `selected` when `multi`
+       * is true.
+       */
+      selectedValues: {
+        type: Array,
+        notify: true
+      },
+
+      /**
+       * Returns an array of currently selected items.
+       */
+      selectedItems: {
+        type: Array,
+        readOnly: true,
+        notify: true
+      },
+
+    },
+
+    observers: [
+      '_updateSelected(attrForSelected, selectedValues)'
+    ],
+
+    /**
+     * Selects the given value. If the `multi` property is true, then the selected state of the
+     * `value` will be toggled; otherwise the `value` will be selected.
+     *
+     * @method select
+     * @param {string} value the value to select.
+     */
+    select: function(value) {
+      if (this.multi) {
+        if (this.selectedValues) {
+          this._toggleSelected(value);
+        } else {
+          this.selectedValues = [value];
+        }
+      } else {
+        this.selected = value;
+      }
+    },
+
+    multiChanged: function(multi) {
+      this._selection.multi = multi;
+    },
+
+    _updateSelected: function() {
+      if (this.multi) {
+        this._selectMulti(this.selectedValues);
+      } else {
+        this._selectSelected(this.selected);
+      }
+    },
+
+    _selectMulti: function(values) {
+      this._selection.clear();
+      if (values) {
+        for (var i = 0; i < values.length; i++) {
+          this._selection.setItemSelected(this._valueToItem(values[i]), true);
+        }
+      }
+    },
+
+    _selectionChange: function() {
+      var s = this._selection.get();
+      if (this.multi) {
+        this._setSelectedItems(s);
+      } else {
+        this._setSelectedItems([s]);
+        this._setSelectedItem(s);
+      }
+    },
+
+    _toggleSelected: function(value) {
+      var i = this.selectedValues.indexOf(value);
+      var unselected = i < 0;
+      if (unselected) {
+        this.selectedValues.push(value);
+      } else {
+        this.selectedValues.splice(i, 1);
+      }
+      this._selection.setItemSelected(this._valueToItem(value), unselected);
+    }
+  };
+
+  /** @polymerBehavior */
+  Polymer.IronMultiSelectableBehavior = [
+    Polymer.IronSelectableBehavior,
+    Polymer.IronMultiSelectableBehaviorImpl
+  ];
+
+;
+
+  /**
+  `iron-selector` is an element which can be used to manage a list of elements
+  that can be selected.  Tapping on the item will make the item selected.  The `selected` indicates
+  which item is being selected.  The default is to use the index of the item.
+
+  Example:
+
+      <iron-selector selected="0">
+        <div>Item 1</div>
+        <div>Item 2</div>
+        <div>Item 3</div>
+      </iron-selector>
+
+  If you want to use the attribute value of an element for `selected` instead of the index,
+  set `attrForSelected` to the name of the attribute.  For example, if you want to select item by
+  `name`, set `attrForSelected` to `name`.
+
+  Example:
+
+      <iron-selector attr-for-selected="name" selected="foo">
+        <div name="foo">Foo</div>
+        <div name="bar">Bar</div>
+        <div name="zot">Zot</div>
+      </iron-selector>
+
+  `iron-selector` is not styled. Use the `iron-selected` CSS class to style the selected element.
+
+  Example:
+
+      <style>
+        .iron-selected {
+          background: #eee;
+        }
+      </style>
+
+      ...
+
+      <iron-selector selected="0">
+        <div>Item 1</div>
+        <div>Item 2</div>
+        <div>Item 3</div>
+      </iron-selector>
+
+  @demo demo/index.html
+  */
+
+  Polymer({
+
+    is: 'iron-selector',
+
+    behaviors: [
+      Polymer.IronMultiSelectableBehavior
+    ]
+
+  });
+
+;
+
+
+  (function() {
+
+    'use strict';
+
+   // this would be the only `paper-drawer-panel` in
+   // the whole app that can be in `dragging` state
+    var sharedPanel = null;
+
+    function classNames(obj) {
+      var classes = [];
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key) && obj[key]) {
+          classes.push(key);
+        }
+      }
+
+      return classes.join(' ');
+    }
+
+    Polymer({
+
+      is: 'paper-drawer-panel',
+
+      /**
+       * Fired when the narrow layout changes.
+       *
+       * @event paper-responsive-change {{narrow: boolean}} detail -
+       *     narrow: true if the panel is in narrow layout.
+       */
+
+      /**
+       * Fired when the a panel is selected.
+       *
+       * Listening for this event is an alternative to observing changes in the `selected` attribute.
+       * This event is fired both when a panel is selected.
+       *
+       * @event iron-select {{item: Object}} detail -
+       *     item: The panel that the event refers to.
+       */
+
+      /**
+       * Fired when a panel is deselected.
+       *
+       * Listening for this event is an alternative to observing changes in the `selected` attribute.
+       * This event is fired both when a panel is deselected.
+       *
+       * @event iron-deselect {{item: Object}} detail -
+       *     item: The panel that the event refers to.
+       */
+      properties: {
+
+        /**
+         * The panel to be selected when `paper-drawer-panel` changes to narrow
+         * layout.
+         */
+        defaultSelected: {
+          type: String,
+          value: 'main'
+        },
+
+        /**
+         * If true, swipe from the edge is disable.
+         */
+        disableEdgeSwipe: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * If true, swipe to open/close the drawer is disabled.
+         */
+        disableSwipe: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * Whether the user is dragging the drawer interactively.
+         */
+        dragging: {
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        },
+
+        /**
+         * Width of the drawer panel.
+         */
+        drawerWidth: {
+          type: String,
+          value: '256px'
+        },
+
+        /**
+         * How many pixels on the side of the screen are sensitive to edge
+         * swipes and peek.
+         */
+        edgeSwipeSensitivity: {
+          type: Number,
+          value: 30
+        },
+
+        /**
+         * If true, ignore `responsiveWidth` setting and force the narrow layout.
+         */
+        forceNarrow: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * Whether the browser has support for the transform CSS property.
+         */
+        hasTransform: {
+          type: Boolean,
+          value: function() {
+            return 'transform' in this.style;
+          }
+        },
+
+        /**
+         * Whether the browser has support for the will-change CSS property.
+         */
+        hasWillChange: {
+          type: Boolean,
+          value: function() {
+            return 'willChange' in this.style;
+          }
+        },
+
+        /**
+         * Returns true if the panel is in narrow layout.  This is useful if you
+         * need to show/hide elements based on the layout.
+         */
+        narrow: {
+          reflectToAttribute: true,
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        },
+
+        /**
+         * Whether the drawer is peeking out from the edge.
+         */
+        peeking: {
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        },
+
+        /**
+         * Max-width when the panel changes to narrow layout.
+         */
+        responsiveWidth: {
+          type: String,
+          value: '640px'
+        },
+
+        /**
+         * If true, position the drawer to the right.
+         */
+        rightDrawer: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * The panel that is being selected. `drawer` for the drawer panel and
+         * `main` for the main panel.
+         */
+        selected: {
+          reflectToAttribute: true,
+          notify: true,
+          type: String,
+          value: null
+        },
+
+        /**
+         * The attribute on elements that should toggle the drawer on tap, also elements will
+         * automatically be hidden in wide layout.
+         */
+        drawerToggleAttribute: {
+          type: String,
+          value: 'paper-drawer-toggle'
+        },
+
+        /**
+         * Whether the transition is enabled.
+         */
+        transition: {
+          type: Boolean,
+          value: false
+        },
+
+      },
+
+      listeners: {
+        tap: '_onTap',
+        track: '_onTrack',
+        down: '_downHandler',
+        up: '_upHandler'
+      },
+
+      observers: [
+        '_forceNarrowChanged(forceNarrow, defaultSelected)'
+      ],
+
+      /**
+       * Toggles the panel open and closed.
+       *
+       * @method togglePanel
+       */
+      togglePanel: function() {
+        if (this._isMainSelected()) {
+          this.openDrawer();
+        } else {
+          this.closeDrawer();
+        }
+      },
+
+      /**
+       * Opens the drawer.
+       *
+       * @method openDrawer
+       */
+      openDrawer: function() {
+        this.selected = 'drawer';
+      },
+
+      /**
+       * Closes the drawer.
+       *
+       * @method closeDrawer
+       */
+      closeDrawer: function() {
+        this.selected = 'main';
+      },
+
+      ready: function() {
+        // Avoid transition at the beginning e.g. page loads and enable
+        // transitions only after the element is rendered and ready.
+        this.transition = true;
+      },
+
+      _computeIronSelectorClass: function(narrow, transition, dragging, rightDrawer, peeking) {
+        return classNames({
+          dragging: dragging,
+          'narrow-layout': narrow,
+          'right-drawer': rightDrawer,
+          'left-drawer': !rightDrawer,
+          transition: transition,
+          peeking: peeking
+        });
+      },
+
+      _computeDrawerStyle: function(drawerWidth) {
+        return 'width:' + drawerWidth + ';';
+      },
+
+      _computeMainStyle: function(narrow, rightDrawer, drawerWidth) {
+        var style = '';
+
+        style += 'left:' + ((narrow || rightDrawer) ? '0' : drawerWidth) + ';';
+
+        if (rightDrawer) {
+          style += 'right:' + (narrow ? '' : drawerWidth) + ';';
+        }
+
+        return style;
+      },
+
+      _computeMediaQuery: function(forceNarrow, responsiveWidth) {
+        return forceNarrow ? '' : '(max-width: ' + responsiveWidth + ')';
+      },
+
+      _computeSwipeOverlayHidden: function(narrow, disableEdgeSwipe) {
+        return !narrow || disableEdgeSwipe;
+      },
+
+      _onTrack: function(event) {
+        if (sharedPanel && this !== sharedPanel) {
+          return;
+        }
+        switch (event.detail.state) {
+          case 'start':
+            this._trackStart(event);
+            break;
+          case 'track':
+            this._trackX(event);
+            break;
+          case 'end':
+            this._trackEnd(event);
+            break;
+        }
+
+      },
+
+      _responsiveChange: function(narrow) {
+        this._setNarrow(narrow);
+
+        if (this.narrow) {
+          this.selected = this.defaultSelected;
+        }
+
+        this.setScrollDirection(this._swipeAllowed() ? 'y' : 'all');
+        this.fire('paper-responsive-change', {narrow: this.narrow});
+      },
+
+      _onQueryMatchesChanged: function(event) {
+        this._responsiveChange(event.detail.value);
+      },
+
+      _forceNarrowChanged: function() {
+        // set the narrow mode only if we reached the `responsiveWidth`
+        this._responsiveChange(this.forceNarrow || this.$.mq.queryMatches);
+      },
+
+      _swipeAllowed: function() {
+        return this.narrow && !this.disableSwipe;
+      },
+
+      _isMainSelected: function() {
+        return this.selected === 'main';
+      },
+
+      _startEdgePeek: function() {
+        this.width = this.$.drawer.offsetWidth;
+        this._moveDrawer(this._translateXForDeltaX(this.rightDrawer ?
+            -this.edgeSwipeSensitivity : this.edgeSwipeSensitivity));
+        this._setPeeking(true);
+      },
+
+      _stopEdgePeek: function() {
+        if (this.peeking) {
+          this._setPeeking(false);
+          this._moveDrawer(null);
+        }
+      },
+
+      _downHandler: function(event) {
+        if (!this.dragging && this._isMainSelected() && this._isEdgeTouch(event) && !sharedPanel) {
+          this._startEdgePeek();
+          // cancel selection
+          event.preventDefault();
+          // grab this panel
+          sharedPanel = this;
+        }
+      },
+
+      _upHandler: function() {
+        this._stopEdgePeek();
+        // release the panel
+        sharedPanel = null;
+      },
+
+      _onTap: function(event) {
+        var targetElement = Polymer.dom(event).localTarget;
+        var isTargetToggleElement = targetElement &&
+          this.drawerToggleAttribute &&
+          targetElement.hasAttribute(this.drawerToggleAttribute);
+
+        if (isTargetToggleElement) {
+          this.togglePanel();
+        }
+      },
+
+      _isEdgeTouch: function(event) {
+        var x = event.detail.x;
+
+        return !this.disableEdgeSwipe && this._swipeAllowed() &&
+          (this.rightDrawer ?
+            x >= this.offsetWidth - this.edgeSwipeSensitivity :
+            x <= this.edgeSwipeSensitivity);
+      },
+
+      _trackStart: function(event) {
+        if (this._swipeAllowed()) {
+          sharedPanel = this;
+          this._setDragging(true);
+
+          if (this._isMainSelected()) {
+            this._setDragging(this.peeking || this._isEdgeTouch(event));
+          }
+
+          if (this.dragging) {
+            this.width = this.$.drawer.offsetWidth;
+            this.transition = false;
+          }
+        }
+      },
+
+      _translateXForDeltaX: function(deltaX) {
+        var isMain = this._isMainSelected();
+
+        if (this.rightDrawer) {
+          return Math.max(0, isMain ? this.width + deltaX : deltaX);
+        } else {
+          return Math.min(0, isMain ? deltaX - this.width : deltaX);
+        }
+      },
+
+      _trackX: function(event) {
+        if (this.dragging) {
+          var dx = event.detail.dx;
+
+          if (this.peeking) {
+            if (Math.abs(dx) <= this.edgeSwipeSensitivity) {
+              // Ignore trackx until we move past the edge peek.
+              return;
+            }
+            this._setPeeking(false);
+          }
+
+          this._moveDrawer(this._translateXForDeltaX(dx));
+        }
+      },
+
+      _trackEnd: function(event) {
+        if (this.dragging) {
+          var xDirection = event.detail.dx > 0;
+
+          this._setDragging(false);
+          this.transition = true;
+          sharedPanel = null;
+          this._moveDrawer(null);
+
+          if (this.rightDrawer) {
+            this[xDirection ? 'closeDrawer' : 'openDrawer']();
+          } else {
+            this[xDirection ? 'openDrawer' : 'closeDrawer']();
+          }
+        }
+      },
+
+      _transformForTranslateX: function(translateX) {
+        if (translateX === null) {
+          return '';
+        }
+
+        return this.hasWillChange ? 'translateX(' + translateX + 'px)' :
+            'translate3d(' + translateX + 'px, 0, 0)';
+      },
+
+      _moveDrawer: function(translateX) {
+        this.transform(this._transformForTranslateX(translateX), this.$.drawer);
+      }
+
+    });
+
+  }());
+
+;
+
+
+  (function() {
+
+    'use strict';
+
+    var SHADOW_WHEN_SCROLLING = 1;
+    var SHADOW_ALWAYS = 2;
+
+
+    var MODE_CONFIGS = {
+
+      outerScroll: {
+        scroll: true
+      },
+
+      shadowMode: {
+        standard: SHADOW_ALWAYS,
+        waterfall: SHADOW_WHEN_SCROLLING,
+        'waterfall-tall': SHADOW_WHEN_SCROLLING
+      },
+
+      tallMode: {
+        'waterfall-tall': true
+      }
+    };
+
+    Polymer({
+
+      is: 'paper-header-panel',
+
+      /**
+       * Fired when the content has been scrolled.  `event.detail.target` returns
+       * the scrollable element which you can use to access scroll info such as
+       * `scrollTop`.
+       *
+       *     <paper-header-panel on-content-scroll="{{scrollHandler}}">
+       *       ...
+       *     </paper-header-panel>
+       *
+       *
+       *     scrollHandler: function(event) {
+       *       var scroller = event.detail.target;
+       *       console.log(scroller.scrollTop);
+       *     }
+       *
+       * @event content-scroll
+       */
+
+      properties: {
+
+        /**
+         * Controls header and scrolling behavior. Options are
+         * `standard`, `seamed`, `waterfall`, `waterfall-tall`, `scroll` and
+         * `cover`. Default is `standard`.
+         *
+         * `standard`: The header is a step above the panel. The header will consume the
+         * panel at the point of entry, preventing it from passing through to the
+         * opposite side.
+         *
+         * `seamed`: The header is presented as seamed with the panel.
+         *
+         * `waterfall`: Similar to standard mode, but header is initially presented as
+         * seamed with panel, but then separates to form the step.
+         *
+         * `waterfall-tall`: The header is initially taller (`tall` class is added to
+         * the header).  As the user scrolls, the header separates (forming an edge)
+         * while condensing (`tall` class is removed from the header).
+         *
+         * `scroll`: The header keeps its seam with the panel, and is pushed off screen.
+         *
+         * `cover`: The panel covers the whole `paper-header-panel` including the
+         * header. This allows user to style the panel in such a way that the panel is
+         * partially covering the header.
+         *
+         *     <paper-header-panel mode="cover">
+         *       <paper-toolbar class="tall">
+         *         <core-icon-button icon="menu"></core-icon-button>
+         *       </paper-toolbar>
+         *       <div class="content"></div>
+         *     </paper-header-panel>
+         */
+        mode: {
+          type: String,
+          value: 'standard',
+          observer: '_modeChanged',
+          reflectToAttribute: true
+        },
+
+        /**
+         * If true, the drop-shadow is always shown no matter what mode is set to.
+         */
+        shadow: {
+          type: Boolean,
+          value: false
+        },
+
+        /**
+         * The class used in waterfall-tall mode.  Change this if the header
+         * accepts a different class for toggling height, e.g. "medium-tall"
+         */
+        tallClass: {
+          type: String,
+          value: 'tall'
+        },
+
+        /**
+         * If true, the scroller is at the top
+         */
+        atTop: {
+          type: Boolean,
+          value: true,
+          readOnly: true
+        }
+      },
+
+      observers: [
+        '_computeDropShadowHidden(atTop, mode, shadow)'
+      ],
+
+      ready: function() {
+        this.scrollHandler = this._scroll.bind(this);
+        this._addListener();
+
+        // Run `scroll` logic once to initialze class names, etc.
+        this._keepScrollingState();
+      },
+
+      detached: function() {
+        this._removeListener();
+      },
+
+      /**
+       * Returns the header element
+       *
+       * @property header
+       * @type Object
+       */
+      get header() {
+        return Polymer.dom(this.$.headerContent).getDistributedNodes()[0];
+      },
+
+      /**
+       * Returns the scrollable element.
+       *
+       * @property scroller
+       * @type Object
+       */
+      get scroller() {
+        return this._getScrollerForMode(this.mode);
+      },
+
+      /**
+       * Returns true if the scroller has a visible shadow.
+       *
+       * @property visibleShadow
+       * @type Boolean
+       */
+      get visibleShadow() {
+        return this.header.classList.contains('has-shadow');
+      },
+
+      _computeDropShadowHidden: function(atTop, mode, shadow) {
+
+        var shadowMode = MODE_CONFIGS.shadowMode[mode];
+
+        if (this.shadow) {
+          this.toggleClass('has-shadow', true, this.header);
+
+        } else if (shadowMode === SHADOW_ALWAYS) {
+          this.toggleClass('has-shadow', true, this.header);
+
+        } else if (shadowMode === SHADOW_WHEN_SCROLLING && !atTop) {
+          this.toggleClass('has-shadow', true, this.header);
+
+        } else {
+          this.toggleClass('has-shadow', false, this.header);
+
+        }
+      },
+
+      _computeMainContainerClass: function(mode) {
+        // TODO:  It will be useful to have a utility for classes
+        // e.g. Polymer.Utils.classes({ foo: true });
+
+        var classes = {};
+
+        classes['flex'] = mode !== 'cover';
+
+        return Object.keys(classes).filter(
+          function(className) {
+            return classes[className];
+          }).join(' ');
+      },
+
+      _addListener: function() {
+        this.scroller.addEventListener('scroll', this.scrollHandler, false);
+      },
+
+      _removeListener: function() {
+        this.scroller.removeEventListener('scroll', this.scrollHandler);
+      },
+
+      _modeChanged: function(newMode, oldMode) {
+        var configs = MODE_CONFIGS;
+        var header = this.header;
+        var animateDuration = 200;
+
+        if (header) {
+          // in tallMode it may add tallClass to the header; so do the cleanup
+          // when mode is changed from tallMode to not tallMode
+          if (configs.tallMode[oldMode] && !configs.tallMode[newMode]) {
+            header.classList.remove(this.tallClass);
+            this.async(function() {
+              header.classList.remove('animate');
+            }, animateDuration);
+          } else {
+            header.classList.toggle('animate', configs.tallMode[newMode]);
+          }
+        }
+        this._keepScrollingState();
+      },
+
+      _keepScrollingState: function () {
+        var main = this.scroller;
+        var header = this.header;
+
+        this._setAtTop(main.scrollTop === 0);
+
+        if (header && MODE_CONFIGS.tallMode[this.mode]) {
+          this.toggleClass(this.tallClass, this.atTop ||
+              header.classList.contains(this.tallClass) &&
+              main.scrollHeight < this.offsetHeight, header);
+        }
+      },
+
+      _scroll: function(e) {
+        this._keepScrollingState();
+        this.fire('content-scroll', {target: this.scroller}, {bubbles: false});
+      },
+
+      _getScrollerForMode: function(mode) {
+        return MODE_CONFIGS.outerScroll[mode] ?
+            this : this.$.mainContainer;
+      }
+
+    });
+
+  })();
+
+;
+
+
+  (function() {
+
+    'use strict';
+
+    function classNames(obj) {
+      var classNames = [];
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key) && obj[key]) {
+          classNames.push(key);
+        }
+      }
+
+      return classNames.join(' ');
+    }
+
+    Polymer({
+
+      is: 'paper-toolbar',
+
+      hostAttributes: {
+        'role': 'toolbar'
+      },
+
+      properties: {
+
+        /**
+         * Controls how the items are aligned horizontally when they are placed
+         * at the bottom.
+         * Options are `start`, `center`, `end`, `justified` and `around`.
+         *
+         * @attribute bottomJustify
+         * @type string
+         * @default ''
+         */
+        bottomJustify: {
+          type: String,
+          value: ''
+        },
+
+        /**
+         * Controls how the items are aligned horizontally.
+         * Options are `start`, `center`, `end`, `justified` and `around`.
+         *
+         * @attribute justify
+         * @type string
+         * @default ''
+         */
+        justify: {
+          type: String,
+          value: ''
+        },
+
+        /**
+         * Controls how the items are aligned horizontally when they are placed
+         * in the middle.
+         * Options are `start`, `center`, `end`, `justified` and `around`.
+         *
+         * @attribute middleJustify
+         * @type string
+         * @default ''
+         */
+        middleJustify: {
+          type: String,
+          value: ''
+        }
+
+      },
+
+      attached: function() {
+        this._observer = this._observe(this);
+        this._updateAriaLabelledBy();
+      },
+
+      detached: function() {
+        if (this._observer) {
+          this._observer.disconnect();
+        }
+      },
+
+      _observe: function(node) {
+        var observer = new MutationObserver(function() {
+          this._updateAriaLabelledBy();
+        }.bind(this));
+        observer.observe(node, {
+          childList: true,
+          subtree: true
+        });
+        return observer;
+      },
+
+      _updateAriaLabelledBy: function() {
+        var labelledBy = [];
+        var contents = Polymer.dom(this.root).querySelectorAll('content');
+        for (var content, index = 0; content = contents[index]; index++) {
+          var nodes = Polymer.dom(content).getDistributedNodes();
+          for (var node, jndex = 0; node = nodes[jndex]; jndex++) {
+            if (node.classList && node.classList.contains('title')) {
+              if (node.id) {
+                labelledBy.push(node.id);
+              } else {
+                var id = 'paper-toolbar-label-' + Math.floor(Math.random() * 10000);
+                node.id = id;
+                labelledBy.push(id);
+              }
+            }
+          }
+        }
+        if (labelledBy.length > 0) {
+          this.setAttribute('aria-labelledby', labelledBy.join(' '));
+        }
+      },
+
+      _computeBarClassName: function(barJustify) {
+        var classObj = {
+          'center': true,
+          'horizontal': true,
+          'layout': true,
+          'toolbar-tools': true
+        };
+
+        // If a blank string or any falsy value is given, no other class name is
+        // added.
+        if (barJustify) {
+          var justifyClassName = (barJustify === 'justified') ?
+              barJustify :
+              barJustify + '-justified';
+
+          classObj[justifyClassName] = true;
+        }
+
+        return classNames(classObj);
+      }
+
+    });
+
+  }());
+
+;
+
     Polymer({
         is : 'cwn-info-link',
 
@@ -8221,8 +9683,6 @@ Polymer({
               disabled : []
             };
             this.render();
-
-            if( $(window).width() > 700 ) this.toggle();
         },
 
         getEnabled : function() {
@@ -8317,16 +9777,6 @@ Polymer({
           this.mouseOverRegion = region;
 
           $(this).find('.menu-item[name="'+region.name+'"]').addClass('hovered');
-        },
-
-        toggle : function() {
-          if( $(this).hasClass('closed') ) {
-            $(this).removeClass('closed');
-            this.$.toggle.className = "fa fa-arrow-right";
-          } else {
-            $(this).addClass('closed');
-            this.$.toggle.className = "fa fa-arrow-left";
-          }
         }
     })
 ;
@@ -8378,13 +9828,13 @@ Polymer({
                 return;
               }
 
-              this.$.selector.onClick(features);
+              this.selector.onClick(features);
             }.bind(this)
           });
 
           this.markerLayer.addTo(this.map);
 
-          this.$.selector.init(this, this.markerLayer);
+          this.selector.init(this, this.markerLayer);
 
           CWN.ds.on('load', this.process.bind(this));
           if( !CWN.ds.loading ) this.process();
@@ -8413,21 +9863,19 @@ Polymer({
         },
 
         onMouseMove : function(features, e) {
-          var nodeLabel = '', linkLabel = '', regionLabel = '';
+          var label = [], linkLabel = '', regionLabel = '';
           var i, f;
 
           for( i = 0; i < features.length; i++ ) {
             f = features[i].properties;
 
-            if( f.type == 'Diversion' || f.type == 'Return Flow' ) linkLabel = f.prmname;
-            if( f.type == 'Link Group' ) linkLabel = f.type+', Count: '+f.lines.length;
-            else if ( f.type == 'Region' ) regionLabel = f.name;
-            else nodeLabel = f.prmname;
+            if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.prmname);
+            if( f.type == 'Link Group' ) label.push(f.type+', Count: '+f.lines.length);
+            else if ( f.type == 'Region' ) label.push(f.name);
+            else label.push(f.prmname);
           }
 
-          if( nodeLabel ) this.showHoverLabel(true, nodeLabel, e.containerPoint);
-          else if( linkLabel ) this.showHoverLabel(true, linkLabel, e.containerPoint);
-          else if( regionLabel ) this.showHoverLabel(true, regionLabel, e.containerPoint);
+          if( label.length > 0 ) this.showHoverLabel(true, label.join('<br />'), e.containerPoint);
           else this.showHoverLabel(false);
         },
 
@@ -8490,10 +9938,7 @@ Polymer({
               })
             }
 
-
-
-            this.$.menu.init();
-
+            this.menu.init();
             this.updateRenderState();
             this.update();
 
@@ -8572,7 +10017,7 @@ Polymer({
                 d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
                 if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
-                
+
                 if( d.properties.terminals ) {
                     for( var j = 0; j < d.properties.terminals.length; j++ ) {
                         d2 = CWN.ds.lookupMap[d.properties.terminals[j]];
@@ -8658,7 +10103,7 @@ Polymer({
 
         _updateRenderState : function(name) {
           var region = CWN.ds.regionLookupMap[name];
-          var state = this.$.menu.state;
+          var state = this.menu.state;
 
           if( state.enabled.indexOf(name) > -1 ) {
             this._addStateNodes(region.nodes, state);
@@ -8877,6 +10322,8 @@ Polymer({
             }
           };
 
+          this.$.map.menu = this.$.menu;
+          this.$.map.selector = this.$.selector;
         },
 
         attached : function() {
@@ -8978,5 +10425,9 @@ Polymer({
 
           this.$.map.update();
           this.$.graph.update();
+        },
+
+        onRegionSelect : function(e) {
+          this.$.map.onRegionSelect(e);
         }
     });

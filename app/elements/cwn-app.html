@@ -24,6 +24,7 @@
     <template>
         <cwn-search id="search"></cwn-search>
         <cwn-about id="about"></cwn-about>
+        <cwn-region-selector id="selector"></cwn-region-selector>
 
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
@@ -52,6 +53,11 @@
             <span class="visible-xs"><i class="fa fa-question"></i></span>
           </a>
 
+          <cwn-map-menu menu
+            id="menu"
+            on-select="onRegionSelect">
+          </cwn-map-menu>
+
           <cwn-filters
             id="filters" content
             on-update="onFiltersUpdated"></cwn-filters>
@@ -70,6 +76,8 @@
             class="fit"
             id="graph">
           </cwn-graph>
+
+
 
         </cwn-app-layout>
 
@@ -138,6 +146,8 @@
             }
           };
 
+          this.$.map.menu = this.$.menu;
+          this.$.map.selector = this.$.selector;
         },
 
         attached : function() {
@@ -239,6 +249,10 @@
 
           this.$.map.update();
           this.$.graph.update();
+        },
+
+        onRegionSelect : function(e) {
+          this.$.map.onRegionSelect(e);
         }
     });
 </script>
