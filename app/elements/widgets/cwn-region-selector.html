@@ -26,32 +26,12 @@
     },
 
     renderFeatures : function() {
-      var table = '<table class="table">';
-
+      var table = '';
       for (var i = 0; i < this.features.length; i++) {
-        var f = this.features[i];
-
-        var type = '';
-        if( f.geometry.type == 'Point' ) type = 'Node';
-        else if( f.geometry.type == 'LineString' ) type = 'Link';
-        else if( f.geometry.type == 'Polygon' ) type = 'Region';
-
-
-        table +=
-          '<tr>' +
-            '<td>'+type+'</td>' +
-            '<td style="text-align:center">'+
-              (f.properties.prmname || f.properties.name || 'Region to Region') +
-            '</td>' +
-            '<td>'+
-              (type == 'Region' ?
-                '<a class="btn btn-link region" index="'+i+'">Expand</a>' :
-                '<a class="btn btn-link" index="'+i+'" href="#info/'+f.properties.prmname+'">Info</a>') +
-            '</td>'
-          '</tr>';
+        table += this.renderFeature(this.features[i], i);
       }
 
-      this.$.body.innerHTML = table+'</table>';
+      this.$.body.innerHTML = table;
 
       $(this.$.body)
         .find('a')
@@ -72,6 +52,28 @@
           }
 
         }.bind(this));
+    },
+
+    renderFeature : function(feature, i) {
+      var link, icon = '';
+
+      if( feature.properties.type == 'Link Group' ) {
+        link = '<a>Line Group</a>';
+      } else if ( feature.properties.type == 'Region' ) {
+        link = '<a class="region" index="'+i+'" style="cusor:pointer">'+feature.properties.name+'</a>';
+      } else {
+        link = '<a href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a>';
+        icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
+      }
+
+      return '<div class="layout horizontal">'+
+        '<div style="padding:15px 5px; width: 50px">'+icon+'</div>'+
+        '<div class="flex">'+
+          '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+
+          (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
+          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+        '</div>'+
+      '</div>'
     }
   })
 </script>

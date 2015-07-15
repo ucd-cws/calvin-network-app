@@ -23,6 +23,7 @@
 
     <template>
         <cwn-search id="search"></cwn-search>
+        <cwn-about id="about"></cwn-about>
 
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
@@ -46,9 +47,13 @@
             <span class="visible-xs"><i class="fa fa-filter"></i></span>
           </a>
 
+          <a right-nav on-click="showAbout">
+            <span class="hidden-xs"><i class="fa fa-question"></i> About</span>
+            <span class="visible-xs"><i class="fa fa-question"></i></span>
+          </a>
+
           <cwn-filters
             id="filters" content
-            legend="{{legend}}"
             on-update="onFiltersUpdated"></cwn-filters>
 
           <cwn-map content
@@ -146,6 +151,8 @@
           this.setLocation();
 
           CWN.ds.on('load', this.onLoadingChange.bind(this));
+
+          this.$.filters.setLegend(this.legend);
         },
 
         onLoadingChange : function() {
@@ -213,6 +220,10 @@
           this.$.search.show();
         },
 
+        showAbout : function() {
+          this.$.about.show();
+        },
+
         updateGraph : function() {
           this.$.graph.update();
         },
@@ -223,7 +234,9 @@
           window.location.hash = 'info/'+e.detail.properties.prmname;
         },
 
-        onFiltersUpdated : function() {
+        onFiltersUpdated : function(e) {
+          this.$.map.mapFilters = e.detail;
+
           this.$.map.update();
           this.$.graph.update();
         }

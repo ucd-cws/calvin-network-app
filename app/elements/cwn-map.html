@@ -38,6 +38,15 @@
             height: 100%;
             display: block;
         }
+
+        #hoverLabel {
+          position: absolute;
+          background-color: white;
+          padding: 5px;
+          border: 1px solid #ccc;
+          display: none;
+          z-index: 100;
+        }
     </style>
 
     <template>
@@ -55,6 +64,8 @@
         </div>
 
         <cwn-region-selector id="selector"></cwn-region-selector>
+
+        <div id="hoverLabel"></div>
     </template>
 </dom-module>
 
@@ -88,27 +99,20 @@
           var ref = this;
 
           this.markerLayer = new L.CanvasGeojsonLayer({
-            onMouseOver : function(features) {
-              for( var i = 0; i < features.length; i++ ) {
-                if( !features[i].properties._render ) features[i].properties._render = {};
-                features[i].properties._render.hover = true;
-              }
-            },
-            onMouseOut : function(features) {
-              for( var i = 0; i < features.length; i++ ) {
-                if( !features[i].properties._render ) features[i].properties._render = {};
-                features[i].properties._render.hover = false;
-              }
-            },
-            onClick : function(features) {
+            onMouseOver : this.onMouseOver.bind(this),
+            onMouseOut : this.onMouseOut.bind(this),
+            onMouseMove : this.onMouseMove.bind(this),
+            onClick : function(features, e) {
               if( features.length == 0 ) return;
 
-              if( features.length == 1 && features[0].geometry.type == 'Polygon' ) {
+              var type = features[0].geometry.type;
+
+              if( features.length == 1 && type == 'Polygon' ) {
                 ref.onRegionClick(features[0].properties.id);
                 return;
               }
 
-              if( features.length == 1 && features[0].geometry.type == 'Point' ) {
+              if( features.length == 1 && features[0].properties.prmname ) {
                 window.location.href = '#info/' + features[0].properties.prmname;
                 return;
               }
@@ -116,6 +120,7 @@
               this.$.selector.onClick(features);
             }.bind(this)
           });
+
           this.markerLayer.addTo(this.map);
 
           this.$.selector.init(this, this.markerLayer);
@@ -146,22 +151,61 @@
           ctx.stroke();
         },
 
+        onMouseMove : function(features, e) {
+          var nodeLabel = '', linkLabel = '', regionLabel = '';
+          var i, f;
+
+          for( i = 0; i < features.length; i++ ) {
+            f = features[i].properties;
+
+            if( f.type == 'Diversion' || f.type == 'Return Flow' ) linkLabel = f.prmname;
+            if( f.type == 'Link Group' ) linkLabel = f.type+', Count: '+f.lines.length;
+            else if ( f.type == 'Region' ) regionLabel = f.name;
+            else nodeLabel = f.prmname;
+          }
+
+          if( nodeLabel ) this.showHoverLabel(true, nodeLabel, e.containerPoint);
+          else if( linkLabel ) this.showHoverLabel(true, linkLabel, e.containerPoint);
+          else if( regionLabel ) this.showHoverLabel(true, regionLabel, e.containerPoint);
+          else this.showHoverLabel(false);
+        },
+
+        onMouseOver : function(features, e) {
+          var i, f;
+
+          for( i = 0; i < features.length; i++ ) {
+            f = features[i].properties;
+
+            if( !f._render ) f._render = {};
+            f._render.hover = true;
+          }
+        },
+
+        onMouseOut : function(features) {
+          for( var i = 0; i < features.length; i++ ) {
+            if( !features[i].properties._render ) features[i].properties._render = {};
+            features[i].properties._render.hover = false;
+          }
+
+          this.showHoverLabel(false);
+        },
+
+        showHoverLabel : function(show, label, pos) {
+          if( show ) {
+            this.$.hoverLabel.style.display = 'block';
+            this.$.hoverLabel.style.left = (pos.x+10)+'px';
+            this.$.hoverLabel.style.top = (pos.y+10)+'px';
+            this.$.hoverLabel.innerHTML = label;
+          } else {
+            this.$.hoverLabel.style.display = 'none';
+          }
+        },
 
         process : function() {
             if( CWN.ds.loading ) return;
 
             this.edges = [];
             this.knownEdges = [];
-            /*for( var i = 0; i < CWN.ds.data.length; i++ ) {
-                var d = CWN.ds.data[i];
-
-                if( d.properties.type == 'Diversion' || d.properties.type == 'Return Flow' ) {
-                    this.links.push(d);
-
-                } else {
-                    this.nodes.push(d);
-                }
-            }*/
 
             for( var i = 0; i < CWN.ds.data.regions.length; i++ ) {
               this.markerLayer.addFeature({
@@ -180,7 +224,8 @@
             for( var i = 0; i < CWN.ds.data.nodes.length; i++ ) {
               this.markerLayer.addFeature({
                 geojson: CWN.ds.data.nodes[i],
-                render: CWN.map.renderer.basic
+                render: CWN.map.renderer.basic,
+                size: 20
               })
             }
 
@@ -209,7 +254,7 @@
 
             this.links = this.getEdgeMarkers();
 
-            if( this.markerLayer ) this.markerLayer.render();
+            this.updateRenderState();
 
             this.updating = false;
             this.fire('filtering-complete');
@@ -238,24 +283,19 @@
         // marker nodes that are linked to a visible node with the 'nodeStep' attribute
         filter : function() {
             var re, i, d, d2, d3, id;
-
             // three loops, first mark nodes that match, then mark one step nodes
             // finally mark links to hide and show
             try {
                 re = new RegExp('.*'+this.mapFilters.text.toLowerCase()+'.*');
             } catch (e) {}
-
             for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 d = CWN.ds.data.nodes[i];
-
                 if( !d.properties._render ) {
                     d.properties._render = {
                         filter_id : d.properties.type.replace(' ','_').replace('-','_')
                     };
                 }
                 d.properties._render.oneStep = false;
-
-
                 if( this.mapFilters[d.properties._render.filter_id] && this.isTextMatch(re, d.properties) ) {
                     if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) {
                         d.properties._render.show = false;
@@ -266,13 +306,12 @@
                     d.properties._render.show = false;
                 }
             }
-
             // now mark one step nodes
             for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
                 if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
-
+                
                 if( d.properties.terminals ) {
                     for( var j = 0; j < d.properties.terminals.length; j++ ) {
                         d2 = CWN.ds.lookupMap[d.properties.terminals[j]];
@@ -292,14 +331,12 @@
                     }
                 }
             }
-
             // now mark links that should be show
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
                 d = CWN.ds.data.links[i];
                 if( !d.properties._render ) {
                     d.properties._render = {};
                 }
-
                 d2 = CWN.ds.lookupMap[d.properties.origin];
                 d3 = CWN.ds.lookupMap[d.properties.terminus];
                 if( d2 && d3 &&
@@ -340,19 +377,21 @@
 
           this._updateRenderState('California');
 
-          var f = null;
+          var f = null, render;
           for( var i = 0; i < this.markerLayer.features.length; i++ ) {
             f = this.markerLayer.features[i];
+            r = f.geojson.properties._render || {};
 
-            if( this.renderState.points.indexOf(f.geojson) > -1 ||
+            if( (this.renderState.points.indexOf(f.geojson) > -1 ||
               this.renderState.lines.indexOf(f.geojson) > -1 ||
-              this.renderState.polygons.indexOf(f.geojson) > -1  ) {
+              this.renderState.polygons.indexOf(f.geojson) > -1) &&
+              r.show !== false ) {
                 f.visible = true;
             } else {
               f.visible = false;
             }
           }
-          console.log('set render state');
+
           this.markerLayer.render();
         },
 
@@ -391,6 +430,9 @@
 
             // TODO: why!?
             if( !node ) continue;
+
+            var render = node.properties._render || {};
+            if( render.show === false ) continue;
 
             if( node.properties.type == 'Diversion' || node.properties.type == 'Return Flow' ) {
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
@@ -450,7 +492,8 @@
                   coordinates : [origin.center, terminal.center]
                 },
                 properties : {
-                  lines : [$.extend(true, {}, node.properties)]
+                  type : 'Link Group',
+                  lines : [$.extend(true, {}, node.properties)],
                 }
               },
               render : function(ctx, xyPoints, map) {

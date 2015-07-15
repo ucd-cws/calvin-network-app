@@ -45,12 +45,13 @@
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
 
+                  <!--
                     <div class="form-group">
                         <label for="filter-input" class="col-sm-2 control-label"></label>
                         <div class="col-sm-10">
                           <label class="checkbox-inline">
-                            <input type="checkbox" 
-                                checked$="[[filters.calibrationMode]]" 
+                            <input type="checkbox"
+                                checked$="[[filters.calibrationMode]]"
                                 on-change="setCalibrationMode" /> Calibration Mode
                             <p class="help-block">Show calibration links and nodes, mark nodes attached to calibartion links</p>
                           </label>
@@ -61,14 +62,14 @@
                         <label for="filter-input" class="col-sm-2 control-label"></label>
                         <div class="col-sm-10">
                           <label class="checkbox-inline">
-                            <input type="checkbox" 
+                            <input type="checkbox"
                                 checked="[[filters.oneStepMode]]"
                                 on-change="setOneStepMode"  /> One Step Mode
                             <p class="help-block">Partially show nodes that have been filtered out but are connected to a visible node</p>
                           </label>
                         </div>
                     </div>
-
+                  -->
                     <div class="form-group">
                       <label for="filter-input" class="col-sm-2 control-label">Filter</label>
                       <div class="col-sm-10">
@@ -81,20 +82,20 @@
                         <label for="filter-types" class="col-sm-2 control-label">Types</label>
                         <div class="col-sm-10" id="filter-types">
 
-                            <template is="x-repeat" items="{{legendArr}}">
+                            <template is="dom-repeat" items="{{legendArr}}">
                                 <label class="checkbox-inline">
-                                    <input type="checkbox" 
-                                        name="[[item.name]]" 
-                                        checked="[[item.checked]]" 
+                                    <input type="checkbox"
+                                        name="[[item.name]]"
+                                        checked="[[item.checked]]"
                                         on-change="_updateCheckbox" />
-                            
+
                                     <div class="cb-border">
                                         <cwn-app-icon width="[[item.iconSize]]" height="[[item.iconSize]]" type="[[item.name]]"></cwn-app-icon>
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">[[item.name]]</div>
                                     </div>
                                 </label>
                             </template>
-                        
+
                         </div>
                     </div>
 
@@ -113,28 +114,30 @@
     Polymer({
         is : 'cwn-filters',
 
-        configure : function() {
-            return {
-                legendArr : [],
-                iconSize : 22,
+        ready : function() {
+          this.legendArr = [];
+          this.iconSize = 22;
 
-                filters : {
-                    calibrationMode : true,
-                    oneStepMode : true,
-                    text : '',
-                }
-            }
+          this.filters = {
+              calibrationMode : true,
+              oneStepMode : true,
+              text : '',
+          };
         },
 
-        ready : function() {
-            for( var key in this.legend ) {
-                this.filters[key.replace(' ','_').replace('-','_')] = true;
-                this.legendArr.push({
-                    iconSize : this.iconSize,
-                    name : key,
-                    checked : true
-                });
-            }
+        setLegend : function(legend) {
+          this.legend = legend;
+
+          var tmp = [];
+          for( var key in this.legend ) {
+              this.filters[key.replace(' ','_').replace('-','_')] = true;
+              tmp.push({
+                  iconSize : this.iconSize,
+                  name : key,
+                  checked : true
+              });
+          }
+          this.legendArr = tmp;
         },
 
         _updateCheckbox : function(e) {
@@ -142,7 +145,7 @@
             var value = $(e.currentTarget).is(':checked');
             this.filters[name.replace(' ','_').replace('-','_')] = value;
 
-            this.fire('update');
+            this.fire('update', this.filters);
         },
 
         show : function() {
@@ -160,7 +163,7 @@
             this.$.root.classList.remove('open');
             this.classList.remove('open');
         },
-        
+
         toggle : function() {
             this.$.root.classList.toggle('open');
             this.classList.toggle('open');
@@ -176,12 +179,12 @@
 
         setCalibrationMode : function(e) {
             this.filters.calibrationMode = $(e.currentTarget).is(':checked');
-            this.fire('update');
+            this.fire('update', this.filters);
         },
 
         setOneStepMode : function(e) {
             this.filters.oneStepMode = $(e.currentTarget).is(':checked');
-            this.fire('update');
+            this.fire('update', this.filters);
         },
 
         onKeyUp : function(e) {
@@ -191,7 +194,7 @@
 
         updateFilterText : function(e) {
             this.filters.text = e.currentTarget.value;
-            this.fire('update');
+            this.fire('update', this.filters);
         }
     });
 </script>

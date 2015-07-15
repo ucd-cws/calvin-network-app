@@ -61,7 +61,6 @@ Polymer({
 
     update : function() {
         if( !this.feature ) return;
-        console.log(this.feature.properties.costs);
 
         this.noCostData = true;
 

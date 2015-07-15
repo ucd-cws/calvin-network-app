@@ -350,6 +350,7 @@ Copyright (c) 2015 Daniel Eden
 
 
 
+
 </head><body><div hidden="">
 
 <dom-module id="cwn-info-link">
@@ -586,7 +587,7 @@ Copyright (c) 2015 Daniel Eden
                 <div style="height:62px">
                     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                         <div class="logo">
-                            <span class="hidden-xs"><i class="fa fa-code-fork"></i> California Water Network</span>
+                            <span class="hidden-xs"><i class="fa fa-code-fork"></i> CALVIN Water Network</span>
                             <span class="visible-xs"><i class="fa fa-code-fork"></i> CWN</span>
                         </div>
 
@@ -655,11 +656,14 @@ Copyright (c) 2015 Daniel Eden
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
 
+                  <!--
                     <div class="form-group">
                         <label for="filter-input" class="col-sm-2 control-label"></label>
                         <div class="col-sm-10">
                           <label class="checkbox-inline">
-                            <input type="checkbox" checked$="[[filters.calibrationMode]]" on-change="setCalibrationMode"> Calibration Mode
+                            <input type="checkbox"
+                                checked$="[[filters.calibrationMode]]"
+                                on-change="setCalibrationMode" /> Calibration Mode
                             <p class="help-block">Show calibration links and nodes, mark nodes attached to calibartion links</p>
                           </label>
                         </div>
@@ -669,12 +673,14 @@ Copyright (c) 2015 Daniel Eden
                         <label for="filter-input" class="col-sm-2 control-label"></label>
                         <div class="col-sm-10">
                           <label class="checkbox-inline">
-                            <input type="checkbox" checked="[[filters.oneStepMode]]" on-change="setOneStepMode"> One Step Mode
+                            <input type="checkbox"
+                                checked="[[filters.oneStepMode]]"
+                                on-change="setOneStepMode"  /> One Step Mode
                             <p class="help-block">Partially show nodes that have been filtered out but are connected to a visible node</p>
                           </label>
                         </div>
                     </div>
-
+                  -->
                     <div class="form-group">
                       <label for="filter-input" class="col-sm-2 control-label">Filter</label>
                       <div class="col-sm-10">
@@ -687,17 +693,17 @@ Copyright (c) 2015 Daniel Eden
                         <label for="filter-types" class="col-sm-2 control-label">Types</label>
                         <div class="col-sm-10" id="filter-types">
 
-                            <template is="x-repeat" items="{{legendArr}}">
+                            <template is="dom-repeat" items="{{legendArr}}">
                                 <label class="checkbox-inline">
                                     <input type="checkbox" name="[[item.name]]" checked="[[item.checked]]" on-change="_updateCheckbox">
-                            
+
                                     <div class="cb-border">
                                         <cwn-app-icon width="[[item.iconSize]]" height="[[item.iconSize]]" type="[[item.name]]"></cwn-app-icon>
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">[[item.name]]</div>
                                     </div>
                                 </label>
                             </template>
-                        
+
                         </div>
                     </div>
 
@@ -711,6 +717,7 @@ Copyright (c) 2015 Daniel Eden
         </div>
     </template>
 </dom-module>
+
 
 
 <dom-module id="cwn-search">
@@ -728,6 +735,39 @@ Copyright (c) 2015 Daniel Eden
         </div>
 
         <div id="results"></div>
+
+      </div>
+    </cwn-popup>
+  </template>
+</dom-module>
+
+
+
+<dom-module id="cwn-about">
+  <template>
+    <cwn-popup id="popup" style="z-index: 10000">
+      <div class="popup-body" id="body">
+
+        <p style="font-size: 18px">
+          <a href="http://calvin.ucdavis.edu/" target="_blank"><i class="fa fa-globe"></i> Homepage</a>
+        </p>
+
+        <div>
+          <p>
+            All data can be accessed via the
+            <a href="https://github.com/ucd-cws/calvin-network-data" target="_blank"><i class="fa fa-github"></i> GitHub Repository.</a>
+            Tickets for data issues should be made <a href="https://github.com/ucd-cws/calvin-network-data/issues" target="_blank">here.</a>
+          </p>
+
+          <p>
+            Please report application bugs
+            <a href="https://github.com/ucd-cws/ca-water-network/issues" target="_blank"><i class="fa fa-bug"></i> here.</a>
+          </p>
+
+          <p>
+            Created by the UC Davis <a href="https://watershed.ucdavis.edu/" target="_blank">Center for Watershed Sciences</a>
+          </p>
+        </div>
 
       </div>
     </cwn-popup>
@@ -1193,6 +1233,15 @@ Copyright (c) 2015 Daniel Eden
             height: 100%;
             display: block;
         }
+
+        #hoverLabel {
+          position: absolute;
+          background-color: white;
+          padding: 5px;
+          border: 1px solid #ccc;
+          display: none;
+          z-index: 100;
+        }
     </style>
 
     <template>
@@ -1207,6 +1256,8 @@ Copyright (c) 2015 Daniel Eden
         </div>
 
         <cwn-region-selector id="selector"></cwn-region-selector>
+
+        <div id="hoverLabel"></div>
     </template>
 </dom-module>
 
@@ -1237,6 +1288,7 @@ Copyright (c) 2015 Daniel Eden
 
     <template>
         <cwn-search id="search"></cwn-search>
+        <cwn-about id="about"></cwn-about>
 
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
@@ -1260,7 +1312,12 @@ Copyright (c) 2015 Daniel Eden
             <span class="visible-xs"><i class="fa fa-filter"></i></span>
           </a>
 
-          <cwn-filters id="filters" content="" legend="{{legend}}" on-update="onFiltersUpdated"></cwn-filters>
+          <a right-nav="" on-click="showAbout">
+            <span class="hidden-xs"><i class="fa fa-question"></i> About</span>
+            <span class="visible-xs"><i class="fa fa-question"></i></span>
+          </a>
+
+          <cwn-filters id="filters" content="" on-update="onFiltersUpdated"></cwn-filters>
 
           <cwn-map content="" id="map" on-selected="onFeatureSelected" on-filtering-complete="updateGraph">
           </cwn-map>
