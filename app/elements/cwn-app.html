@@ -156,14 +156,14 @@
             this.setLocation();
           }.bind(this));
 
+          this.$.filters.setLegend(this.legend);
           this.$.map.init(this.legend, this.$.filters.filters);
           this.$.info.init(this.$.map.map);
 
           this.setLocation();
 
-          CWN.ds.on('load', this.onLoadingChange.bind(this));
-
-          this.$.filters.setLegend(this.legend);
+          if( CWN.ds.loading ) CWN.ds.on('load', this.onLoadingChange.bind(this));
+          else this.onLoadingChange();
         },
 
         onLoadingChange : function() {

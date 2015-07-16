@@ -115,8 +115,8 @@
 
           this.selector.init(this, this.markerLayer);
 
-          CWN.ds.on('load', this.process.bind(this));
           if( !CWN.ds.loading ) this.process();
+          else CWN.ds.on('load', this.process.bind(this));
 
           setTimeout(function(){
               this.map.invalidateSize();

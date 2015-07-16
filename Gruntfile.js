@@ -163,8 +163,8 @@ module.exports = function (grunt) {
         vulcanize: {
             default : {
                 options: {
-                    csp : true,
-                    inline : true
+                    inlineCss : true,
+                    inlineScripts : true
                 },
                 files : {
                     '<%= yeoman.dist %>/require.html': ['<%= yeoman.dist %>/require.html']

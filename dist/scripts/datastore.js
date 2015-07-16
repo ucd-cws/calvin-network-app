@@ -40,9 +40,9 @@ function Datastore() {
         this.islocal = local;
 
         this.loadNetwork(this.network, function(err){
-            this.loading = false;
-            this.fire('load', this.loading);
-            this.fire('loaded');
+          this.loading = false;
+          this.fire('load', this.loading);
+          this.fire('loaded');
         }.bind(this));
     }
 
@@ -56,7 +56,7 @@ function Datastore() {
         var regionsLoaded = false;
         function done() {
           if( networkLoaded && regionsLoaded ) callback();
-        }
+        };
 
         var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
 
