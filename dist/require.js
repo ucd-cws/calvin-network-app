@@ -8159,7 +8159,21 @@ this._removeChildren();
 ;
 
     Polymer({
-        is : 'cwn-app-layout'
+        is : 'cwn-app-layout',
+
+        updateView : function(page) {
+          $(this.$.navBtns).remove();
+
+          if( page == 'map' ) {
+            this.$.mapLayout.style.display = 'block';
+            this.$.layout.style.display = 'none';
+            this.$.mapBtns.appendChild(this.$.navBtns);
+          } else {
+            this.$.mapLayout.style.display = 'none';
+            this.$.layout.style.display = 'block';
+            this.$.layoutBtns.appendChild(this.$.navBtns);
+          }
+        }
     });
 ;
 
@@ -8201,32 +8215,11 @@ this._removeChildren();
         },
 
         show : function() {
-            setTimeout(function(){
-                this.$.root.classList.add('show');
-            }.bind(this), 50);
-
-            this.$.root.classList.add('open');
-            this.classList.add('open');
-            $('html, body').animate({ scrollTop: '0px' });
+          this.$.popup.show();
         },
 
         hide : function() {
-            this.$.root.classList.remove('show');
-            this.$.root.classList.remove('open');
-            this.classList.remove('open');
-        },
-
-        toggle : function() {
-            this.$.root.classList.toggle('open');
-            this.classList.toggle('open');
-            if( this.classList.contains('open') ) {
-                $('html, body').animate({ scrollTop: '0px' });
-                setTimeout(function(){
-                    this.$.root.classList.add('show');
-                }.bind(this), 50);
-            } else {
-                this.$.root.classList.remove('show');
-            }
+          this.$.popup.hide();
         },
 
         setCalibrationMode : function(e) {
@@ -10354,9 +10347,12 @@ Polymer({
           var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
           if( loc == '') loc = 'map';
           this.$.backBtn.style.display = 'none';
+          this.$.filterBtn.style.display = 'none';
 
+          this.$.layout.updateView(loc);
 
           if( loc == 'map' ) {
+            this.$.filterBtn.style.display = 'inline-block';
             this.selectedPage = this.PAGES.map;
             this.async(function(){
               var ele = this.querySelector('cwn-map');
@@ -10399,7 +10395,7 @@ Polymer({
         },
 
         showFilters : function() {
-            this.$.filters.toggle();
+            this.$.filters.show();
         },
 
         search : function() {

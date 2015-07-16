@@ -26,16 +26,25 @@
         <cwn-about id="about"></cwn-about>
         <cwn-region-selector id="selector"></cwn-region-selector>
 
+        <cwn-filters
+          id="filters"
+          on-update="onFiltersUpdated"></cwn-filters>
+
         <div class="splash-screen" id="splash">
           <div class="splash-screen-text">
             Loading Network...<br />
           </div>
         </div>
 
-        <cwn-app-layout>
+        <cwn-app-layout id="layout">
           <a right-nav href="#map" id="backBtn">
             <span class="hidden-xs"><i class="fa fa-arrow-left"></i> Back</span>
             <span class="visible-xs"><i class="fa fa-arrow-left"></i></span>
+          </a>
+
+          <a right-nav on-click="showFilters" id="filterBtn">
+            <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
+            <span class="visible-xs"><i class="fa fa-filter"></i></span>
           </a>
 
           <a right-nav on-click="search">
@@ -43,26 +52,18 @@
             <span class="visible-xs"><i class="fa fa-search"></i></span>
           </a>
 
-          <a right-nav on-click="showFilters">
-            <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
-            <span class="visible-xs"><i class="fa fa-filter"></i></span>
-          </a>
-
           <a right-nav on-click="showAbout">
             <span class="hidden-xs"><i class="fa fa-question"></i> About</span>
             <span class="visible-xs"><i class="fa fa-question"></i></span>
           </a>
 
-          <cwn-map-menu menu
+          <cwn-map-menu
             id="menu"
             on-select="onRegionSelect">
           </cwn-map-menu>
 
-          <cwn-filters
-            id="filters" content
-            on-update="onFiltersUpdated"></cwn-filters>
 
-          <cwn-map content
+          <cwn-map
             id="map"
             on-selected="onFeatureSelected"
             on-filtering-complete="updateGraph">
@@ -178,9 +179,12 @@
           var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
           if( loc == '') loc = 'map';
           this.$.backBtn.style.display = 'none';
+          this.$.filterBtn.style.display = 'none';
 
+          this.$.layout.updateView(loc);
 
           if( loc == 'map' ) {
+            this.$.filterBtn.style.display = 'inline-block';
             this.selectedPage = this.PAGES.map;
             this.async(function(){
               var ele = this.querySelector('cwn-map');
@@ -223,7 +227,7 @@
         },
 
         showFilters : function() {
-            this.$.filters.toggle();
+            this.$.filters.show();
         },
 
         search : function() {

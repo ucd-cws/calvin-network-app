@@ -1,28 +1,5 @@
-<!-- <polymer-element name="cwn-filters" attributes="legend filters"> -->
 <dom-module id="cwn-filters">
     <style>
-        :host {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            z-index: 5000;
-            background-color: rgba(0,0,0,.5);
-        }
-        :host(.open) {
-            overflow-y: auto;
-            overflow-x: hidden;
-            height: 100%;
-        }
-        .filters-root {
-            padding: 10px;
-            background-color: rgba(255,255,255, .9);
-            box-shadow: 0 0 10px;
-            display: none;
-        }
-        #root.open {
-            display: block;
-        }
         .cb-border {
             display:inline-block;
             padding:2px 2px 0 2px;
@@ -40,7 +17,8 @@
     </style>
 
     <template>
-        <div id="root" class="showControls filters-root">
+      <cwn-popup id="popup" style="z-index: 10000">
+        <div class="popup-body" id="body">
             <div class="row" >
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
@@ -83,6 +61,7 @@
                         <div class="col-sm-10" id="filter-types">
 
                             <template is="dom-repeat" items="{{legendArr}}">
+                              <div>
                                 <label class="checkbox-inline">
                                     <input type="checkbox"
                                         name="[[item.name]]"
@@ -94,6 +73,7 @@
                                         <div style="vertical-align:top;display:inline-block;padding:2px 0 0 2px">[[item.name]]</div>
                                     </div>
                                 </label>
+                              </div>
                             </template>
 
                         </div>
@@ -102,11 +82,8 @@
                   </div>
                 </div>
             </div>
-
-            <div style="text-align:center">
-                <a class="btn btn-link" on-click="hide">Close</a>
-            </div>
         </div>
+      </cwn-popup>
     </template>
 </dom-module>
 
@@ -149,32 +126,11 @@
         },
 
         show : function() {
-            setTimeout(function(){
-                this.$.root.classList.add('show');
-            }.bind(this), 50);
-
-            this.$.root.classList.add('open');
-            this.classList.add('open');
-            $('html, body').animate({ scrollTop: '0px' });
+          this.$.popup.show();
         },
 
         hide : function() {
-            this.$.root.classList.remove('show');
-            this.$.root.classList.remove('open');
-            this.classList.remove('open');
-        },
-
-        toggle : function() {
-            this.$.root.classList.toggle('open');
-            this.classList.toggle('open');
-            if( this.classList.contains('open') ) {
-                $('html, body').animate({ scrollTop: '0px' });
-                setTimeout(function(){
-                    this.$.root.classList.add('show');
-                }.bind(this), 50);
-            } else {
-                this.$.root.classList.remove('show');
-            }
+          this.$.popup.hide();
         },
 
         setCalibrationMode : function(e) {
