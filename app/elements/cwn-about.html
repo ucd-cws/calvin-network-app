@@ -2,11 +2,6 @@
   <template>
     <cwn-popup id="popup" style="z-index: 10000">
       <div class="popup-body" id="body">
-
-        <p style="font-size: 18px">
-          <a href="http://calvin.ucdavis.edu/" target="_blank"><i class="fa fa-globe"></i> Homepage</a>
-        </p>
-
         <div>
           <p>
             All data can be accessed via the
@@ -34,8 +29,8 @@
     is : 'cwn-about',
 
     ready : function() {
-      this.$.popup.header = 'CALVIN Water Network';
-
+      this.$.popup.$['header-html'].innerHTML = 'CALVIN Water Network '+
+        '<small><a href="http://calvin.ucdavis.edu/" target="_blank"><i class="fa fa-globe"></i> Homepage</a></small>';
     },
 
     show : function() {
