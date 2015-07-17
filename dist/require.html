@@ -13624,6 +13624,8 @@ Polymer({
               this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
             }
           } else if ( loc == 'graph' ) {
+            this.$.backBtn.style.display = 'inline-block';
+            this.$.filterBtn.style.display = 'inline-block';
             this.selectedPage = this.PAGES.graph;
           }
           this.setPage();
