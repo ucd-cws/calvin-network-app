@@ -1,74 +1,121 @@
 <!--<polymer-element name="cwn-graph" attributes="ds settings">-->
 <dom-module id="cwn-graph">
-    <template>
-        <style>
-            #sigma {
-                width: 100%;
-                height: 100%;
-                display: block;
-            }
-            .maxDepth {
-                position: absolute;
-                left: 0;
-                bottom: 0;
-                z-index: 100;
-                background-color: rgba(220,220,220,.85);
-                color: #888;
-                padding: 5px;
-                border-radius: 0 3px 0 0;
-                box-shadow: 0 0 5px #333;
-            }
-            .maxDepth input {
-                width: 60px !important;
-            }
-            table td {
-                padding: 3px !important;
-            }
-        </style>
-        <div id="sigma"></div>
-        <div class="maxDepth">
-            <table>
-                <tr>
-                    <td>Max Depth:</td>
-                    <td><input type="number" value$="{{maxDepth}}" class="form-control" on-change="maxUpdate" /></td>
-                </tr>
-                <tr>
-                    <td>Negative Depth: </td>
-                    <td><input type="number" value$="{{negativeDepth}}" class="form-control" on-change="minUpdate" /></td>
-                </td>
-                <tr>
-                    <td><a href="#map">Back to Map</a></td>
-                    <td></td>
-                </td>
-            </table>
-        </div>
+  <style>
+    #sigma {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    .maxDepth {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        z-index: 100;
+        background-color: rgba(220,220,220,.85);
+        color: #888;
+        padding: 5px;
+        border-radius: 0 3px 0 0;
+        box-shadow: 0 0 5px #333;
+    }
+    .maxDepth input {
+        width: 60px !important;
+    }
+    table td {
+        padding: 3px !important;
+    }
 
-        <cwn-popup id="popup" noFooter>
-            <div class="popup-body">
-                <div class="layout horizontal">
-                    <div>
-                        <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
-                    </div>
-                    <div flex>
-                        <div style="padding-left:25px">
-                            <div>{{popupNode.properties.description}}</div>
-                            <h4 style="margin-top: 30px">Actions</h4>
-                            <ul>
-                                <li><a 
-                                        class="btn btn-link" 
-                                        href="{{graphLink}}"
-                                        on-click="hide">
-                                        Set as Graph Root</a>
-                                </li>
-                                <li><a class="btn btn-link" href="{{infoLink}}" on-click="hide">View Info</a></li>
-                                <li><a class="btn btn-link" on-click="goTo">View on Map</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div> 
+    input[type="number"] {
+      background-color: #eee;
+    }
+  </style>
+
+  <template>
+
+      <div id="sigma"></div>
+
+      <div class="maxDepth">
+          <table>
+              <tr>
+                  <td>Max Depth:</td>
+                  <td><input type="number" value$="{{maxDepth}}" class="form-control" on-change="maxUpdate" /></td>
+              </tr>
+              <tr>
+                  <td>Negative Depth: </td>
+                  <td><input type="number" value$="{{negativeDepth}}" class="form-control" on-change="minUpdate" /></td>
+              </td>
+              <tr>
+                  <td><a href="#map">Back to Map</a></td>
+                  <td></td>
+              </td>
+          </table>
+      </div>
+
+      <cwn-popup id="popup" noFooter>
+          <div class="popup-body">
+
+            <table style="margin: 0 auto">
+              <tr>
+                <td>
+                  <cwn-app-icon type$="{{popupType}}" width="72" height="72" fillFromType="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
+                </td><td>
+                  <h3>{{popupLabel}}</h3>
+                  <div><b>{{popupType}}</b></div>
+                </td>
+              </tr>
+            </table>
+
+            <div style="text-align:center">
+              <div style="padding: 10px 10px 0 10px; color: #888">{{popupDescription}}</div>
+
+              <div id="regions"></div>
             </div>
-        </cwn-popup>
-    </template>
+
+            <div style="border-top: 1px solid #eee; text-align:center; margin-top: 15px;padding-top: 15px">
+              <div style="margin: 0 auto; display: inline-block; text-align: left">
+                <div>
+                  <a
+                          class="btn btn-link"
+                          href="{{graphLink}}"
+                          on-click="hide">
+                          <i class="fa fa-chevron-circle-up fa-fw"></i> Set as Graph Root</a>
+                </div>
+                <div>
+                    <a class="btn btn-link" href="{{infoLink}}" on-click="hide">
+                      <i class="fa fa-info fa-fw"></i> View Info</a>
+                </div>
+                <div>
+                    <a class="btn btn-link" on-click="goTo">
+                      <i class="fa fa-map-marker fa-fw"></i> Show on Map</a>
+                </div>
+                <div id="githubLink"></div>
+              </div>
+            </div>
+
+
+              <!--<div class="layout horizontal">
+                  <div>
+                      <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
+                  </div>
+                  <div flex>
+                      <div style="padding-left:25px">
+                          <div>{{popupNode.properties.description}}</div>
+                          <h4 style="margin-top: 30px">Actions</h4>
+                          <ul>
+                              <li><a
+                                      class="btn btn-link"
+                                      href="{{graphLink}}"
+                                      on-click="hide">
+                                      Set as Graph Root</a>
+                              </li>
+                              <li><a class="btn btn-link" href="{{infoLink}}" on-click="hide">View Info</a></li>
+                              <li><a class="btn btn-link" on-click="goTo">View on Map</a></li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>-->
+          </div>
+      </cwn-popup>
+  </template>
 </dom-module>
 
 <script>
@@ -81,7 +128,7 @@
                 observer : 'update'
             },
             popupNode : {
-                observer : 'setLinks'
+                observer : 'setPopupInfo'
             }
         },
 
@@ -99,6 +146,10 @@
             this.cnodes = [];
             this.graphLink = '';
             this.infoLink = '';
+
+            this.popupLabel = '';
+            this.popupDescription = '';
+            this.popupType = '';
         },
 
         attached : function() {
@@ -111,12 +162,23 @@
             });
         },
 
-        setLinks : function() {
+        setPopupInfo : function() {
             if( !this.popupNode ) return;
             if( !this.popupNode.properties ) return;
+            var props = this.popupNode.properties;
 
-            this.graphLink = '#info/'+this.popupNode.properties.prmname;
-            this.infoLink = '#info/'+this.popupNode.properties.prmname;
+
+            this.graphLink = '#graph/'+props.prmname;
+            this.infoLink = '#info/'+props.prmname;
+            this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+props.repo.github+'" '+
+              ' target="_blank"><i class="fa fa-github fa-fw"></i> Show on GitHub</a>';
+
+            this.$.regions.innerHTML = props.regions ?
+                '<i>'+props.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</i>' : '';
+
+            this.popupLabel = props.prmname.replace(/_/g, ' ');
+            this.popupDescription = props.description || '';
+            this.popupType = props.type;
         },
 
         changeNode : function() {
@@ -143,7 +205,7 @@
         update : function() {
             if( !CWN.ds ) return;
             if( this.prmname == '' ) return;
-            
+
             this.reset();
 
             var t1 = new Date().getTime();
@@ -280,7 +342,7 @@
             var tNode = CWN.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
             // make sure the next node exists
             if( !tNode ) return;
-            
+
             // make sure the next node is being shown
             if( tNode.properties._render && !tNode.properties._render.show ) {
                 this._followLink(link, level, direction);
@@ -406,7 +468,7 @@
 
         render : function() {
             if( !this.graph ) {
-                this.graph = new sigma({ 
+                this.graph = new sigma({
                     graph: this.graphJson,
                     renderer : {
                         container: this.$.sigma,
@@ -418,15 +480,15 @@
                         minNodeSize: 10
                     }
                 });
+
                 this.graph.bind('clickNode', function(e){
                     //window.location.hash = 'graph/'+e.data.node.id;
                     this.popupNode = CWN.ds.lookupMap[e.data.node.id];
 
-                    this.$.popup.header = this.popupNode.properties.prmname;
                     this.$.popup.show();
                 }.bind(this));
             } else {
-  
+
                 this.graph.graph.clear();
                 this.graph.graph.read(this.graphJson);
                 // Refresh the display:
