@@ -13,6 +13,10 @@
           padding: 5px;
           font-size: 14px;
         }
+        .menu-item:hover {
+          color: #2196f3;
+          cursor: pointer;
+        }
 
     </style>
     <template>
@@ -71,9 +75,12 @@
             var ref = this;
             var region = CWN.ds.regionLookupMap[regionName];
 
+            var id = region.name;
+            var label = region.geo.properties.name || id;
+
             var panel = $('<div class="menu-root cwn-map-menu"></div>');
-            var input = $('<div class="menu-item cwn-map-menu" name="'+region.name+'">'+
-                          '<input type="checkbox" name="'+region.name+'" /> '+region.name+'</div>');
+            var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
+                          '<input type="checkbox" name="'+id+'" /> '+label+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
             panel.append(input);

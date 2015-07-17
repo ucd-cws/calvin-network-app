@@ -13,6 +13,11 @@ CWN.map.renderer.basic = function(ctx, xyPoints, map, feature) {
     renderBasicLine(ctx, xyPoints, map, feature, render);
   } else if ( feature.geojson.geometry.type == 'Polygon' ) {
     renderBasicPolygon(ctx, xyPoints, map, feature, render);
+  } else if ( feature.geojson.geometry.type == 'MultiPolygon' ) {
+    //debugger;
+    xyPoints.forEach(function(points){
+      renderBasicPolygon(ctx, points, map, feature, render);
+    });
   }
 }
 

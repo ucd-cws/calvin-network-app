@@ -3,20 +3,22 @@
         leaflet-map, core-animated-pages {
             height: 100%
         }
+
         .splash-screen {
           position: fixed;
           top: 100px;
-          width: 100%;
           text-align: center;
-           z-index: 20000;
+          z-index: 20000;
+          width: 100%;
         }
+
         .splash-screen-text {
+          margin: 20px;
           display: inline-block;
           background-color: rgba(0,0,0,.7);
           border-radius: 6px;
           box-shadow: 0 0 5px black;
           padding: 25px;
-          font-size: 50px;
           color: white;
         }
     </style>
@@ -31,9 +33,9 @@
           on-update="onFiltersUpdated"></cwn-filters>
 
         <div class="splash-screen" id="splash">
-          <div class="splash-screen-text">
-            Loading Network...<br />
-          </div>
+          <h2 class="splash-screen-text">
+            <i class="fa fa-circle-o-notch fa-spin"></i> Loading Network...
+          </h2>
         </div>
 
         <cwn-app-layout id="layout">

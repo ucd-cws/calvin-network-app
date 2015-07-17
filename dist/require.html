@@ -12691,6 +12691,10 @@ Polymer({
           padding: 5px;
           font-size: 14px;
         }
+        .menu-item:hover {
+          color: #2196f3;
+          cursor: pointer;
+        }
 
     </style>
     <template>
@@ -12749,9 +12753,12 @@ Polymer({
             var ref = this;
             var region = CWN.ds.regionLookupMap[regionName];
 
+            var id = region.name;
+            var label = region.geo.properties.name || id;
+
             var panel = $('<div class="menu-root cwn-map-menu"></div>');
-            var input = $('<div class="menu-item cwn-map-menu" name="'+region.name+'">'+
-                          '<input type="checkbox" name="'+region.name+'" /> '+region.name+'</div>');
+            var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
+                          '<input type="checkbox" name="'+id+'" /> '+label+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
             panel.append(input);
@@ -12908,7 +12915,7 @@ Polymer({
 
               var type = features[0].geometry.type;
 
-              if( features.length == 1 && type == 'Polygon' ) {
+              if( features.length == 1 && type == 'Polygon' || type == 'MultiPolygon' ) {
                 ref.onRegionClick(features[0].properties.id);
                 return;
               }
@@ -12959,14 +12966,19 @@ Polymer({
           for( i = 0; i < features.length; i++ ) {
             f = features[i].properties;
 
-            if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.prmname);
-            if( f.type == 'Link Group' ) label.push(f.type+', Count: '+f.lines.length);
-            else if ( f.type == 'Region' ) label.push(f.name);
-            else label.push(f.prmname);
+            if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.type+' <b>'+f.prmname+'</b>');
+            else if( f.type == 'Link Group' ) label.push(f.type+' <b>Count: '+f.lines.length+'</b>');
+            else if ( f.type == 'Region' ) label.push(f.type+' <b>'+f.name+'</b>');
+            else label.push(f.type+' <b>'+f.prmname+'</b>');
           }
 
-          if( label.length > 0 ) this.showHoverLabel(true, label.join('<br />'), e.containerPoint);
-          else this.showHoverLabel(false);
+          if( features.length > 0 ) {
+            this.showHoverLabel(true, label.join('<br />'), e.containerPoint);
+            this.$.leaflet.style.cursor = 'pointer';
+          } else {
+            this.showHoverLabel(false);
+            this.$.leaflet.style.cursor = '-webkit-grab';
+          }
         },
 
         onMouseOver : function(features, e) {
@@ -12985,8 +12997,6 @@ Polymer({
             if( !features[i].properties._render ) features[i].properties._render = {};
             features[i].properties._render.hover = false;
           }
-
-          this.showHoverLabel(false);
         },
 
         showHoverLabel : function(show, label, pos) {
@@ -13213,9 +13223,10 @@ Polymer({
           var self = this;
 
           // find first region and insert after
-          var index = 0;
+          var index = 0, type;
           for( var i = 0; i < this.markerLayer.features.length; i++ ) {
-            if( this.markerLayer.features[i].geojson.geometry.type != 'Polygon' ) {
+            type = this.markerLayer.features[i].geojson.geometry.type;
+            if( type != 'Polygon' && type != 'MultiPolygon' ) {
               index = i;
               break;
             }
@@ -13355,20 +13366,22 @@ Polymer({
         leaflet-map, core-animated-pages {
             height: 100%
         }
+
         .splash-screen {
           position: fixed;
           top: 100px;
-          width: 100%;
           text-align: center;
-           z-index: 20000;
+          z-index: 20000;
+          width: 100%;
         }
+
         .splash-screen-text {
+          margin: 20px;
           display: inline-block;
           background-color: rgba(0,0,0,.7);
           border-radius: 6px;
           box-shadow: 0 0 5px black;
           padding: 25px;
-          font-size: 50px;
           color: white;
         }
     </style>
@@ -13381,9 +13394,9 @@ Polymer({
         <cwn-filters id="filters" on-update="onFiltersUpdated"></cwn-filters>
 
         <div class="splash-screen" id="splash">
-          <div class="splash-screen-text">
-            Loading Network...<br>
-          </div>
+          <h2 class="splash-screen-text">
+            <i class="fa fa-circle-o-notch fa-spin"></i> Loading Network...
+          </h2>
         </div>
 
         <cwn-app-layout id="layout">
