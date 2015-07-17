@@ -82,7 +82,7 @@
             var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
                           '<input type="checkbox" name="'+id+'" /> '+label+'</div>');
 
-            var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'"></div>');
+            var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'" name="'+id+'-children"></div>');
             panel.append(input);
             panel.append(children);
 
@@ -120,6 +120,21 @@
             for( var i = 0; i < region.subregions.length; i++ ) {
                 this.renderRegion(region.subregions[i], children[0]);
             }
+        },
+
+        onRegionClick : function(name) {
+          var ele = $(this.querySelector('input[name="'+name+'"]'));
+          var children = $(this.querySelector('div[name="'+name+'-children"]'));
+
+          if( !ele.is(':checked') ) {
+            ele.prop('checked', true);
+            children.show('fast');
+          } else {
+            ele.prop('checked', false);
+            children.hide('fast');
+          }
+
+          this.fire('select', this.getEnabled());
         },
 
         setHovered : function(region) {
