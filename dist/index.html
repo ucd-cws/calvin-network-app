@@ -10,9 +10,13 @@
 
         <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
+        <script src="scripts/app.js"></script>
+
+        <link rel="stylesheet" href="styles/app.css">
+
         <link rel="import" href="require.html">
 
-        <style shim-shadowdom>
+        <style>
             html, body {
                 height: 100%;
                 overflow-x: hidden;
@@ -21,5 +25,11 @@
     </head>
     <body class="fullbleed">
         <cwn-app class="fit"></cwn-app>
+
+        <script>
+            $(document).ready(function(){
+                CWN.ds.reload();
+            });
+        </script>
     </body>
 </html>

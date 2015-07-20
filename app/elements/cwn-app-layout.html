@@ -2,7 +2,6 @@
     <style>
         .navbar-inverse {
             box-shadow: 0 0 5px black;
-            z-index: 10000 !important;
         }
         li {
             cursor: pointer;
@@ -15,13 +14,13 @@
             top: 0px;
             left: 0px;
         }
-        ::content .nav-right > a {
+        ::content .nav-right a {
             margin: 8px 5px;
             padding: 7px 10px;
             line-height: 20px;
             position: relative;
             display: inline-block;
-            color: #888 !important;
+            color: white !important;
             cursor: pointer;
 
             background-color: rgba(255,255,255,.1);
@@ -30,37 +29,80 @@
 
         .logo {
             font-size: 16px;
-            padding: 15px 10px;
-            color: #888 !important;
+            padding: 18px 10px;
+            color: white !important;
             display: inline-block;
         }
         .nav-left {
-            padding: 15px 10px;
-            color: #888 !important;
+            padding: 18px 10px;
+            color: white !important;
             display: inline-block;
         }
         .nav-right {
-            color: #888 !important;
+            padding: 6px 0;
+            color: white !important;
             display: inline-block;
-            float: right;
+            text-align: right;
         }
+
+        #mapLayout {
+          background-color: white;
+          height: 100%;
+          display: none;
+        }
+
+        #layout {
+          display: none;
+        }
+
+
+
     </style>
 
     <template>
-        <div class="full-height">
+
+      <div id="navBtns">
+        <content select="[right-nav]"></content>
+      </div>
+
+      <paper-drawer-panel id="mapLayout" responsive-width="768px">
+        <paper-header-panel drawer class="drawer">
+          <paper-toolbar style="background-color: #2196f3">
+            <div class="hidden-xs">CALVIN Water Network</div>
+          </paper-toolbar>
+
+          <content select="cwn-map-menu"></content>
+        </paper-header-panel>
+
+        <paper-header-panel main style="height:100%">
+          <paper-toolbar style="background-color: #2196f3">
+            <a class="btn btn-link" paper-drawer-toggle style="color:white"><i class="fa fa-bars" paper-drawer-toggle></i></a>
+
+            <div class="visible-xs-inline-block">CWN</div>
+
+            <div class="nav-right flex" id="mapBtns"></div>
+          </paper-toolbar>
+
+          <div class="fullbleed">
+            <content select="cwn-map"></content>
+          </div>
+
+
+        </paper-header-panel>
+      </paper-drawer-panel>
+
+
+        <div class="full-height" id="layout">
             <div class="vertical layout" style="height:100%">
-                <div style="height:50px">
-                    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                <div style="height:62px">
+                    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" >
                         <div class="logo">
-                            <span class="hidden-xs"><i class="fa fa-code-fork"></i> California Water Network</span>
+                            <span class="hidden-xs"><i class="fa fa-code-fork"></i> CALVIN Water Network</span>
                             <span class="visible-xs"><i class="fa fa-code-fork"></i> CWN</span>
                         </div>
 
                         <div id="leftNav" class="nav-left"></div>
-                        <div class="nav-right">
-                            <content select="[right-nav]"></content>
-                        </div>
-                        
+                        <div class="nav-right" style="float:right" id="layoutBtns"></div>
                     </nav>
                 </div>
                 <div class="flex" style="position:relative">
@@ -70,11 +112,26 @@
                 </div>
             </div>
         </div>
+
     </template>
 </dom-module>
 
 <script>
     Polymer({
-        is : 'cwn-app-layout'
+        is : 'cwn-app-layout',
+
+        updateView : function(page) {
+          $(this.$.navBtns).remove();
+
+          if( page == 'map' ) {
+            this.$.mapLayout.style.display = 'block';
+            this.$.layout.style.display = 'none';
+            this.$.mapBtns.appendChild(this.$.navBtns);
+          } else {
+            this.$.mapLayout.style.display = 'none';
+            this.$.layout.style.display = 'block';
+            this.$.layoutBtns.appendChild(this.$.navBtns);
+          }
+        }
     });
 </script>

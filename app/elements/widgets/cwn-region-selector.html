@@ -1,0 +1,79 @@
+<dom-module id="cwn-region-selector">
+  <template>
+    <cwn-popup id="popup" style="z-index: 10000">
+      <div class="popup-body" id="body"></div>
+    </cwn-popup>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is : 'cwn-region-selector',
+
+    ready : function() {
+      this.$.popup.header = 'Select';
+    },
+
+    init : function(map, markerLayer) {
+      this.map = map;
+      this.markerLayer = markerLayer;
+    },
+
+    onClick : function(features) {
+      this.features = features;
+      this.renderFeatures();
+      this.$.popup.show();
+    },
+
+    renderFeatures : function() {
+      var table = '';
+      for (var i = 0; i < this.features.length; i++) {
+        table += this.renderFeature(this.features[i], i);
+      }
+
+      this.$.body.innerHTML = table;
+
+      $(this.$.body)
+        .find('a')
+        .on('click', function(e){
+          if( !$(e.currentTarget).hasClass('region') ) {
+            this.$.popup.hide();
+            return;
+          }
+
+          var index = parseInt(e.currentTarget.getAttribute('index'));
+          var feature = this.features[index];
+
+          if( feature.geometry.type == 'Polygon') {
+            this.map.onRegionClick(feature.properties.id);
+            this.$.popup.hide();
+          } else {
+            alert("Not implemented yet :(");
+          }
+
+        }.bind(this));
+    },
+
+    renderFeature : function(feature, i) {
+      var link, icon = '';
+
+      if( feature.properties.type == 'Link Group' ) {
+        link = '<a>Line Group</a>';
+      } else if ( feature.properties.type == 'Region' ) {
+        link = '<a class="region" index="'+i+'" style="cusor:pointer">'+feature.properties.name+'</a>';
+      } else {
+        link = '<a href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a>';
+        icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
+      }
+
+      return '<div class="layout horizontal">'+
+        '<div style="padding:15px 5px; width: 50px">'+icon+'</div>'+
+        '<div class="flex">'+
+          '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+
+          (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
+          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+        '</div>'+
+      '</div>'
+    }
+  })
+</script>

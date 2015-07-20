@@ -14,153 +14,143 @@
 
     var s = node[prefix + 'size']*2;
 
-    CWN.render.Junction(
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render.Junction(context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Power Plant'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Power Plant'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Power Plant'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Pump Plant'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Pump Plant'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Pump Plant'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Water Treatment'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Water Treatment'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Water Treatment'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Surface Storage'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Surface Storage'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Surface Storage'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Groundwater Storage'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Groundwater Storage'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Groundwater Storage'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Agricultural Demand'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Agricultural Demand'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Agricultural Demand'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Urban Demand'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Urban Demand'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Urban Demand'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes.Sink = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render.Sink(
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render.Sink(context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes['Non-Standard Demand'] = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render['Non-Standard Demand'](
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+    CWN.render['Non-Standard Demand'](context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 
   sigma.canvas.nodes.Wetland = function(node, context, settings) {
     var prefix = settings('prefix') || '';
-    
+
     var s = node[prefix + 'size']*2;
 
-    CWN.render.Wetland(
-      context, 
-      node[prefix + 'x']-node[prefix + 'size'], 
-      node[prefix + 'y']-node[prefix + 'size'],
-      s,
-      s
-    ); 
+
+    CWN.render.Wetland(context, {
+      x: node[prefix + 'x']-node[prefix + 'size'],
+      y: node[prefix + 'y']-node[prefix + 'size'],
+      width: s,
+      height: s
+    });
   };
 })();
 
@@ -225,13 +215,14 @@
     context.fillStyle = color;
     context.beginPath();
     context.moveTo(aX + vX, aY + vY);
-    context.lineTo(aX + vY * 0.6, aY - vX * 0.6);
-    context.lineTo(aX - vY * 0.6, aY + vX * 0.6);
+    context.lineTo(aX + vY * 0.8, aY - vX * 0.8);
+    context.lineTo(aX - vY * 0.8, aY + vX * 0.8);
     context.lineTo(aX + vX, aY + vY);
     context.closePath();
     context.fill();
 
-    /* Now lets line add markers */
+    /* TODO: Now lets line add markers */
+    /*
     var mX = sX+vX*3, mY = sY+vY*3;
     if( edge.calvin.renderInfo ) {
       for( var key in CWN.render.lineMarkers ) {
@@ -242,6 +233,6 @@
         }
       }
     }
-
+    */
   };
 })();

@@ -19,7 +19,7 @@
     Polymer({
         is : 'cwn-date-linechart',
 
-        published : {
+        properties : {
             label : String,
             xlabel : String,
             ylabel : String,
@@ -33,26 +33,28 @@
             startDate : Date,
             stopDate : Date,
             type: String,
-            animate : Boolean
+            animate : {
+              type: Boolean,
+              notify : true
+            }
         },
 
-        configure : function() {
-            return {
-                options : null,
-                type : '',
-                cols : null,
-                dt : null,
-                chart : null,
-                height : 400,
-                data : [],
-                startDate : null,
-                stopDate : null,
-                animate : false,
+        ready : function() {
 
-                updateTimer : -1,
+            this.options = null;
+            this.type = '';
+            this.cols = null;
+            this.dt = null;
+            this.chart = null;
+            this.height = 400;
+            this.data = [];
+            this.startDate = null;
+            this.stopDate = null;
+            this.animate = false;
 
-                onLoadHandlerSet : false
-            }
+            this.updateTimer = -1;
+
+            this.onLoadHandlerSet = false;
         },
 
         attached : function() {
@@ -85,7 +87,7 @@
             if( this.onLoadHandlerSet ) return;
 
             // put in global scope by cwn-datastore
-            chartLoadHandlers.push(function(){
+            CWN.chartLoadHandlers.push(function(){
                 this.update();
             }.bind(this));
         },
@@ -107,7 +109,7 @@
 
             if( !this.cols ) {
                 if( !this.data ) this.data = ['date', 'value'];
-                //else if( !this.data.length == 0 ) this.data = ['date', 'value'];
+                else if( this.data.length == 0 ) this.data = ['date', 'value'];
 
                 try {
                     if( typeof this.data[0][1] != 'string' ) this.data.splice(0, 0, ['date', 'value']);
@@ -115,7 +117,7 @@
                     debugger;
                 }
             }
-            
+
 
             if( this.updateTimer == -1 ) clearTimeout(this.updateTimer);
             this.updateTimer = setTimeout(function() {
@@ -125,6 +127,7 @@
         },
 
         _setDataTable : function(data) {
+          try {
             if( this.cols ) {
                 this.dt = new google.visualization.DataTable();
                 for( var i = 0; i < this.cols.length; i++ ) {
@@ -134,6 +137,10 @@
             } else {
                 this.dt = google.visualization.arrayToDataTable(data);
             }
+          } catch(e) {
+            return false;
+          }
+          return true;
         },
 
         _update : function() {
@@ -168,8 +175,8 @@
                 }
             }
 
-            this._setDataTable(filteredData);
-            this.redraw();
+            var success = this._setDataTable(filteredData);
+            if( success ) this.redraw();
         },
 
         redraw : function() {
@@ -200,7 +207,7 @@
                 }
             }
 
-            
+
             if( this.animate ) {
                 options.animation = {
                     duration : 750,

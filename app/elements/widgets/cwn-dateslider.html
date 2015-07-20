@@ -19,16 +19,21 @@
             left: 0;
             z-index: 4;
 
+            transition: none;
+            -webkit-transition: none;
+            -moz-transition: none;
+            -ms-transition: none;
+
             border-radius: 0 4px 4px 0 !important;
             -webkit-border-radius: 0 4px 4px 0 !important;
             -moz-border-radius: 0 4px 4px 0 !important;
             -ms-border-radius: 0 4px 4px 0 !important;
 
             -webkit-user-select: none;
-            -moz-user-select: none; 
+            -moz-user-select: none;
             -ms-user-select: none;
             -o-user-select: none;
-            user-select: none;   
+            user-select: none;
         }
         .line {
             border-left: 1px dashed #428bca;
@@ -81,29 +86,25 @@
         },
 
 
-        configure : function() {
-            return {
-                numDays : 0,
-
-                startDate : new Date(),
-                endDate : new Date(),
-
-                current : {
-                    start : new Date(),
-                    end : new Date()
-                },
-
-                dragging : null,
-                dragStartX : 0,
-                dragStartLeft : 0,
-                otherStartLeft : 0,
-
-                cWidth : 0,
-                cBarWidth : 0
-            }
-        },
-        
         ready : function() {
+          this.numDays = 0;
+
+          this.startDate = new Date();
+          this.endDate = new Date();
+
+          this.current = {
+              start : new Date(),
+              end : new Date()
+          };
+
+          this.dragging = null;
+          this.dragStartX = 0;
+          this.dragStartLeft = 0;
+          this.otherStartLeft = 0;
+
+          this.cWidth = 0;
+          this.cBarWidth = 0;
+
             this.reset();
 
             $(window)
@@ -141,7 +142,7 @@
 
             days = (this.current.end - this.startDate)/(1000*60*60*24);
             var rightPos = this.cWidth * (days / this.numDays);
-            
+
             this.setLeftPos(leftPos);
             this.setRightPos(rightPos);
 
@@ -224,19 +225,19 @@
 
             var parentX = $(this).offset().left;
             var pos = $(this.$[this.dragging.id]).offset().left - parentX;
-            
+
             var cDay = Math.floor(this.numDays * (pos / this.cWidth));
 
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
-            
+
             if( this.dragging.id == 'startTab' ) this.current.start = result;
             else if( this.dragging.id == 'endTab' ) this.current.end = result;
 
             if( this.dragging.id != 'slider' ) {
                 this.dragging.innerHTML = result.toISOString().split('T')[0];
             }
-            
+
             this.dragging = null;
 
             this.fire('values-changed', this.current);
@@ -266,7 +267,7 @@
                 pos = this.otherStartLeft;
             } else if( this.dragging.id == 'endTab' && pos < this.otherStartLeft ) {
                 pos = this.otherStartLeft;
-            } 
+            }
 
             return pos;
         },
@@ -283,7 +284,7 @@
                     // touchend... I hope
                     return this.lastTouchX;
                 }
-            }                
+            }
             return 0; // bad
         }
     });

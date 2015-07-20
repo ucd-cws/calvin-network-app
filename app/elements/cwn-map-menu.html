@@ -1,0 +1,155 @@
+<dom-module id="cwn-map-menu">
+    <style>
+        :host {
+            display:block;
+            overflow: auto;
+        }
+        .menu-root {
+          background-color: rgba(200,200,200, .2);
+          padding-left: 10px;
+          border-radius: 3px;
+        }
+        .menu-item {
+          padding: 5px;
+          font-size: 14px;
+        }
+        .menu-item:hover {
+          color: #2196f3;
+          cursor: pointer;
+        }
+
+    </style>
+    <template>
+        <div id="content"></div>
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is : 'cwn-map-menu',
+
+        ready : function() {
+          this.classList.add('closed');
+        },
+
+        init : function() {
+            this.state = {
+              enabled : [],
+              disabled : []
+            };
+            this.render();
+        },
+
+        getEnabled : function() {
+          this.state = {
+            enabled : ['California'],
+            disabled : []
+          };
+          this._getEnabled('California');
+          return this.state;
+        },
+
+        _getEnabled : function(name) {
+          var ele = $(this).find('input[name="'+name+'"]');
+
+          if( ele.is(':checked') ) {
+            if( name != 'California' ) this.state.enabled.push(name);
+            var region = CWN.ds.regionLookupMap[name];
+
+            if( !region.subregions ) return;
+
+            for( var i = 0; i < region.subregions.length; i++ ) {
+              this._getEnabled(region.subregions[i]);
+            }
+          } else {
+            this.state.disabled.push(name);
+          }
+        },
+
+        render : function() {
+            this.$.content.innerHTML = '';
+            this.renderRegion('California', this.$.content);
+        },
+
+        renderRegion : function(regionName, root) {
+            var ref = this;
+            var region = CWN.ds.regionLookupMap[regionName];
+
+            var id = region.name;
+            var label = region.geo.properties.name || id;
+
+            var panel = $('<div class="menu-root cwn-map-menu"></div>');
+            var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
+                          '<input type="checkbox" name="'+id+'" /> '+label+'</div>');
+
+            var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'" name="'+id+'-children"></div>');
+            panel.append(input);
+            panel.append(children);
+
+            root.appendChild(panel[0]);
+
+
+            input.find('input').on('click', function(e){
+              e.stopPropagation();
+
+              var ele = $(this);
+
+              if( ele.is(':checked') ) {
+                  children.show('fast');
+              } else {
+                  children.hide('fast');
+              }
+
+              ref.fire('select', ref.getEnabled());
+            });
+
+            input
+              .on('click', function(){
+                input.find('input').trigger("click");
+              })
+              .on('mouseover', function(){
+                this.fire('hover', regionName);
+              }.bind(this))
+              .on('mouseout', function(){
+                this.fire('nohover', regionName);
+              }.bind(this));
+
+
+            if( !region.subregions ) return;
+
+            for( var i = 0; i < region.subregions.length; i++ ) {
+                this.renderRegion(region.subregions[i], children[0]);
+            }
+        },
+
+        onRegionClick : function(name) {
+          var ele = $(this.querySelector('input[name="'+name+'"]'));
+          var children = $(this.querySelector('div[name="'+name+'-children"]'));
+
+          if( !ele.is(':checked') ) {
+            ele.prop('checked', true);
+            children.show('fast');
+          } else {
+            ele.prop('checked', false);
+            children.hide('fast');
+          }
+
+          this.fire('select', this.getEnabled());
+        },
+
+        setHovered : function(region) {
+          if( !region ) {
+            $(this).find('.menu-item').removeClass('hovered');
+            this.mouseOverRegion = null;
+            return;
+          }
+
+          if( this.mouseOverRegion && region.name == this.mouseOverRegion.name ) return;
+
+          $(this).find('.menu-item').removeClass('hovered');
+          this.mouseOverRegion = region;
+
+          $(this).find('.menu-item[name="'+region.name+'"]').addClass('hovered');
+        }
+    })
+</script>

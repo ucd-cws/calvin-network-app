@@ -14,6 +14,33 @@ CWN.colors = {
   black : '#000000'
 };
 
+CWN.colors.rgb = {
+  base : [255,255,202],
+  //lightGrey : [123,123,121],
+  lightGrey : [70,70,70],
+  green : [143,210,72],
+  salmon : [255,205,150],
+  lightBlue : [145,203,221],
+  red : [255,8,0],
+  blue : [79,127,191],
+  purple : [114,40,162],
+  black:[0,0,0]
+}
+
+
+// elements that need charts can push to this array callbacks for when charts are loaded
+CWN.chartLoadHandlers = [];
+
+google.load("visualization", '1', {
+    packages:['corechart', 'table'],
+    callback : function() {
+        for( var i = 0; i < CWN.chartLoadHandlers.length; i++ ) {
+            CWN.chartLoadHandlers[i]();
+        }
+    }
+});
+
+
 // reneder an icon on a canvas
 CWN.render = {};
 
@@ -32,46 +59,51 @@ CWN.icon = function(type, width, height) {
     return canvas;
 }
 
-/** render icon on canvas context **/
-/** all icons take a canvas context, left, top, width and height **/
-CWN.render.Junction = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
-    ctx.lineWidth = 1;
+CWN.getColor = function(name, opacity) {
+  if( opacity === undefined ) opacity = 1;
+  return 'rgba('+CWN.colors.rgb[name].join(',')+','+opacity+')';
+}
 
-    var r = w / 2;
+/** render icon on canvas context **/
+/** all icons take a canvas context, left, top, width and height, opacity **/
+CWN.render.Junction = function(ctx, config) {
+    ctx.fillStyle = config.fill ||  CWN.getColor('base', config.opacity);
+    ctx.strokeStyle = config.stroke || CWN.getColor('lightGrey', config.opacity);
+    ctx.lineWidth = config.lineWidth || 2;
+
+    var r = config.width / 2;
 
     ctx.beginPath();    
-    ctx.arc(l+r, t+r, r, 0, Math.PI*2, true); 
+    ctx.arc(config.x+r, config.y+r, r, 0, Math.PI*2, true); 
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 }
 
-CWN.render['Power Plant'] = function(ctx, l, t, w, h) {
-    CWN.render['Junction'](ctx, l, t, w, h);
-    var r = w / 2;
+CWN.render['Power Plant'] = function(ctx, config) {
+    CWN.render['Junction'](ctx, config);
+    var r = config.width / 2;
 
     // horizontal line
     ctx.beginPath();
-    ctx.moveTo(l,t+r);
-    ctx.lineTo(l+w,t+r);
+    ctx.moveTo(config.x, config.y+r);
+    ctx.lineTo(config.x+config.width, config.y+r);
     ctx.stroke();
     ctx.closePath();
 
     // vertical line
     ctx.beginPath();
-    ctx.moveTo(l+r,t);
-    ctx.lineTo(l+r,t+w);
+    ctx.moveTo(config.x+r, config.y);
+    ctx.lineTo(config.x+r, config.y+config.width);
     ctx.stroke();
     ctx.closePath();
 }
 
-CWN.render['Pump Plant'] = function(ctx, l, t, w, h) {
-    CWN.render['Junction'](ctx, l, t, w, h);
-    var r = w / 2;
-    var cx = l + r;
-    var cy = t + r;
+CWN.render['Pump Plant'] = function(ctx, config) {
+    CWN.render['Junction'](ctx, config);
+    var r = config.width / 2;
+    var cx = config.x + r;
+    var cy = config.y + r;
 
     var x1 = cx + r * Math.cos(Math.PI/4);
     var y1 = cy + r * Math.sin(Math.PI/4);
@@ -98,99 +130,109 @@ CWN.render['Pump Plant'] = function(ctx, l, t, w, h) {
     ctx.closePath();
 }
 
-CWN.render['Water Treatment'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
-    ctx.lineWidth = 1;
+CWN.render['Water Treatment'] = function(ctx, config) {
+    ctx.fillStyle = config.fill || CWN.getColor('base', config.opacity);
+    ctx.strokeStyle = config.stroke || CWN.getColor('lightGrey', config.opacity);
+    ctx.lineWidth = config.lineWidth || 2;
 
-    CWN.render._nSidedPath(ctx, l, t, w/2, 8, 22.5);
+    CWN.render._nSidedPath(ctx, config.x, config.y, config.width/2, 8, 22.5);
     ctx.fill();
     ctx.closePath();
     ctx.stroke();
 }
 
-CWN.render['Surface Storage'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
-    ctx.lineWidth = 1;
+CWN.render['Surface Storage'] = function(ctx, config) {
+    ctx.fillStyle = config.fill || CWN.getColor('base', config.opacity);
+    ctx.strokeStyle = config.stroke || CWN.getColor('lightGrey', config.opacity);
+    ctx.lineWidth = config.lineWidth || 2;
 
-    CWN.render._nSidedPath(ctx, l, t, w/2, 3, 90);
+    CWN.render._nSidedPath(ctx, config.x, config.y, config.width/2, 3, 90);
     ctx.fill();
     ctx.closePath();
     ctx.stroke();
 }
 
-CWN.render['Groundwater Storage'] = function(ctx, l, t, w, h) {
-    var r = w / 2;
+CWN.render['Groundwater Storage'] = function(ctx, config) {
+    var r = config.width / 2;
     
-    var grd = ctx.createLinearGradient(l+r, t, l+r, t+h-(.25*h));
-    grd.addColorStop(0, CWN.colors.lightGrey);
-    grd.addColorStop(1, CWN.colors.base);
+    var grd = ctx.createLinearGradient(config.x+r, config.y, config.x+r, config.y+config.height-(.25*config.height));
+    grd.addColorStop(0, config.stroke || CWN.getColor('lightGrey', config.opacity));
+    grd.addColorStop(1, config.fill || CWN.getColor('base', config.opacity));
     ctx.fillStyle=grd;
 
-    ctx.strokeStyle = CWN.colors.lightGrey;
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = config.stroke || CWN.getColor('lightGrey', config.opacity);
+    ctx.lineWidth = config.lineWidth || 2;
 
-    CWN.render._nSidedPath(ctx, l, t, r, 3, 90);
+    CWN.render._nSidedPath(ctx, config.x, config.y, r, 3, 90);
     ctx.fill();
     ctx.closePath();
     ctx.stroke();
 }
 
-CWN.render['Sink'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.base;
-    ctx.strokeStyle = CWN.colors.lightGrey;
-    ctx.lineWidth = 1;
+CWN.render['Sink'] = function(ctx, config) {
+    ctx.fillStyle = config.fill || CWN.getColor('base', config.opacity);
+    ctx.strokeStyle = config.stroke || CWN.getColor('lightGrey', config.opacity);
+    ctx.lineWidth = config.lineWidth || 2;
 
-    CWN.render._nSidedPath(ctx, l, t, w/2, 4, 45);
+    CWN.render._nSidedPath(ctx, config.x, config.y, config.width/2, 4, 45);
     ctx.fill();
     ctx.closePath();
     ctx.stroke();
 }
 
-CWN.render['Non-Standard Demand'] = function(ctx, l, t, w, h) {
-    ctx.fillStyle = CWN.colors.red;
-    ctx.strokeStyle = CWN.colors.lightGrey;
-    ctx.lineWidth = 1;
+CWN.render['Non-Standard Demand'] = function(ctx, config) {
+    ctx.fillStyle = config.fill || CWN.getColor('red', config.opacity);
+    ctx.strokeStyle = config.stroke || CWN.getColor('lightGrey', config.opacity);
+    ctx.lineWidth = config.lineWidth || 2;
 
-    CWN.render._nSidedPath(ctx, l, t, w/2, 4, 45);
+    CWN.render._nSidedPath(ctx, config.x, config.y, config.width/2, 4, 45);
     ctx.fill();
     ctx.closePath();
     ctx.stroke();
 }
 
-CWN.render['Agricultural Demand'] = function(ctx, l, t, w, h) {
-    CWN.render._oval(ctx, l, t, w, h, CWN.colors.lightBlue);
+CWN.render['Agricultural Demand'] = function(ctx, config) {
+    if( !config.stroke ) config.stroke = CWN.getColor('lightGrey', config.opacity);
+    if( !config.fill ) config.fill = CWN.getColor('lightBlue', config.opacity);
+
+    CWN.render._oval(ctx, config);
 }
 
-CWN.render['Urban Demand'] = function(ctx, l, t, w, h) {
-    CWN.render._oval(ctx, l, t, w, h, CWN.colors.salmon);
+CWN.render['Urban Demand'] = function(ctx, config) {
+    if( !config.stroke ) config.stroke = CWN.getColor('lightGrey', config.opacity);
+    if( !config.fill ) config.fill = CWN.getColor('salmon', config.opacity);
+
+    CWN.render._oval(ctx, config);
 }
 
-CWN.render.Wetland = function(ctx, l, t, w, h) {
-    CWN.render._oval(ctx, l, t, w, h, CWN.colors.green);
+CWN.render.Wetland = function(ctx, config) {
+    if( !config.stroke ) config.stroke = CWN.getColor('lightGrey', config.opacity);
+    if( !config.fill ) config.fill = CWN.getColor('green', config.opacity);
+
+    CWN.render._oval(ctx, config);
 }
 
-CWN.render._oval = function(ctx, x, y, w, h, color) {
-    ctx.fillStyle = color;
+CWN.render._oval = function(ctx, config) {
+    ctx.fillStyle = config.fill;
+    ctx.strokeStyle = config.stroke;
 
-    h -= w * .5;
-    y += h / 2;
+    config.height -= config.width * .5;
+    config.y += config.height / 2;
 
     var kappa = .5522848,
-      ox = (w / 2) * kappa, // control point offset horizontal
-      oy = (h / 2) * kappa, // control point offset vertical
-      xe = x + w,           // x-end
-      ye = y + h,           // y-end
-      xm = x + w / 2,       // x-middle
-      ym = y + h / 2;       // y-middle
+      ox = (config.width / 2) * kappa, // control point offset horizontal
+      oy = (config.height / 2) * kappa, // control point offset vertical
+      xe = config.x + config.width,           // x-end
+      ye = config.y + config.height,           // y-end
+      xm = config.x + config.width / 2,       // x-middle
+      ym = config.y + config.height / 2;       // y-middle
 
     ctx.beginPath();
-    ctx.moveTo(x, ym);
-    ctx.bezierCurveTo(x, ym - oy, xm - ox, y, xm, y);
-    ctx.bezierCurveTo(xm + ox, y, xe, ym - oy, xe, ym);
+    ctx.moveTo(config.x, ym);
+    ctx.bezierCurveTo(config.x, ym - oy, xm - ox, config.y, xm, config.y);
+    ctx.bezierCurveTo(xm + ox, config.y, xe, ym - oy, xe, ym);
     ctx.bezierCurveTo(xe, ym + oy, xm + ox, ye, xm, ye);
-    ctx.bezierCurveTo(xm - ox, ye, x, ym + oy, x, ym);
+    ctx.bezierCurveTo(xm - ox, ye, config.x, ym + oy, config.x, ym);
     ctx.fill();
     ctx.stroke();
 }

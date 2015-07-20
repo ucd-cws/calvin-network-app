@@ -19,6 +19,7 @@
 
         properties : {
             type : {
+                reflect : true,
                 type : String,
                 observer : 'onTypeChange'
             },
@@ -38,25 +39,23 @@
             }
         },
 
-        configure : function() {
-            return {
-                fillStyle : '#fffff',
-                fillFromType : false,
-                fontSize : 14,
+        ready : function() {
+          this.fillStyle = '#fffff';
+          this.fillFromType = false;
+          this.fontSize = 14;
 
-                styles : {
-                  'Power Plant' : '#3366cc',
-                  'Agricultural Demand' : '#ff9900',
-                  'Junction' : '#109618',
-                  'Pump Plant' : '#990099',
-                  'Water Treatment' : '#0099c6',
-                  'Surface Storage' : '#dd4477',
-                  'Urban Demand' : '#66aa00',
-                  'Sink' : '#b82e2e',
-                  'Groundwater Storage' : '#316395',
-                  'Non-Standard Demand' : '#22aa99'
-                }
-            }
+          this.styles = {
+            'Power Plant' : '#3366cc',
+            'Agricultural Demand' : '#ff9900',
+            'Junction' : '#109618',
+            'Pump Plant' : '#990099',
+            'Water Treatment' : '#0099c6',
+            'Surface Storage' : '#dd4477',
+            'Urban Demand' : '#66aa00',
+            'Sink' : '#b82e2e',
+            'Groundwater Storage' : '#316395',
+            'Non-Standard Demand' : '#22aa99'
+          };
         },
 
         attached : function() {
@@ -75,9 +74,10 @@
                 $(this.$.icon).show();
             } else {
                 $(this.$.icon).hide();
-                $(this.$.show).show();
+                $(this.$.canvas).show();
+                this.redraw();
             }
-            this.redraw();
+
         },
 
         redraw : function() {
@@ -87,14 +87,20 @@
             this.fontSize = this.width-15;
             if( this.fontSize < 14 ) this.fontSize = 14;
 
+            if( !CWN.render[this.type] ) return;
+
             this.$.canvas.setAttribute('height', this.height);
             this.$.canvas.setAttribute('width', this.width);
 
             var ctx = this.$.canvas.getContext('2d');
             ctx.clearRect(0, 0, this.width, this.height);
 
-            if( !CWN.render[this.type] ) return;
-            CWN.render[this.type](ctx, 2, 2, this.width-4, this.height-4);
+            CWN.render[this.type](ctx, {
+                x: 2,
+                y: 2,
+                width: this.width-4,
+                height: this.height-4
+            });
         }
-    }); 
+    });
 </script>

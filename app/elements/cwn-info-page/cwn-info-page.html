@@ -1,6 +1,6 @@
 <!--<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">-->
-<link rel="import" href="cwn-node-info.html" />
-<link rel="import" href="cwn-cost-info.html" />
+<link rel="import" href="node/cwn-node-info.html" />
+<link rel="import" href="cost/cwn-cost-info.html" />
 
 <dom-module id="cwn-info-page">
     <style>
@@ -13,34 +13,21 @@
         box-shadow: 0 0 5px #888;
         padding: 15px;
       }
-
-      .back-btn {
-        display: inline-block;
-
-        color: #333 !important;
-        background-color: #ccc;
-        border-radius: 50px;
-        font-size: 40px;
-        padding: 0px 12px;
-        margin: 10px;
-        z-index: 100;
-        cursor: pointer;
-      }
     </style>
 
     <template>
-      <a class="back-btn" on-click="back"><i class="fa fa-arrow-left"></i></a>
 
-      <div class="card" hidden$="{{loading}}">
+      <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
         <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
+
       <!-- End Header Card -->
-      <div hidden$="{{!showDateRangeSlider}}">
+      <div id="dateRangeSlider">
         <div style="padding:20px 50px 5px 50px">
           <h4>Date Range</h4>
-          <cwn-dateslider 
-            id="dateslider" 
-            start="1920-01-01" 
+          <cwn-dateslider
+            id="dateslider"
+            start="1920-01-01"
             on-values-changed="updateDateFilters">
           </cwn-dateslider>
         </div>
@@ -53,7 +40,7 @@
           <div class="card">
             <h2 class="page-header">Climate</h2>
 
-            <div class="alert alert-info" hidden$="{{feature.properties.hasClimate}}">
+            <div class="alert alert-info" hidden$="{{showClimateData}}">
               This node has no climate data associated with it.
             </div>
             <div class="alert alert-error" hidden$="{{!climateLoadError}}">
@@ -69,17 +56,23 @@
                 <h4>Inflows</h4>
               </div>
 
-              <template is="x-repeat" items="{{inflows}}">
-                <cwn-date-linechart 
-                  label="{{item.label}}" 
-                  ylabel="Flow (kaf)" 
+              <div id="inflows">
+                <h4>Inflows</h4>
+                <div id="inflowCharts"></div>
+              </div>
+<!--
+              <template is="dom-repeat" items="{{inflows}}">
+                <cwn-date-linechart
+                  label="{{item.label}}"
+                  ylabel="Flow (kaf)"
                   data="{{item.data}}"
                   animate>
                 </cwn-date-linechart>
               </template>
+-->
 
               <div id="eacChartRoot"></div>
-              <template id="eacChart" is="x-template">
+              <template id="eacChart" is="dom-template">
                 <h4>Elevation / Area / Capacity</h4>
                 <cwn-linechart
                   data="{{data}}"
@@ -88,7 +81,12 @@
                   type="{{type}}">
                 </cwn-linechart>
               </template>
-  
+
+              <div id="evaporation" style="display:none">
+                <h4>Evaporation</h4>
+                <cwn-date-linechart animate id="evaporationChart"></cwn-date-linechart>
+              </div>
+
             </div>
           </div>
           <!-- End Climate -->
@@ -98,8 +96,8 @@
 
           <!-- Start Costs -->
           <div class="card">
-            <cwn-cost-info 
-              feature="{{feature}}" 
+            <cwn-cost-info
+              feature="{{feature}}"
               has-time-series="{{hasTimeSeries}}">
             </cwn-cost-info>
           </div>
@@ -107,10 +105,8 @@
 
         </div>
       </div>
- 
-      
+
+
     </template>
 </dom-module>
-
-<script src="DomController.js"></script>
 <script src="controller.js"></script>

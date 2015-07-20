@@ -3,66 +3,87 @@
         leaflet-map, core-animated-pages {
             height: 100%
         }
+
         .splash-screen {
           position: fixed;
           top: 100px;
-          width: 100%;
           text-align: center;
-           z-index: 20000;
+          z-index: 20000;
+          width: 100%;
         }
+
         .splash-screen-text {
+          margin: 20px;
           display: inline-block;
           background-color: rgba(0,0,0,.7);
           border-radius: 6px;
           box-shadow: 0 0 5px black;
           padding: 25px;
-          font-size: 50px;
           color: white;
         }
     </style>
 
     <template>
+        <cwn-search id="search"></cwn-search>
+        <cwn-about id="about"></cwn-about>
+        <cwn-region-selector id="selector"></cwn-region-selector>
+
+        <cwn-filters
+          id="filters"
+          on-update="onFiltersUpdated"></cwn-filters>
+
         <div class="splash-screen" id="splash">
-          <div class="splash-screen-text">
-            Loading Network...<br />
-          </div>
+          <h2 class="splash-screen-text">
+            <i class="fa fa-circle-o-notch fa-spin"></i> Loading Network...
+          </h2>
         </div>
 
-        <cwn-datastore 
-          id="ds"
-          on-load="onLoadingChange"
-          on-loaded="onDataLoad"
-          islocal$="{{islocal}}"
-          >
-        </cwn-datastore>
+        <cwn-app-layout id="layout">
+          <a right-nav href="#map" id="backBtn">
+            <span class="hidden-xs"><i class="fa fa-arrow-left"></i> Back</span>
+            <span class="visible-xs"><i class="fa fa-arrow-left"></i></span>
+          </a>
 
-        <cwn-app-layout>
-            <a right-nav on-click="showFilters">
-              <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
-              <span class="visible-xs"><i class="fa fa-filter"></i></span>
-            </a>
+          <a right-nav on-click="showFilters" id="filterBtn">
+            <span class="hidden-xs"><i class="fa fa-filter"></i> Filters</span>
+            <span class="visible-xs"><i class="fa fa-filter"></i></span>
+          </a>
 
-            <cwn-filters 
-              id="filters" content 
-              legend="{{legend}}"
-              on-update="onFiltersUpdated"></cwn-filters>
+          <a right-nav on-click="search">
+            <span class="hidden-xs"><i class="fa fa-search"></i> Search</span>
+            <span class="visible-xs"><i class="fa fa-search"></i></span>
+          </a>
 
-            <cwn-map content
-              id="map" 
-              on-selected="onFeatureSelected"
-              on-filtering-complete="updateGraph">
-            </cwn-map>
+          <a right-nav on-click="showAbout">
+            <span class="hidden-xs"><i class="fa fa-question"></i> About</span>
+            <span class="visible-xs"><i class="fa fa-question"></i></span>
+          </a>
 
-            <cwn-info-page content 
-              id="info">
-            </cwn-info-page>
+          <cwn-map-menu
+            id="menu"
+            on-select="onRegionSelect">
+          </cwn-map-menu>
 
-            <cwn-graph content
-              class="fit" 
-              id="graph">
-            </cwn-graph>
+
+          <cwn-map
+            id="map"
+            on-selected="onFeatureSelected"
+            on-filtering-complete="updateGraph">
+          </cwn-map>
+
+          <cwn-info-page content
+            id="info">
+          </cwn-info-page>
+
+          <cwn-graph content
+            class="fit"
+            id="graph">
+          </cwn-graph>
+
+
 
         </cwn-app-layout>
+
     </template>
 </dom-module>
 
@@ -70,30 +91,22 @@
     Polymer({
         is : 'cwn-app',
 
-        properties : {
-          islocal : {
-            type : Boolean,
-            notify: true
-          }
-        },
+        ready : function() {
+          this.PAGES = {
+            map : 0,
+            info : 1,
+            graph : 2
+          };
 
-        configure : function() {
-          return {
-            PAGES : {
-              map : 0,
-              info : 1,
-              graph : 2
-            },
-
-            selectedPage : 0,
+          this.selectedPage = 0;
 
 
-            loading : true,
+          this.loading = true;
 
-            dataLoaded : false,
-            dataLoadHandlers : [],
+          this.dataLoaded = false;
+          this.dataLoadHandlers = [];
 
-            legend : {
+          this.legend = {
             'Power Plant'         : {
               color : '#3366cc',
               google : 'small_red'
@@ -134,8 +147,10 @@
                 color : '#22aa99',
                 google : 'shaded_dot'
             }
-          }
-          }
+          };
+
+          this.$.map.menu = this.$.menu;
+          this.$.map.selector = this.$.selector;
         },
 
         attached : function() {
@@ -143,36 +158,43 @@
             this.setLocation();
           }.bind(this));
 
-          setTimeout(function(){
-            this.$.map.init(this.$.ds, this.legend, this.$.filters.filters);
-            this.$.info.init(this.$.map.map, this.$.ds, this.islocal);
-          }.bind(this), 200);
+          this.$.filters.setLegend(this.legend);
+          this.$.map.init(this.legend, this.$.filters.filters);
+          this.$.info.init(this.$.map.map);
 
           this.setLocation();
 
-          console.log('islocal: '+this.islocal);
+          if( CWN.ds.loading ) CWN.ds.on('load', this.onLoadingChange.bind(this));
+          else this.onLoadingChange();
         },
 
         onLoadingChange : function() {
-          this.loading = this.$.ds.loading;
-
-          if( this.loading ) this.$.splash.style.display = 'block';
-          else this.$.splash.style.display = 'none';
+          if( CWN.ds.loading ) {
+            this.$.splash.style.display = 'block';
+          } else {
+            this.$.splash.style.display = 'none';
+            this.onDataLoad();
+          }
         },
 
         setLocation : function() {
           var loc = window.location.hash.replace('#','').replace(/\/.*/,'');
           if( loc == '') loc = 'map';
+          this.$.backBtn.style.display = 'none';
+          this.$.filterBtn.style.display = 'none';
+
+          this.$.layout.updateView(loc);
 
           if( loc == 'map' ) {
-            //this.$.pages.selected = this.PAGES.MAP;
+            this.$.filterBtn.style.display = 'inline-block';
             this.selectedPage = this.PAGES.map;
             this.async(function(){
               var ele = this.querySelector('cwn-map');
               if( ele && ele.map ) ele.map.invalidateSize();
             });
           } else if ( loc == 'info' ) {
-            //this.$.pages.selected = this.PAGES.INFO;
+            this.$.backBtn.style.display = 'inline-block';
+
             this.selectedPage = this.PAGES.info;
             if( this.dataLoaded ) {
               this.setInfoFeature();
@@ -180,6 +202,8 @@
               this.dataLoadHandlers.push(this.setInfoFeature.bind(this));
             }
           } else if ( loc == 'graph' ) {
+            this.$.backBtn.style.display = 'inline-block';
+            this.$.filterBtn.style.display = 'inline-block';
             this.selectedPage = this.PAGES.graph;
           }
           this.setPage();
@@ -195,9 +219,9 @@
         setInfoFeature : function() {
           var name = window.location.hash.replace('#','').split('/')[1];
           name = decodeURIComponent(name);
-          this.$.info.feature = this.$.ds.lookupMap[name];
+          this.$.info.setFeature(CWN.ds.lookupMap[name]);
         },
-       
+
         onDataLoad : function() {
           this.dataLoaded = true;
           for( var i = 0; i < this.dataLoadHandlers.length; i++ ) {
@@ -207,7 +231,15 @@
         },
 
         showFilters : function() {
-            this.$.filters.toggle();
+            this.$.filters.show();
+        },
+
+        search : function() {
+          this.$.search.show();
+        },
+
+        showAbout : function() {
+          this.$.about.show();
         },
 
         updateGraph : function() {
@@ -220,9 +252,15 @@
           window.location.hash = 'info/'+e.detail.properties.prmname;
         },
 
-        onFiltersUpdated : function() {
+        onFiltersUpdated : function(e) {
+          this.$.map.mapFilters = e.detail;
+
           this.$.map.update();
           this.$.graph.update();
+        },
+
+        onRegionSelect : function(e) {
+          this.$.map.onRegionSelect(e);
         }
     });
 </script>

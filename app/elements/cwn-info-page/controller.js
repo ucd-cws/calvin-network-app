@@ -1,47 +1,40 @@
 Polymer({
     is : 'cwn-info-page',
 
-    mixins : [new InfoPageDomControllers()],
-
     properties : {
       hasTimeSeries : {
         type : Boolean,
         notify : true,
         observer : 'updateDateSliderVisibility'
-      },
-      feature : {
-        type : Object,
-        observer : 'update'
       }
     },
 
-    configure : function() {
-      return {
-        feature : null,
+    ready : function() {
+      this.feature = null;
 
-        hack : '',
-        islocal : false,
+      this.hack = '';
+      this.islocal = false;
 
-        tableProperties : ['prmname'],
+      this.tableProperties = ['prmname'];
 
-        // loading flags
-        climateLoadError : false,
-        costLoadError : false,
-        climateLoading : false,
-        costLoading : false,
-        loading : false,
+      // loading flags
+      this.climateLoadError = false;
+      this.costLoadError = false;
+      this.climateLoading = false;
+      this.costLoading = false;
+      this.loading = false;
 
         // have to do long lookup right now, is there are better way?
-        origins : [],
-        terminals : [],
+      this.origins = [];
+      this.terminals = [];
 
-        // render data.  Data in a format ready to draw above
-        inflows : [],
+      // render data.  Data in a format ready to draw above
+      this.inflows = [],
 
-        map : {},
+      this.map = {};
 
         // Elevation / Area / Capacity charts
-        eacChart : {
+        this.eacChart = {
           type : 'ComboChart',
           cols : [
             {id: 'capacity', label: 'capacity', type: 'number'},
@@ -70,125 +63,134 @@ Polymer({
               position: 'top'
             }
           }
-        },
+        };
 
         // date filtering
-        filters : {
+        this.filters = {
           start : null,
           stop : null
         },
 
         // dom controller stuff
-        hasTimeSeries : false,
-        showDateRangeSlider : false,
-        showClimateData : false,
-        charts : {}
-      }
+        this.hasTimeSeries = false;
+        this.showClimateData = false;
+        this.charts = {};
+
     },
 
-    init : function(map, ds, islocal) {
+    init : function(map) {
       this.map = map;
-      this.ds = ds;
-      this.islocal = islocal;
+      this.islocal = CWN.ds.islocal;
 
-      if( this.ds.loading ) {
-        this.ds.addEventListener('load', function(e){
-          this.loading = e.detail;
-          if( !this.loading ) this.onLoad();
-        }.bind(this));
-      } else {
-        this.onLoad();
-      }
+      CWN.ds.on('load', this.onLoad.bind(this));
     },
 
     onLoad : function() {
+      if( CWN.ds.loading ) return;
+
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
-        if( this.feature = this.ds.lookupMap[loc[1]] ) {
+        if( this.feature = CWN.ds.lookupMap[loc[1]] ) {
           this.update();
         } else {
-          this.feature = this.ds.lookupMap[loc[1]];
+          this.feature = CWN.ds.lookupMap[loc[1]];
         }
       }
     },
 
+    setFeature : function(feature) {
+      this.feature = feature;
+      this.update();
+    },
+
     update : function() {
-      if( !this.ds ) return;
+      if( CWN.ds.loading ) return;
+
       if( this.feature == null ) return alert('Feature not found');
 
       this.climateLoadError = false;
       this.climateLoading = false;
+
+      this.eacChart.data = [];
+      this.evaporationData = null;
+      this.hasInflows = false;
+      this.hasEvaporation = false;
+
+      var props = this.feature.properties;
+      if( props.inflows || props.el_ar_cap || props.evaporation) {
+        this.showClimateData = true;
+      } else {
+        this.showClimateData = false;
+      }
+
+      this.renderClimateData(props.inflows, props.el_ar_cap, props.evaporation);
       this.updateDateSliderVisibility();
 
-      this.eacChart.data = [];
-
-      this.loadClimateData();
-    },
-
-    loadClimateData : function() {
-      this.showClimateData = false;
-      if( !this.feature.properties.hasClimate ) return;
-
-      this.climateLoading = true;
-      this.inflows = [];
-
-      var type;
-      if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-        type = 'link';
-      } else {
-        type = 'node';
-      }
-
-      var params = '?prmname='+ this.feature.properties.prmname +
-        '&type=' + type + '&attribute=climate'
-
-      $.ajax({
-          url : '/rest/getAttribute'+params,
-          success : function(resp) {
-            this.climateLoading = false;
-            if( !resp.climate ) return this.climateLoadError = true;
-            
-            this.showClimateData = true;
-            this.renderClimateData(JSON.parse(resp.climate));
-
-            this.async(function(){
-              this.$.dateslider.resize();
-            });
-          }.bind(this),
-          error : function(resp) {
-            this.climateLoadError = true;
-          }.bind(this)
+      this.async(function(){
+        this.$.dateslider.resize();
       });
+
     },
 
-    renderClimateData : function(data) {
+    renderClimateData : function(inflows, el_ar_cap, evaporation) {
 
-      if( data.inflows ) {
-        for( var i = 0; i < data.inflows.length; i++ ) {
-          var inflow = {
-            label : data.inflows[i].name,
-            data : []
-          };
-          for( var j = 0; j < data.inflows[i].date.length; j++ ) {
-            inflow.data.push([data.inflows[i].date[j], data.inflows[i].inflow[j]]);
-          }
-          this.inflows.push(inflow);
+      if( inflows ) {
+        this.hasInflows = true;
+        this.$.inflowCharts.innerHTML = '';
+
+        for( var name in inflows ) {
+          /*var inflow = {
+            label : name,
+            description : inflows[name].description || '',
+            data : inflows[name].inflow
+          };*/
+
+          var chart = document.createElement('cwn-date-linechart');
+          chart.label = (inflows[name].description || name || ''),
+          chart.data = inflows[name].inflow;
+
+          this.$.inflowCharts.appendChild(chart);
         }
+
+        this.$.inflows.style.display = 'block';
+      } else {
+        this.$.inflows.style.display = 'none';
+      }
+
+      if( evaporation ) {
+        this.hasEvaporation = true;
+        this.$.evaporationChart.update(evaporation);
+        this.evaporationData = evaporation;
+        this.$.evaporation.style.display = 'block';
+      } else {
+        this.$.evaporation.style.display = 'none';
       }
 
       this.eacChart.data = [];
-      if( data.el_ar_cap ) {
-        
+      if( el_ar_cap ) {
+
         var max = 0;
-        for( var i = 0; i < data.el_ar_cap.length; i++ ) {
-          this.eacChart.data.push([
-            data.el_ar_cap[i].capacity,
-            data.el_ar_cap[i].elevation,
-            data.el_ar_cap[i].area,
-            null,
-            null
-          ]);
-          if( data.el_ar_cap[i].elevation > max ) max = data.el_ar_cap[i].elevation;
+        var elevationCol = 0, capacityCol = 0, areaCol = 0;
+
+        for( var i = 0; i < el_ar_cap.length; i++ ) {
+          // make sure col labels are set correctly
+          if( i == 0 ) {
+            for( var j = 0; j < el_ar_cap[i].length; j ++ ) {
+              if( el_ar_cap[i][j].toLowerCase() == 'elevation' ) elevationCol = j;
+              else if( el_ar_cap[i][j].toLowerCase() == 'capacity' ) capacityCol = j;
+              else if( el_ar_cap[i][j].toLowerCase() == 'area' ) areaCol = j;
+            }
+          } else {
+            this.eacChart.data.push([
+              el_ar_cap[i][capacityCol],
+              el_ar_cap[i][elevationCol],
+              el_ar_cap[i][areaCol],
+              null,
+              null
+            ]);
+          }
+
+          if( el_ar_cap[i][elevationCol] > max ) max = el_ar_cap[i][elevationCol];
         }
 
         if( this.feature.properties.initialstorage ) {
@@ -202,13 +204,15 @@ Polymer({
         }
 
         this.eacChart.data.sort(function(a,b){
-          if( a[0] > b[0] ) return 1;
-          if( a[0] < b[0] ) return -1;
+          if( a[capacityCol] > b[capacityCol] ) return 1;
+          if( a[capacityCol] < b[capacityCol] ) return -1;
           return 0;
         });
+
+        this.stampEacChart();
       }
 
-      this.stampEacChart();
+
       this.updateDateSliderVisibility();
     },
 
@@ -222,16 +226,51 @@ Polymer({
         eles[i].update();
       }
 
-      this.setPathValue('filters.start', e.detail.start);
-      this.setPathValue('filters.stop', e.detail.end);
-    },  
-
-    back : function() {
-      window.location.hash = 'map'
+      this.notifyPath('filters.start', e.detail.start);
+      this.notifyPath('filters.stop', e.detail.end);
     },
 
     _setCostMonth : function(e) {
       this.$.costInfo.setMonth(parseInt(e.currentTarget.getAttribute('index')));
+    },
+
+    // dom-template: http://polymer.github.io/polymer/
+    // doesn't seem to take variables when you stamp now :(
+    // setting manually.
+    _stamp : function(ele, query, data) {
+      var template = ele.stamp();
+
+      if( query && data ) {
+        var newEle = template.root.querySelector(query);
+        if( newEle ) {
+          for( var key in data ) newEle[key] = data[key];
+        }
+      }
+
+      return template;
+    },
+
+    updateDateSliderVisibility : function() {
+      this.$.dateRangeSlider.style.display = (this.hasInflows || this.hasTimeSeries || this.hasEvaporation) ? 'block' : 'none';
+    },
+
+    stampEacChart : function() {
+      if( !this.eacChart ) return;
+
+        if( this.eacChart.data.length == 0 ) {
+
+            this.charts.eacChart = null;
+            this.$.eacChartRoot.innerHTML = '';
+
+        } else if( !this.charts.eacChart ) {
+
+            this.charts.eacChart = this._stamp(this.$.eacChart, 'cwn-linechart', this.eacChart);
+            this.$.eacChartRoot.appendChild(this.charts.eacChart.root);
+
+            this.async(function(){
+                this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
+            });
+        }
     }
 
 });

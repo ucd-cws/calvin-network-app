@@ -1,6 +1,5 @@
 <!--
     data should be format [[date,value],[date,value]...]
-    <polymer-element name="cwn-linechart" attributes="label xlabel ylabel data height animate options cols type">
 -->
 <dom-module id="cwn-linechart">
     <style>
@@ -17,56 +16,39 @@
     Polymer({
         is : 'cwn-linechart',
 
-        published : {
+        properties : {
             label : String,
             xlabel : String,
             ylabel : String,
             height : Number,
-            animate : Boolean,
+            animate : {
+              notify: true,
+              type: Boolean
+            },
             options : Object,
             cols : Object,
             type : String
         },
 
-        /*bind : {
-            label : 'redraw',
-            xlabel : 'redraw',
-            ylabel : 'redraw',
-            height : 'setHeight',
-            data  : 'update',
-            start : 'update',
-            stop  : 'update',
-            options : 'update'
-        },*/
-
-        bind : {
-            height: 'setHeight'
-        },
-
-        configure : function() {
-            return {
-                onLoadHandlerSet : false,
-                dt : null,
-                chart : null,
-                height : 400,
-                animate : false,
-                updateTimer : -1,
-                options : null,
-                cols : null,
-                data : null
-            }
-        },
-
         ready : function() {
-            $(window).on('resize', function(){
-                this.redraw();
-            }.bind(this));
+          this.onLoadHandlerSet = false;
+          this.dt = null;
+          this.chart = null;
+          this.height = 400;
+          this.updateTimer = -1;
+          this.options = null;
+          this.cols = null;
+          this.data = null;
 
-            this.async(function(){
-                this.redraw();
-            });
+          $(window).on('resize', function(){
+              this.redraw();
+          }.bind(this));
+
+          this.async(function(){
+              this.redraw();
+          });
         },
-        
+
         setHeight : function() {
             if( !this.$ ) return;
 
@@ -82,7 +64,7 @@
                 this.update(this.data);
             }.bind(this));
         },
-        
+
 
         update : function(data) {
             this.data = data;
@@ -114,7 +96,7 @@
             } else {
                 this.dt = google.visualization.arrayToDataTable(data);
             }
-            
+
             this.redraw();
         },
 

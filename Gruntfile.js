@@ -163,8 +163,8 @@ module.exports = function (grunt) {
         vulcanize: {
             default : {
                 options: {
-                    csp : true,
-                    inline : true
+                    inlineCss : true,
+                    inlineScripts : true
                 },
                 files : {
                     '<%= yeoman.dist %>/require.html': ['<%= yeoman.dist %>/require.html']
@@ -210,14 +210,14 @@ module.exports = function (grunt) {
                     stdout: true,
                     stderr: true
                 },
-                command: 'node server --dev'
+                command: 'node ./server --dev'
             },
             'build-server' : {
                 options: {
                     stdout: true,
                     stderr: true
                 },
-                command: 'node server.js'
+                command: 'node ./server'
             }
         }
 
