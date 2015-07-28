@@ -1,56 +1,32 @@
 {
-  "name": "ca-water-network",
-  "version": "0.0.1",
-  "description": "california water network app",
-  "main": "server.js",
+  "name": "kraken-water-network",
+  "version": "0.1.0",
+  "description": "CALVIN water network app via Kraken",
+  "author": "jrmerz",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "grunt test",
+    "build": "grunt build",
+    "all": "npm run build && npm run test"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@bitbucket.org:ucd-cws/ca-water-network.git"
-  },
-  "author": "Justin Merz (jrmerz@ucdavis.edu)",
-  "license": "ISC",
   "dependencies": {
     "MongoQueryEngine": "git+https://github.com/CSTARS/MongoQueryEngine.git#middleware",
-    "async": "*",
-    "body-parser": "*",
-    "colors": "*",
-    "connect-redis": "*",
-    "csv-parse": "*",
-    "express": "*",
-    "express-session": "*",
-    "fast-csv": "*",
-    "geojson-utils": "*",
-    "install": "*",
-    "jjv": "*",
-    "mongodb": "*",
-    "redis": "*",
-    "request": "*",
-    "rimraf": "*"
+    "construx": "^1.0.0",
+    "construx-copier": "^1.0.0",
+    "express": "^4.12.2",
+    "kraken-js": "^1.0.3",
+    "mongodb": "^2.0.39"
   },
-  "devDependencies" : {
-    "time-grunt": "*",
-    "grunt": "*",
-    "grunt-autoprefixer": "*",
-    "grunt-concurrent": "*",
-    "grunt-contrib-clean": "*",
-    "grunt-contrib-compass": "*",
-    "grunt-contrib-concat": "*",
-    "grunt-contrib-copy": "*",
-    "grunt-contrib-cssmin": "*",
-    "grunt-contrib-imagemin": "*",
-    "grunt-contrib-uglify": "*",
-    "grunt-manifest": "*",
-    "grunt-rev": "*",
-    "grunt-shell": "*",
-    "grunt-svgmin": "*",
-    "grunt-usemin": "*",
-    "grunt-vulcanize": "*",
-    "jshint-stylish": "*",
-    "load-grunt-tasks": "*",
-    "minimist": "*"
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-browserify": "^3.8.0",
+    "grunt-cli": "^0.1.13",
+    "grunt-config-dir": "^0.3.2",
+    "grunt-contrib-clean": "^0.6.0",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-copy-to": "0.0.10",
+    "grunt-mocha-cli": "^1.14.0",
+    "mocha": "^1.18.0",
+    "supertest": "^0.9.0"
   }
 }

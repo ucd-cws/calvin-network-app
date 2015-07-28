@@ -1,8 +1,6 @@
 dump.rdb
 .tmp
 node_modules
-bower_components
+public/bower_components
 .DS_Store
-app/components
-neo4j/query.js
-app/polymer
+npm-debug.log
