@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "MongoQueryEngine": "git+https://github.com/CSTARS/MongoQueryEngine.git#middleware",
+    "async": "^1.4.0",
     "construx": "^1.0.0",
     "construx-copier": "^1.0.0",
+    "csv-parse": "^0.1.3",
     "express": "^4.12.2",
     "kraken-js": "^1.0.3",
     "mongodb": "^2.0.39"

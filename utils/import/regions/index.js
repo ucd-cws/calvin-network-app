@@ -1,5 +1,5 @@
 var Region = require('./region');
-var mongo = require('../../server/lib/mongo');
+var mongo = require('../../../lib/mongo');
 var fs = require('fs');
 var parse = require('csv-parse');
 var async = require('async');
