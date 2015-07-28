@@ -1,10 +1,14 @@
 {
-  "name": "kraken-water-network",
-  "version": "0.1.0",
-  "description": "CALVIN water network app via Kraken",
+  "name": "ca-water-network",
+  "version": "0.2.0",
+  "description": "CALVIN water network app",
   "author": "jrmerz",
   "main": "index.js",
   "scripts": {
+    "init-tools": "sudo npm install -g bower",
+    "init-dev": "npm install && bower install",
+    "init-prod": "npm install --production",
+    "run-dev": "node server --dev",
     "test": "grunt test",
     "build": "grunt build",
     "all": "npm run build && npm run test"
@@ -23,9 +27,15 @@
     "grunt-cli": "^0.1.13",
     "grunt-config-dir": "^0.3.2",
     "grunt-contrib-clean": "^0.6.0",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-cssmin": "^0.13.0",
     "grunt-contrib-jshint": "^0.10.0",
+    "grunt-contrib-uglify": "^0.9.1",
     "grunt-copy-to": "0.0.10",
+    "grunt-filerev": "^2.3.1",
     "grunt-mocha-cli": "^1.14.0",
+    "grunt-usemin": "^3.0.0",
+    "grunt-vulcanize": "^1.0.0",
     "mocha": "^1.18.0",
     "supertest": "^0.9.0"
   }

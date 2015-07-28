@@ -6,7 +6,7 @@ var http = require('http');
 var db = require('./lib/mongo');
 var mqeLib = require('MongoQueryEngine');
 
-var options, app, server, logger;
+var options, app, server, logger, conf;
 
 /*
  * Create and configure application. Also exports application instance for use by tests.
@@ -14,6 +14,14 @@ var options, app, server, logger;
  */
 options = {
     onconfig: function (config, next) {
+      conf = config;
+
+      // allow command line switch from serving /dist to /app
+      if( config.get('dev') ) {
+        var middleware = config.get('middleware').static;
+        middleware.module.arguments[0] = middleware.module.arguments[0].replace(/dist$/,'public');
+      }
+
       db.config(config.get('mqe'), function(database) {
 
         mqeLib.init({
@@ -42,6 +50,7 @@ app.use(kraken(options));
 app.on('start', function () {
     logger.info('Application ready to serve requests.');
     logger.info('Environment: %s', app.kraken.get('env:env'));
+    logger.info('Static root: '+conf.get('middleware').static.module.arguments[0]);
 });
 
 

@@ -58,7 +58,7 @@ function Datastore() {
           if( networkLoaded && regionsLoaded ) callback();
         };
 
-        var url = window.location.protocol+'//'+window.location.host+'/rest/getNetwork';
+        var url = window.location.protocol+'//'+window.location.host+'/network/get';
 
         $.ajax({
             url : url,
@@ -86,7 +86,7 @@ function Datastore() {
             }.bind(this)
         });
 
-        url = window.location.protocol+'//'+window.location.host+'/rest/getRegions';
+        url = window.location.protocol+'//'+window.location.host+'/regions/get';
         $.ajax({
             url : url,
             success : function(resp) {
