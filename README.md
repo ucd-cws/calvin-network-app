@@ -1,6 +1,6 @@
 ## CAVLIN Network Web App
 
-This is the home of the source code for the [CALVIN network app](cwn-regions.casil.ucdavis.edu).
+This is the home of the source code for the [CALVIN network app](http://cwn.casil.ucdavis.edu).
 
 #### Data Repository
 
