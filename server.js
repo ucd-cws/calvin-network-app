@@ -22,6 +22,11 @@ options = {
         middleware.module.arguments[0] = middleware.module.arguments[0].replace(/dist$/,'public');
       }
 
+      // command line override of mqe config
+      if( config.get('mqe-local') ) {
+        config.use(require(config.get('mqe-local')));
+      }
+
       db.config(config.get('mqe'), function(database) {
 
         mqeLib.init({
