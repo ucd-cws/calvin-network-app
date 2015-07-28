@@ -1,21 +1,20 @@
 // express js
 var express = require('express');
 var app = express();
+var http = require('http');
 var bodyParser = require('body-parser');
 var mongo = require('./lib/mongo');
+var mqeLib = require('MongoQueryEngine');
 
+var config = require('../mqeConfig.js');
 
-// global ns provided by mqe
-var app = global.app;
-var mqe = global.mqe;
-var config = global.appConfig;
-var express = global.express;
-var logger = global.logger;
+mqeLib.init({config: config, app: app, express: express}, function(){
+  var setup = mqeLib.getSetup();
 
-
-// express app
-exports.bootstrap = function() {
-  var db = global.db;
+  // global ns provided by mqe
+  var mqe = setup.mqe;
+  var logger = setup.logger;
+  var db = setup.database;
 
   mongo.connect(db, config);
 
@@ -57,9 +56,11 @@ exports.bootstrap = function() {
     });
   });
 
+  http.createServer(app).listen(config.server.localport);
 
-  console.log('Serving '+dir);
-};
+  logger.info("Network app is up and running at http://"+config.server.host+":"+config.server.localport);
+  logger.info('Serving '+dir);
+});
 
 function sendError(resp, msg) {
     resp.send({error:true, message: msg});
