@@ -15,22 +15,21 @@ on the default port.  Then run:
 git clone https://github.com/ucd-cws/calvin-network-data.git
 cd [/path/to/ca-network-app/root/dir]
 npm install
-cd import
-node regions [/path/to/calvin-network-data/data] [branch name]
+node utils/import/regions [/path/to/calvin-network-data/data] [branch name]
 ```
 Make sure you supply the correct branch name, this will be used to fill in the
 github links as well as repo information.
 
 #### Run Application Locally
 
-To run the application locally, first import the data repo (see above).  Then
-copy the mqeConfig.js file to a separate dir.  Edit the 'root' variable to point
-at your ca-water-network repo install directory.  Then run
-
+To run the application locally, first import the data repo (see above).  Make sure your have [bower](http://bower.io) installed.  
 ```
-cd [/path/to/ca-network-app/root/dir]
-npm install
-node node_modules/MongoQueryEngine/server.js [/path/to/custom/mqeConfig.js]
+npm run-script init-tools
+```
+Then run
+```
+npm run-script init-dev
+npm start
 ```
 
 #### Supply Edits to Network Data
