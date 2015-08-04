@@ -203,7 +203,9 @@ function readRefs(dir, filename, parent, attr, callback) {
 
       process.nextTick(next);
     },
-    callback
+    function() {
+      process.nextTick(callback);
+    }
   );
 }
 
@@ -220,11 +222,11 @@ function readFile(file, object, attr, callback) {
 
       if( err ) object[attr] = err;
       else object[attr] = parseInts(data);
-      callback();
+      process.nextTick(callback);
     });
   } else {
     object[attr] = fs.readFileSync(file, 'utf-8');
-    callback();
+    process.nextTick(callback);
   }
 }
 
