@@ -279,6 +279,9 @@ function Datastore() {
             debugger;
         }
 
+        if( !link.geometry ) return;
+        else if( !link.geometry.coordinates ) return;
+
         // finally, mark the angle of the line, so we can rotate the icon on the
         // map accordingly
         var width = link.geometry.coordinates[1][0] - link.geometry.coordinates[0][0];
