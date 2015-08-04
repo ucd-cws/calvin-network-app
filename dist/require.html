@@ -11329,8 +11329,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }.bind(this));
 
         if( this.feature.properties.repo ) {
-          this.$.githubLink.innerHTML = '<a class="btn btn-link" href="https://github.com/ucd-cws/calvin-network-data/tree/'+
-            this.feature.properties.repo.branch+this.feature.properties.repo.dir+'" target="_blank">'+
+          this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+
+            this.feature.properties.repo.github+'" target="_blank">'+
             '<i class="fa fa-github"></i> Show on GitHub</a>';
         }
 
