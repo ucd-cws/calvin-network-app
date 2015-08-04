@@ -56,7 +56,7 @@ Polymer({
               link = CWN.ds.lookupMap[this.feature.properties[type][i].link_prmname];
               node = CWN.ds.lookupMap[this.feature.properties[type][i].prmname];
 
-              if( link ) {
+              if( link && node ) {
                 this[type].push({
                   name: node.properties.prmname,
                   link: '#info/'+link.properties.prmname,

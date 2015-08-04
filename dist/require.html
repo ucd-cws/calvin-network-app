@@ -11128,8 +11128,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         .border {
           padding: 5px;
           display: inline-block;
-          border-radius: 6px;
-          border: 1px solid #eee;
+          /*border-radius: 6px;
+          border: 1px solid #eee;*/
           margin-top: 25px;
         }
         .description {
@@ -11309,7 +11309,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
               link = CWN.ds.lookupMap[this.feature.properties[type][i].link_prmname];
               node = CWN.ds.lookupMap[this.feature.properties[type][i].prmname];
 
-              if( link ) {
+              if( link && node ) {
                 this[type].push({
                   name: node.properties.prmname,
                   link: '#info/'+link.properties.prmname,
