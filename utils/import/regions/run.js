@@ -5,56 +5,71 @@ var mongo = require('../../../lib/mongo');
 var fs = require('fs');
 var parse = require('csv-parse');
 var async = require('async');
+var git = require('../../git');
 
 var dir, branch, files;
 
-module.exports = function(dir, branch) {
+module.exports = function(dir) {
   var nodes = [];
   var regions = [];
   var regionNames = {};
   var lookup = {};
 
-  var ca = new Region(dir);
-  ca.name = 'California';
+  git.info(dir, function(gitInfo) {
+    console.log(gitInfo);
 
-  var json = ca.toJSON();
-  readNodes(dir, nodes, function(){
-    nodes.forEach(function(node){
-      node.properties.repo.branch = branch
-      node.properties.repo.github = 'https://github.com/ucd-cws/calvin-network-data/tree/'+
-        branch + node.properties.repo.dir;
+    var ca = new Region(dir);
+    ca.name = 'California';
 
-      lookup[node.properties.repo.dirNodeName] = node;
-      lookup[node.properties.prmname] = node;
+    var json = ca.toJSON();
+    readNodes(dir, nodes, gitInfo, function(){
+      nodes.forEach(function(node){
+        node.properties.repo.branch = gitInfo.branch;
+        node.properties.repo.commit = gitInfo.commit;
+        node.properties.repo.tag = gitInfo.tag;
+        node.properties.repo.repo = gitInfo.origin;
 
-      setOriginsTerminals(node, nodes);
-    });
+        node.properties.repo.github = 'https://github.com/'+gitInfo.origin+'/tree/'+
+          gitInfo.branch + node.properties.repo.dir;
 
-    processLinks(nodes, lookup);
+        lookup[node.properties.repo.dirNodeName] = node;
+        lookup[node.properties.prmname] = node;
 
-    setRegions(json, '', regions, regionNames, lookup);
+        setOriginsTerminals(node, nodes);
+      });
 
-    mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
-      if( err ) {
-        return console.log('Unabled to connect to mongo');
-      }
+      processLinks(nodes, lookup);
 
-      mongo.updateNetwork(nodes, function(err){
-        if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
+      setRegions(json, '', regions, regionNames, lookup);
 
-        mongo.updateRegions(regions, function(err){
+      mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
+        if( err ) {
+          return console.log('Unabled to connect to mongo');
+        }
 
-          if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
-          console.log('done.');
-          process.exit();
+        mongo.updateNetwork(nodes, function(err){
+          if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
+
+          mongo.updateRegions(regions, function(err){
+
+            if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
+            console.log('done.');
+            process.exit();
+          });
         });
       });
     });
+
   });
+
+
+
 }
 
-function readNodes(dir, nodes, callback) {
+function readNodes(dir, nodes, gitInfo, callback) {
   files = fs.readdirSync(dir);
+
+  var re = new RegExp('.*'+gitInfo.origin.split('/')[1]);
 
   async.eachSeries(files,
     function(file, next){
@@ -64,7 +79,7 @@ function readNodes(dir, nodes, callback) {
       var stat = fs.statSync(dir+'/'+file);
 
       if( stat.isDirectory() ) {
-        return readNodes(dir+'/'+file, nodes, next);
+        return readNodes(dir+'/'+file, nodes, gitInfo, next);
 
       } else if ( stat.isFile() && file.match('\.geojson$') ) {
 
@@ -81,7 +96,7 @@ function readNodes(dir, nodes, callback) {
 
         readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties', function(){
 
-          d.properties.repo.dir = dir.replace(/.*calvin-network-data/,'');
+          d.properties.repo.dir = dir.replace(re, '');
           nodes.push(d);
           setImmediate(next);
 
