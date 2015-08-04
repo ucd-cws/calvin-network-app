@@ -58,8 +58,8 @@ function readNodes(dir, nodes, callback) {
 
   async.eachSeries(files,
     function(file, next){
-      if( file.match(/^\./) ) return async.nextTick(next);
-      if( file === 'region.geojson' ) return async.nextTick(next);
+      if( file.match(/^\./) ) return process.nextTick(next);
+      if( file === 'region.geojson' ) return process.nextTick(next);
 
       var stat = fs.statSync(dir+'/'+file);
 
@@ -83,13 +83,13 @@ function readNodes(dir, nodes, callback) {
 
           d.properties.repo.dir = dir.replace(/.*calvin-network-data/,'');
           nodes.push(d);
-          async.nextTick(next);
+          process.nextTick(next);
 
         });
         return;
       }
 
-      async.nextTick(next);
+      process.nextTick(next);
     },
     function(err){
       if( err ) console.log(err);
@@ -201,7 +201,7 @@ function readRefs(dir, filename, parent, attr, callback) {
         return readRefs(dir, filename, parent[attr], key, next);
       }
 
-      async.nextTick(next);
+      process.nextTick(next);
     },
     callback
   );
