@@ -8,21 +8,43 @@ The data repo can be found [here](https://github.com/ucd-cws/calvin-network-data
 
 #### Import data
 
-First make sure you have [MongoDB](https://www.mongodb.com/) installed and running
-on the default port.  Then run:
+First make sure you have [NodeJS](https://nodejs.org/) as well as [MongoDB](https://www.mongodb.com/) installed and running
+on the default port.  You can download MongoDB [here](https://www.mongodb.org/downloads) or use follow [these](http://docs.mongodb.org/manual/administration/install-on-linux/) instructions for using linux package managers.
+
+Then run:
 
  ```
 git clone https://github.com/ucd-cws/calvin-network-data.git
 cd [/path/to/ca-network-app/root/dir]
 npm install
 node utils/import/regions [/path/to/calvin-network-data/data] [branch name]
+// ex:
+// node utils/import/regions /home/jrmerz/dev/calvin-network-data/data master
 ```
 Make sure you supply the correct branch name, this will be used to fill in the
 github links as well as repo information.
 
+#### Repetitive Imports
+
+To simplify the import process you can make a _import.json_ file in the
+root of this repo.  It should look like:
+
+```
+{
+  "path" : "/path/to/your/data/repo/calvin-network-data/data",
+  "branch" : "master"
+}
+```
+
+Then you can simply run this command to (re-)import data after you make changes:
+
+```
+npm run-script import
+```
+
 #### Run Application Locally
 
-To run the application locally, first import the data repo (see above).  Make sure your have [bower](http://bower.io) installed.  
+To run the application locally, first import the data repo (see above).  Make sure your have [bower](http://bower.io) installed.
 ```
 npm run-script init-tools
 ```

@@ -8,6 +8,7 @@
     "init-tools": "sudo npm install -g bower",
     "init-dev": "npm install && bower install",
     "init-prod": "npm install --production",
+    "import": "node utils/import/regions/cmd.js",
     "run-dev": "node server --dev",
     "test": "grunt test",
     "build": "grunt build",

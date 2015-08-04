@@ -5,3 +5,4 @@ public/bower_components
 .DS_Store
 npm-debug.log
 .build
+import.json
