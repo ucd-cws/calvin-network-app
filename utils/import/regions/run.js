@@ -58,8 +58,8 @@ function readNodes(dir, nodes, callback) {
 
   async.eachSeries(files,
     function(file, next){
-      if( file.match(/^\./) ) return next();
-      if( file === 'region.geojson' ) return next();
+      if( file.match(/^\./) ) return async.nextTick(next);
+      if( file === 'region.geojson' ) return async.nextTick(next);
 
       var stat = fs.statSync(dir+'/'+file);
 
@@ -201,7 +201,7 @@ function readRefs(dir, filename, parent, attr, callback) {
         return readRefs(dir, filename, parent[attr], key, next);
       }
 
-      next();
+      async.nextTick(next);
     },
     callback
   );
