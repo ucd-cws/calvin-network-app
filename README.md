@@ -17,12 +17,10 @@ Then run:
 git clone https://github.com/ucd-cws/calvin-network-data.git
 cd [/path/to/ca-network-app/root/dir]
 npm install
-node utils/import/regions [/path/to/calvin-network-data/data] [branch name]
+node utils/import/regions [/path/to/calvin-network-data/data]
 // ex:
-// node utils/import/regions /home/jrmerz/dev/calvin-network-data/data master
+// node utils/import/regions /home/jrmerz/dev/calvin-network-data/data
 ```
-Make sure you supply the correct branch name, this will be used to fill in the
-github links as well as repo information.
 
 #### Repetitive Imports
 

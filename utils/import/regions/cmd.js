@@ -6,8 +6,7 @@ var importJson = __dirname+'/../../../import.json';
 
 if( !fs.existsSync(importJson) ) {
   var example = {
-    path : '/home/user/calvin-network-data/data',
-    branch : 'master'
+    path : '/home/user/calvin-network-data/data'
   };
 
   console.log('Error.\nYou need to create a \'import.json\' file in '+
@@ -18,4 +17,4 @@ if( !fs.existsSync(importJson) ) {
 
 importJson = require(importJson);
 
-run(importJson.path, importJson.repo);
+run(importJson.path);
