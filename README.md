@@ -46,11 +46,15 @@ npm run-script import
 
 To run the application locally, first import the data repo (see above).  Make sure your have [bower](http://bower.io) installed.
 ```
+// if you have not installed bower
 npm run-script init-tools
 ```
-Then run
+Then run the following command once.  It will install all client and server dependencies.  You may need to re-run this script after a _git pull_ where the dependencies list was modified for either client or server.
 ```
 npm run-script init-dev
+```
+Then to start the application (MongoDB needs to be running):
+```
 npm start
 ```
 
