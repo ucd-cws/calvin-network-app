@@ -52,8 +52,15 @@ npm run-script init-dev
 ```
 Then to start the application (MongoDB needs to be running):
 ```
-npm start
+npm run-script run-dev
 ```
+#### Visualize Edits / live-reload
+
+If you are making changes to the data repo and start the application locally using 'npm run-script run-dev', the app will load in 'DEV MODE'.  The app will show DEV MODE in the upper left hand screen, next to the app's title.
+
+While in dev mode, the application will automatically re-import the data whenever you make changes to the data repo's /data folder or the import.json file.  Once the import is complete the app will load the new data a re-render live.  You will not need to refresh your browser.  There will be a popup at the bottom of the screen showing the status of the import process as it happens.
+
+If the 'DEV MODE' label turns red, the application has lost it's web socket connection and will no longer live reload.  You should probably restart the server if this happens.
 
 #### Supply Edits to Network Data
 

@@ -24,10 +24,14 @@ module.exports = function(dir, callback) {
     var json = ca.toJSON();
 
     if( callback ) {
-      callback('Walking '+dir+' for nodes and links...');
+      callback('Walking <b>'+dir+'</b> for nodes and links.  Attaching CSV data.');
     }
 
     readNodes(dir, nodes, gitInfo, function(){
+      if( callback ) {
+        callback('Processing geojson.');
+      }
+
       nodes.forEach(function(node){
         node.properties.repo.branch = gitInfo.branch;
         node.properties.repo.commit = gitInfo.commit;
@@ -43,20 +47,12 @@ module.exports = function(dir, callback) {
         setOriginsTerminals(node, nodes);
       });
 
-      if( callback ) {
-        callback('Processing links...');
-      }
-
       processLinks(nodes, lookup);
-
-      if( callback ) {
-        callback('Processing regions...');
-      }
 
       setRegions(json, '', regions, regionNames, lookup);
 
       if( callback ) {
-        callback('Updating MongoDB...');
+        callback('Updating MongoDB.');
       }
 
       mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){

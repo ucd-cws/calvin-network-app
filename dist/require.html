@@ -8540,11 +8540,11 @@ this.fire('dom-change');
         }.bind(this));
 
         this.socket.on('network-update-msg', function (data) {
-          this.toast.innerHTML = data.msg;
+          this.toast.innerHTML = this.toast.innerHTML + '<br />'+ data.msg;
         }.bind(this));
 
         this.socket.on('network-update-end', function (data) {
-          this.toast.innerHTML = 'Network data update finished! Client refreshing data...';
+          this.toast.innerHTML = this.toast.innerHTML + '<br />Network data update finished! Client refreshing data...';
           this.toast.duration = 3000;
           this.fire('update');
           this.toast.show();
