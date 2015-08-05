@@ -36,6 +36,7 @@
 
         "searchWhitelist" : ["_id", "type", "properties"]
      },
+     "rest" : {},
      "server" : {
 	      "host" : "localhost",
 

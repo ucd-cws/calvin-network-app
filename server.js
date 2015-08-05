@@ -30,6 +30,17 @@ options = {
 
       db.config(config.get('mqe'), function(database) {
 
+        var mqeConfig = config.get('mqe');
+        mqeConfig.rest.getParamParser = function(query) {
+          if( query.id ) {
+            return {'_id': query.id };
+          } else if ( query.prmname ) {
+            console.log({'properties.prmname': query.prmname});
+            return {'properties.prmname': query.prmname};
+          }
+          return {'_id': query._id};
+        };
+
         mqeLib.init({
             config: config.get('mqe'),
             app: app,
