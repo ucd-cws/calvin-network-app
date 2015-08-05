@@ -9,7 +9,7 @@ var git = require('../../git');
 
 var dir, branch, files;
 
-module.exports = function(dir) {
+module.exports = function(dir, callback) {
   var nodes = [];
   var regions = [];
   var regionNames = {};
@@ -54,7 +54,13 @@ module.exports = function(dir) {
 
             if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
             console.log('done.');
-            process.exit();
+
+            if( callback ) {
+              callback();
+            } else {
+              process.exit();
+            }
+
           });
         });
       });

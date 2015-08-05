@@ -32,12 +32,17 @@
           this.classList.add('closed');
         },
 
-        init : function() {
+        init : function(state) {
+          if( state ) {
+            this.state = state;
+          } else {
             this.state = {
               enabled : [],
               disabled : []
             };
-            this.render();
+          }
+
+          this.render();
         },
 
         getEnabled : function() {
@@ -80,14 +85,13 @@
 
             var panel = $('<div class="menu-root cwn-map-menu"></div>');
             var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
-                          '<input type="checkbox" name="'+id+'" /> '+label+'</div>');
+                          '<input type="checkbox" name="'+id+'" '+(this.state.enabled.indexOf(regionName) > -1 ? 'checked' : '')+' /> '+label+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'" name="'+id+'-children"></div>');
             panel.append(input);
             panel.append(children);
 
             root.appendChild(panel[0]);
-
 
             input.find('input').on('click', function(e){
               e.stopPropagation();

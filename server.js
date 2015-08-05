@@ -4,6 +4,7 @@ var kraken = require('kraken-js');
 var http = require('http');
 
 var db = require('./lib/mongo');
+var devCon = require('./lib/dev');
 var mqeLib = require('MongoQueryEngine');
 
 var options, app, server, logger, conf;
@@ -68,6 +69,13 @@ app.on('start', function () {
  */
 function onReady(config) {
   server = http.createServer(app);
+
+  if( conf.get('dev') ) {
+    devCon.init(server, app);
+  } else {
+    devCon.prod(app);
+  }
+
   server.listen(config.get('mqe').server.localport || process.env.PORT || 8000);
   server.on('listening', function () {
       logger.info('Server listening on http://localhost:%d', this.address().port);

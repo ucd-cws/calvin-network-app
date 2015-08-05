@@ -36,13 +36,17 @@ function Datastore() {
         this.filenameLookupMap = {};
     }
 
-    this.reload = function(local) {
-        this.islocal = local;
+    this.reload = function(callback) {
+        //this.islocal = local;
 
         this.loadNetwork(this.network, function(err){
           this.loading = false;
           this.fire('load', this.loading);
           this.fire('loaded');
+
+          if( callback && typeof callback === 'function' ) {
+            callback();
+          }
         }.bind(this));
     }
 

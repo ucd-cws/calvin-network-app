@@ -27,6 +27,7 @@
         <cwn-search id="search"></cwn-search>
         <cwn-about id="about"></cwn-about>
         <cwn-region-selector id="selector"></cwn-region-selector>
+        <cwn-dev on-update="onDataUpdated"></cwn-dev>
 
         <cwn-filters
           id="filters"
@@ -261,6 +262,16 @@
 
         onRegionSelect : function(e) {
           this.$.map.onRegionSelect(e);
+        },
+
+        onDataUpdated : function() {
+          var menuState = this.$.menu.state;
+
+          CWN.ds.reset();
+          CWN.ds.reload(function(){
+            this.$.menu.init(menuState);
+            $(window).trigger('hashchange');
+          }.bind(this));
         }
     });
 </script>

@@ -175,25 +175,30 @@ var DomModule = function () {
 return document.createElement('dom-module');
 };
 DomModule.prototype = Object.create(HTMLElement.prototype);
-DomModule.prototype.constructor = DomModule;
-DomModule.prototype.createdCallback = function () {
-var id = this.id || this.getAttribute('name') || this.getAttribute('is');
+Polymer.Base.extend(DomModule.prototype, {
+constructor: DomModule,
+createdCallback: function () {
+this.register();
+},
+register: function (id) {
+var id = id || this.id || this.getAttribute('name') || this.getAttribute('is');
 if (id) {
 this.id = id;
 modules[id] = this;
 }
-};
-DomModule.prototype.import = function (id, slctr) {
+},
+import: function (id, selector) {
 var m = modules[id];
 if (!m) {
 forceDocumentUpgrade();
 m = modules[id];
 }
-if (m && slctr) {
-m = m.querySelector(slctr);
+if (m && selector) {
+m = m.querySelector(selector);
 }
 return m;
-};
+}
+});
 var cePolyfill = window.CustomElements && !CustomElements.useNative;
 if (cePolyfill) {
 var ready = CustomElements.ready;
@@ -489,7 +494,7 @@ _setupDebouncers: function () {
 this._debouncers = {};
 },
 debounce: function (jobName, callback, wait) {
-this._debouncers[jobName] = Polymer.Debounce.call(this, this._debouncers[jobName], callback, wait);
+return this._debouncers[jobName] = Polymer.Debounce.call(this, this._debouncers[jobName], callback, wait);
 },
 isDebouncerActive: function (jobName) {
 var debouncer = this._debouncers[jobName];
@@ -508,7 +513,7 @@ debouncer.stop();
 }
 }
 });
-Polymer.version = '1.0.7';
+Polymer.version = '1.0.8';
 Polymer.Base._addFeature({
 _registerFeatures: function () {
 this._prepIs();
@@ -948,7 +953,6 @@ var nativeRemoveChild = Element.prototype.removeChild;
 var nativeAppendChild = Element.prototype.appendChild;
 var nativeCloneNode = Element.prototype.cloneNode;
 var nativeImportNode = Document.prototype.importNode;
-var dirtyRoots = [];
 var DomApi = function (node) {
 this.node = node;
 if (this.patch) {
@@ -957,17 +961,12 @@ this.patch();
 };
 DomApi.prototype = {
 flush: function () {
-for (var i = 0, host; i < dirtyRoots.length; i++) {
-host = dirtyRoots[i];
-host.flushDebouncer('_distribute');
-}
-dirtyRoots = [];
+Polymer.dom.flush();
 },
 _lazyDistribute: function (host) {
 if (host.shadyRoot && host.shadyRoot._distributionClean) {
 host.shadyRoot._distributionClean = false;
-host.debounce('_distribute', host._distributeContent);
-dirtyRoots.push(host);
+Polymer.dom.addDebouncer(host.debounce('_distribute', host._distributeContent));
 }
 },
 appendChild: function (node) {
@@ -1403,32 +1402,44 @@ configurable: true
 },
 textContent: {
 get: function () {
-if (this.node.nodeType === Node.TEXT_NODE) {
+var nt = this.node.nodeType;
+if (nt === Node.TEXT_NODE || nt === Node.COMMENT_NODE) {
 return this.node.textContent;
 } else {
-return Array.prototype.map.call(this.childNodes, function (c) {
-return c.textContent;
-}).join('');
+var tc = [];
+for (var i = 0, cn = this.childNodes, c; c = cn[i]; i++) {
+if (c.nodeType !== Node.COMMENT_NODE) {
+tc.push(c.textContent);
+}
+}
+return tc.join('');
 }
 },
 set: function (text) {
+var nt = this.node.nodeType;
+if (nt === Node.TEXT_NODE || nt === Node.COMMENT_NODE) {
+this.node.textContent = text;
+} else {
 this._clear();
 if (text) {
 this.appendChild(document.createTextNode(text));
+}
 }
 },
 configurable: true
 },
 innerHTML: {
 get: function () {
-if (this.node.nodeType === Node.TEXT_NODE) {
+var nt = this.node.nodeType;
+if (nt === Node.TEXT_NODE || nt === Node.COMMENT_NODE) {
 return null;
 } else {
 return getInnerHTML(this.node);
 }
 },
 set: function (text) {
-if (this.node.nodeType !== Node.TEXT_NODE) {
+var nt = this.node.nodeType;
+if (nt !== Node.TEXT_NODE || nt !== Node.COMMENT_NODE) {
 this._clear();
 var d = document.createElement('div');
 d.innerHTML = text;
@@ -1541,7 +1552,43 @@ return Polymer.EventApi.factory(obj);
 return factory(obj, patch);
 }
 };
-Polymer.dom.flush = DomApi.prototype.flush;
+Polymer.Base.extend(Polymer.dom, {
+_flushGuard: 0,
+_FLUSH_MAX: 100,
+_needsTakeRecords: !Polymer.Settings.useNativeCustomElements,
+_debouncers: [],
+_finishDebouncer: null,
+flush: function () {
+for (var i = 0; i < this._debouncers.length; i++) {
+this._debouncers[i].complete();
+}
+if (this._finishDebouncer) {
+this._finishDebouncer.complete();
+}
+this._flushPolyfills();
+if (this._debouncers.length && this._flushGuard < this._FLUSH_MAX) {
+this._flushGuard++;
+this.flush();
+} else {
+if (this._flushGuard >= this._FLUSH_MAX) {
+console.warn('Polymer.dom.flush aborted. Flush may not be complete.');
+}
+this._flushGuard = 0;
+}
+},
+_flushPolyfills: function () {
+if (this._needsTakeRecords) {
+CustomElements.takeRecords();
+}
+},
+addDebouncer: function (debouncer) {
+this._debouncers.push(debouncer);
+this._finishDebouncer = Polymer.Debounce(this._finishDebouncer, this._finishFlush);
+},
+_finishFlush: function () {
+Polymer.dom._debouncers = [];
+}
+});
 function getLightChildren(node) {
 var children = node._lightChildren;
 return children ? children : node.childNodes;
@@ -1667,6 +1714,7 @@ this.shadyRoot._dirtyRoots = [];
 },
 _finishDistribute: function () {
 if (this._useContent) {
+this.shadyRoot._distributionClean = true;
 if (hasInsertionPoint(this.shadyRoot)) {
 this._composeTree();
 } else {
@@ -1680,7 +1728,6 @@ this._updateChildNodes(this, children);
 }
 }
 this.shadyRoot._hasDistributed = true;
-this.shadyRoot._distributionClean = true;
 }
 },
 elementMatches: function (selector, node) {
@@ -2478,6 +2525,16 @@ var recognizers = Gestures.recognizers;
 for (var i = 0, r; i < recognizers.length; i++) {
 r = recognizers[i];
 if (gs[r.name] && !handled[r.name]) {
+if (r.flow && r.flow.start.indexOf(ev.type) > -1) {
+if (r.reset) {
+r.reset();
+}
+}
+}
+}
+for (var i = 0, r; i < recognizers.length; i++) {
+r = recognizers[i];
+if (gs[r.name] && !handled[r.name]) {
 handled[r.name] = true;
 r[type](ev);
 }
@@ -2509,6 +2566,8 @@ prevent = dx > dy;
 }
 if (prevent) {
 ev.preventDefault();
+} else {
+Gestures.prevent('track');
 }
 }
 },
@@ -2650,6 +2709,16 @@ deps: [
 'touchmove',
 'touchend'
 ],
+flow: {
+start: [
+'mousedown',
+'touchstart'
+],
+end: [
+'mouseup',
+'touchend'
+]
+},
 emits: ['track'],
 info: {
 x: 0,
@@ -2665,7 +2734,7 @@ this.moves.push(move);
 },
 prevent: false
 },
-clearInfo: function () {
+reset: function () {
 this.info.state = 'start';
 this.info.started = false;
 this.info.moves = [];
@@ -2704,7 +2773,6 @@ if (self.info.started) {
 Gestures.prevent('tap');
 movefn(e);
 }
-self.clearInfo();
 document.removeEventListener('mousemove', movefn);
 document.removeEventListener('mouseup', upfn);
 };
@@ -2744,7 +2812,6 @@ y: ct.clientY
 });
 this.fire(t, ct);
 }
-this.clearInfo();
 },
 fire: function (target, touch) {
 var secondlast = this.info.moves[this.info.moves.length - 2];
@@ -2779,6 +2846,16 @@ deps: [
 'touchstart',
 'touchend'
 ],
+flow: {
+start: [
+'mousedown',
+'touchstart'
+],
+end: [
+'click',
+'touchend'
+]
+},
 emits: ['tap'],
 info: {
 x: NaN,
@@ -2819,7 +2896,6 @@ sourceEvent: e
 });
 }
 }
-this.reset();
 }
 });
 var DIRECTION_MAP = {
@@ -3516,7 +3592,12 @@ this._effectEffects('__static__', null, this._propertyEffects.__static__);
 });
 Polymer.Base._addFeature({
 _setupConfigure: function (initialConfig) {
-this._config = initialConfig || {};
+this._config = {};
+for (var i in initialConfig) {
+if (initialConfig[i] !== undefined) {
+this._config[i] = initialConfig[i];
+}
+}
 this._handlers = [];
 },
 _marshalAttributes: function () {
@@ -3645,8 +3726,9 @@ var array;
 var last = parts[parts.length - 1];
 if (parts.length > 1) {
 for (var i = 0; i < parts.length - 1; i++) {
-prop = prop[parts[i]];
-if (array) {
+var part = parts[i];
+prop = prop[part];
+if (array && parseInt(part) == part) {
 parts[i] = Polymer.Collection.get(array).getKey(prop);
 }
 if (!prop) {
@@ -3654,14 +3736,12 @@ return;
 }
 array = Array.isArray(prop) ? prop : null;
 }
-if (array) {
+if (array && parseInt(last) == last) {
 var coll = Polymer.Collection.get(array);
 var old = prop[last];
 var key = coll.getKey(old);
-if (key) {
 parts[i] = key;
 coll.setItem(key, value);
-}
 }
 prop[last] = value;
 if (!root) {
@@ -4758,6 +4838,7 @@ Polymer.Base._addFeature({
 _prepStyleProperties: function () {
 this._ownStylePropertyNames = this._styles ? propertyUtils.decorateStyles(this._styles) : [];
 },
+customStyle: {},
 _setupStyleProperties: function () {
 this.customStyle = {};
 },
@@ -4989,15 +5070,8 @@ styleTransformer.documentRule(rule);
 }());
 Polymer.Templatizer = {
 properties: { __hideTemplateChildren__: { observer: '_showHideChildren' } },
-_templatizerStatic: {
-count: 0,
-callbacks: {},
-debouncer: null
-},
 _instanceProps: Polymer.nob,
-created: function () {
-this._templatizerId = this._templatizerStatic.count++;
-},
+_parentPropPrefix: '_parent_',
 templatize: function (template) {
 if (!template._content) {
 template._content = template.content;
@@ -5041,20 +5115,10 @@ n.__hideTemplateChildren__ = hide;
 }
 },
 _debounceTemplate: function (fn) {
-this._templatizerStatic.callbacks[this._templatizerId] = fn.bind(this);
-this._templatizerStatic.debouncer = Polymer.Debounce(this._templatizerStatic.debouncer, this._flushTemplates.bind(this, true));
+Polymer.dom.addDebouncer(this.debounce('_debounceTemplate', fn));
 },
 _flushTemplates: function (debouncerExpired) {
-var db = this._templatizerStatic.debouncer;
-while (debouncerExpired || db && db.finish) {
-db.stop();
-var cbs = this._templatizerStatic.callbacks;
-this._templatizerStatic.callbacks = {};
-for (var id in cbs) {
-cbs[id]();
-}
-debouncerExpired = false;
-}
+Polymer.dom.flush();
 },
 _customPrepEffects: function (archetype) {
 var parentProps = archetype._parentProps;
@@ -5094,7 +5158,7 @@ if (template != this) {
 Polymer.Bind.prepareModel(proto);
 }
 for (prop in parentProps) {
-var parentProp = '_parent_' + prop;
+var parentProp = this._parentPropPrefix + prop;
 var effects = [
 {
 kind: 'function',
@@ -5118,8 +5182,9 @@ this._forwardParentProp(prop, value);
 };
 },
 _createHostPropEffector: function (prop) {
+var prefix = this._parentPropPrefix;
 return function (source, value) {
-this.dataHost['_parent_' + prop] = value;
+this.dataHost[prefix + prop] = value;
 };
 },
 _createInstancePropEffector: function (prop) {
@@ -5151,12 +5216,12 @@ var dot = path.indexOf('.');
 var root = dot < 0 ? path : path.slice(0, dot);
 dataHost._forwardInstancePath.call(dataHost, this, path, value);
 if (root in dataHost._parentProps) {
-dataHost.notifyPath('_parent_' + path, value);
+dataHost.notifyPath(dataHost._parentPropPrefix + path, value);
 }
 },
 _pathEffector: function (path, value, fromAbove) {
 if (this._forwardParentPath) {
-if (path.indexOf('_parent_') === 0) {
+if (path.indexOf(this._parentPropPrefix) === 0) {
 this._forwardParentPath(path.substring(8), value);
 }
 }
@@ -5204,7 +5269,7 @@ stamp: function (model) {
 model = model || {};
 if (this._parentProps) {
 for (var prop in this._parentProps) {
-model[prop] = this['_parent_' + prop];
+model[prop] = this[this._parentPropPrefix + prop];
 }
 }
 return new this.ctor(model, this);
@@ -5920,7 +5985,16 @@ Polymer({
 is: 'dom-bind',
 extends: 'template',
 created: function () {
-Polymer.ImportStatus.whenLoaded(this._readySelf.bind(this));
+Polymer.ImportStatus.whenLoaded(this._markImportsReady.bind(this));
+},
+_ensureReady: function () {
+if (!this._readied) {
+this._readySelf();
+}
+},
+_markImportsReady: function () {
+this._importsReady = true;
+this._ensureReady();
 },
 _registerFeatures: function () {
 this._prepConstructor();
@@ -5953,6 +6027,15 @@ config[prop] = this[prop];
 this._setupConfigure = this._setupConfigure.bind(this, config);
 },
 attached: function () {
+if (this._importsReady) {
+this.render();
+}
+},
+detached: function () {
+this._removeChildren();
+},
+render: function () {
+this._ensureReady();
 if (!this._children) {
 this._template = this;
 this._prepAnnotations();
@@ -5965,9 +6048,6 @@ this._children = Array.prototype.slice.call(this.root.childNodes);
 }
 this._insertChildren();
 this.fire('dom-change');
-},
-detached: function () {
-this._removeChildren();
 }
 });</script>
 <style>
@@ -8403,6 +8483,64 @@ this._removeChildren();
 </style>
 
 
+
+
+
+<script>
+  Polymer({
+    is : 'cwn-dev',
+
+    ready : function() {
+      this.testForSocket(function(isDev){
+        if( isDev ) this.init();
+      }.bind(this));
+    },
+
+    testForSocket : function(callback) {
+      $.get('/rest/isDev', function(resp){
+        if( resp && resp.isDev ) {
+          return callback(true);
+        }
+
+        callback(false);
+      }.bind(this));
+    },
+
+    loadLib : function(callback) {
+      console.log('Is dev, loading socket.io lib');
+      $.get('/socket.io/socket.io.js', function(resp){
+        eval(resp);
+
+        callback();
+      });
+    },
+
+    init : function() {
+      this.loadLib(function() {
+        console.log('Initializing dev socket connection');
+        this.toast = document.createElement('paper-toast');
+
+        document.body.appendChild(this.toast);
+        this.socket = io(window.location.origin);
+
+        this.socket.on('connect', function() {
+          console.log('Dev socket connection established');
+        });
+
+        this.socket.on('network-update-start', function (data) {
+          this.toast.text = 'Network data update detected, importing to database...';
+          this.toast.show();
+        }.bind(this));
+
+        this.socket.on('network-update-end', function (data) {
+          this.toast.text = 'Network data update finished, importing data...';
+          this.fire('update');
+          this.toast.show();
+        }.bind(this));
+      }.bind(this));
+    }
+  });
+</script>
 </head><body><div hidden="" by-vulcanize=""><dom-module id="paper-drawer-panel" assetpath="/public/bower_components/paper-drawer-panel/">
   <style>
 /**
@@ -9722,6 +9860,227 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
   }());
 
+</script>
+<dom-module id="iron-a11y-announcer" assetpath="/public/bower_components/iron-a11y-announcer/">
+  <style>
+    :host {
+      display: inline-block;
+      position: fixed;
+      clip: rect(0px,0px,0px,0px);
+    }
+  </style>
+
+  <template>
+    <span aria-live$="[[mode]]">[[_text]]</span>
+  </template>
+
+  <script>
+
+    (function() {
+      'use strict';
+
+      Polymer.IronA11yAnnouncer = Polymer({
+        is: 'iron-a11y-announcer',
+
+        properties: {
+
+          /**
+           * The value of mode is used to set the `aria-live` attribute
+           * for the element that will be announced. Valid values are: `off`,
+           * `polite` and `assertive`.
+           */
+          mode: {
+            type: String,
+            value: 'polite'
+          },
+
+          _text: {
+            type: String,
+            value: ''
+          }
+        },
+
+        created: function() {
+          if (!Polymer.IronA11yAnnouncer.instance) {
+            Polymer.IronA11yAnnouncer.instance = this;
+          }
+
+          document.body.addEventListener('iron-announce', this._onIronAnnounce.bind(this));
+        },
+
+        /**
+         * Cause a text string to be announced by screen readers.
+         *
+         * @param {string} text The text that should be announced.
+         */
+        announce: function(text) {
+          this._text = '';
+          this.async(function() {
+            this._text = text;
+          }, 100);
+        },
+
+        _onIronAnnounce: function(event) {
+          if (event.detail && event.detail.text) {
+            this.announce(event.detail.text);
+          }
+        }
+      });
+
+      Polymer.IronA11yAnnouncer.instance = null;
+
+      Polymer.IronA11yAnnouncer.requestAvailability = function() {
+        if (!Polymer.IronA11yAnnouncer.instance) {
+          Polymer.IronA11yAnnouncer.instance = document.createElement('iron-a11y-announcer');
+        }
+
+        document.body.appendChild(Polymer.IronA11yAnnouncer.instance);
+      };
+    })();
+
+  </script>
+</dom-module>
+<dom-module id="paper-toast" assetpath="/public/bower_components/paper-toast/">
+  <style>
+    :host {
+      display: inline-block;
+      position: fixed;
+
+      background: #323232;
+      color: #f1f1f1;
+      min-height: 48px;
+      min-width: 288px;
+      padding: 16px 24px 12px;
+      box-sizing: border-box;
+      box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+      border-radius: 2px;
+      bottom: 12px;
+      left: 12px;
+      font-size: 14px;
+      cursor: default;
+
+      -webkit-transition: visibility 0.3s, -webkit-transform 0.3s;
+      transition: visibility 0.3s, transform 0.3s;
+
+      -webkit-transform: translateY(100px);
+      transform: translateY(100px);
+
+      visibility: hidden;
+    }
+
+    :host(.capsule) {
+      border-radius: 24px;
+    }
+
+    :host(.fit-bottom) {
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      min-width: 0;
+      border-radius: 0;
+    }
+
+    :host(.paper-toast-open){
+      visibility: visible;
+
+      -webkit-transform: translateY(0px);
+      transform: translateY(0px);
+    }
+  </style>
+  <template>
+    <span id="label">{{text}}</span>
+    <content></content>
+  </template>
+</dom-module>
+<script>
+(function() {
+
+  var PaperToast = Polymer({
+    is: 'paper-toast',
+
+    properties: {
+      /**
+       * The duration in milliseconds to show the toast.
+       */
+      duration: {
+        type: Number,
+        value: 3000
+      },
+
+      /**
+       * The text to display in the toast.
+       */
+      text: {
+        type: String,
+        value: ""
+      },
+
+      /**
+       * True if the toast is currently visible.
+       */
+      visible: {
+        type: Boolean,
+        readOnly: true,
+        value: false,
+        observer: '_visibleChanged'
+      }
+    },
+
+    created: function() {
+      Polymer.IronA11yAnnouncer.requestAvailability();
+    },
+
+    ready: function() {
+      this.async(function() {
+        this.hide();
+      });
+    },
+
+    /**
+     * Show the toast.
+     * @method show
+     */
+    show: function() {
+      if (PaperToast.currentToast) {
+        PaperToast.currentToast.hide();
+      }
+      PaperToast.currentToast = this;
+      this.removeAttribute('aria-hidden');
+      this._setVisible(true);
+      this.fire('iron-announce', {
+        text: this.text
+      });
+      this.debounce('hide', this.hide, this.duration);
+    },
+
+    /**
+     * Hide the toast
+     */
+    hide: function() {
+      this.setAttribute('aria-hidden', 'true');
+      this._setVisible(false);
+    },
+
+    /**
+     * Toggle the opened state of the toast.
+     * @method toggle
+     */
+    toggle: function() {
+      if (!this.visible) {
+        this.show();
+      } else {
+        this.hide();
+      }
+    },
+
+    _visibleChanged: function(visible) {
+      this.toggleClass('paper-toast-open', visible);
+    }
+  });
+
+  PaperToast.currentToast = null;
+
+})();
 </script>
 <dom-module id="cwn-info-link" assetpath="/public/elements/widgets/">
     <style>
@@ -12864,12 +13223,17 @@ Polymer({
           this.classList.add('closed');
         },
 
-        init : function() {
+        init : function(state) {
+          if( state ) {
+            this.state = state;
+          } else {
             this.state = {
               enabled : [],
               disabled : []
             };
-            this.render();
+          }
+
+          this.render();
         },
 
         getEnabled : function() {
@@ -12912,14 +13276,13 @@ Polymer({
 
             var panel = $('<div class="menu-root cwn-map-menu"></div>');
             var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
-                          '<input type="checkbox" name="'+id+'" /> '+label+'</div>');
+                          '<input type="checkbox" name="'+id+'" '+(this.state.enabled.indexOf(regionName) > -1 ? 'checked' : '')+' /> '+label+'</div>');
 
             var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'" name="'+id+'-children"></div>');
             panel.append(input);
             panel.append(children);
 
             root.appendChild(panel[0]);
-
 
             input.find('input').on('click', function(e){
               e.stopPropagation();
@@ -13570,6 +13933,7 @@ Polymer({
         <cwn-search id="search"></cwn-search>
         <cwn-about id="about"></cwn-about>
         <cwn-region-selector id="selector"></cwn-region-selector>
+        <cwn-dev on-update="onDataUpdated"></cwn-dev>
 
         <cwn-filters id="filters" on-update="onFiltersUpdated"></cwn-filters>
 
@@ -13794,6 +14158,16 @@ Polymer({
 
         onRegionSelect : function(e) {
           this.$.map.onRegionSelect(e);
+        },
+
+        onDataUpdated : function() {
+          var menuState = this.$.menu.state;
+
+          CWN.ds.reset();
+          CWN.ds.reload(function(){
+            this.$.menu.init(menuState);
+            $(window).trigger('hashchange');
+          }.bind(this));
         }
     });
 </script>

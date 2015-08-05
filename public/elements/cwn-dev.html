@@ -1,0 +1,56 @@
+<script>
+  Polymer({
+    is : 'cwn-dev',
+
+    ready : function() {
+      this.testForSocket(function(isDev){
+        if( isDev ) this.init();
+      }.bind(this));
+    },
+
+    testForSocket : function(callback) {
+      $.get('/rest/isDev', function(resp){
+        if( resp && resp.isDev ) {
+          return callback(true);
+        }
+
+        callback(false);
+      }.bind(this));
+    },
+
+    loadLib : function(callback) {
+      console.log('Is dev, loading socket.io lib');
+      $.get('/socket.io/socket.io.js', function(resp){
+        eval(resp);
+
+        callback();
+      });
+    },
+
+    init : function() {
+      this.loadLib(function() {
+        console.log('Initializing dev socket connection');
+        this.toast = document.createElement('paper-toast');
+
+        document.body.appendChild(this.toast);
+        this.socket = io(window.location.origin);
+
+        this.socket.on('connect', function() {
+          console.log('Dev socket connection established');
+          $('.devTitle').html('DEV MODE').css('color', '#ccc');
+        });
+
+        this.socket.on('network-update-start', function (data) {
+          this.toast.text = 'Network data update detected, importing to database...';
+          this.toast.show();
+        }.bind(this));
+
+        this.socket.on('network-update-end', function (data) {
+          this.toast.text = 'Network data update finished, importing data...';
+          this.fire('update');
+          this.toast.show();
+        }.bind(this));
+      }.bind(this));
+    }
+  });
+</script>
