@@ -64,6 +64,7 @@
         is : 'cwn-map',
 
         ready : function() {
+          this.firstLoad = true;
           this.customLines = {};
         },
 
@@ -234,9 +235,12 @@
             this.updateRenderState();
             this.update();
 
-            setTimeout(function(){
-              $('.menu-item[name="California"]').trigger('click');
-            }, 200);
+            // Set California checked on first load
+            if( this.firstLoad ) {
+              this.menu.getEnabled();
+              this.onRegionSelect();
+              this.firstLoad = false;
+            }
         },
 
         update : function() {

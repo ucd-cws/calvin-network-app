@@ -39,14 +39,25 @@
           console.log('Dev socket connection established');
           $('.devTitle').html('DEV MODE').css('color', '#ccc');
         });
+        this.socket.on('disconnect', function() {
+          console.log('Dev socket connection established');
+          $('.devTitle').html('DEV MODE').css('color', 'red');
+        });
+
 
         this.socket.on('network-update-start', function (data) {
-          this.toast.text = 'Network data update detected, importing to database...';
+          this.toast.innerHTML = 'Network data update detected, importing to database...';
+          this.toast.duration = 20000;
           this.toast.show();
         }.bind(this));
 
+        this.socket.on('network-update-msg', function (data) {
+          this.toast.innerHTML = data.msg;
+        }.bind(this));
+
         this.socket.on('network-update-end', function (data) {
-          this.toast.text = 'Network data update finished, importing data...';
+          this.toast.innerHTML = 'Network data update finished! Client refreshing data...';
+          this.toast.duration = 3000;
           this.fire('update');
           this.toast.show();
         }.bind(this));

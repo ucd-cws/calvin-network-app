@@ -22,7 +22,7 @@ function Datastore() {
     this.filenameLookupMap = {};
 
     this.reset = function() {
-        this.fire('load', this.loading);
+        //this.fire('load', this.loading);
 
         this.loading = true;
         this.data = {

@@ -37,7 +37,7 @@
             this.state = state;
           } else {
             this.state = {
-              enabled : [],
+              enabled : ['California'],
               disabled : []
             };
           }
@@ -61,6 +61,7 @@
             if( name != 'California' ) this.state.enabled.push(name);
             var region = CWN.ds.regionLookupMap[name];
 
+            if( !region ) return;
             if( !region.subregions ) return;
 
             for( var i = 0; i < region.subregions.length; i++ ) {
@@ -83,11 +84,17 @@
             var id = region.name;
             var label = region.geo.properties.name || id;
 
+            var enabled = false;
+            if( regionName == 'California' || this.state.enabled.indexOf(regionName) > -1 ) {
+              enabled = true;
+            }
+
             var panel = $('<div class="menu-root cwn-map-menu"></div>');
             var input = $('<div class="menu-item cwn-map-menu" name="'+id+'">'+
-                          '<input type="checkbox" name="'+id+'" '+(this.state.enabled.indexOf(regionName) > -1 ? 'checked' : '')+' /> '+label+'</div>');
+                          '<input type="checkbox" name="'+id+'" '+(enabled ? 'checked' : '')+' /> '+label+'</div>');
 
-            var children = $('<div style="display:'+( region.name == 'California' ? 'block' : 'none')+'" name="'+id+'-children"></div>');
+
+            var children = $('<div style="display:'+( enabled ? 'block' : 'none')+'" name="'+id+'-children"></div>');
             panel.append(input);
             panel.append(children);
 

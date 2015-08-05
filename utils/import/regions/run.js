@@ -22,6 +22,11 @@ module.exports = function(dir, callback) {
     ca.name = 'California';
 
     var json = ca.toJSON();
+
+    if( callback ) {
+      callback('Walking '+dir+' for nodes and links...');
+    }
+
     readNodes(dir, nodes, gitInfo, function(){
       nodes.forEach(function(node){
         node.properties.repo.branch = gitInfo.branch;
@@ -38,9 +43,21 @@ module.exports = function(dir, callback) {
         setOriginsTerminals(node, nodes);
       });
 
+      if( callback ) {
+        callback('Processing links...');
+      }
+
       processLinks(nodes, lookup);
 
+      if( callback ) {
+        callback('Processing regions...');
+      }
+
       setRegions(json, '', regions, regionNames, lookup);
+
+      if( callback ) {
+        callback('Updating MongoDB...');
+      }
 
       mongo.connectForImport('mongodb://localhost:27017/calvin', function(err){
         if( err ) {
@@ -56,7 +73,7 @@ module.exports = function(dir, callback) {
             console.log('done.');
 
             if( callback ) {
-              callback();
+              callback('done', true);
             } else {
               process.exit();
             }

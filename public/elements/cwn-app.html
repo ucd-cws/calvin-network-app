@@ -265,11 +265,14 @@
         },
 
         onDataUpdated : function() {
-          var menuState = this.$.menu.state;
+          var menuState = this.$.menu.getEnabled();
 
           CWN.ds.reset();
+          this.$.map.markerLayer.features = [];
+
           CWN.ds.reload(function(){
             this.$.menu.init(menuState);
+            this.$.map.onRegionSelect();
             $(window).trigger('hashchange');
           }.bind(this));
         }
