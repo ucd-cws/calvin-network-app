@@ -29,8 +29,7 @@ root of this repo.  It should look like:
 
 ```
 {
-  "path" : "/path/to/your/data/repo/calvin-network-data/data",
-  "branch" : "master"
+  "path" : "/path/to/your/data/repo/calvin-network-data/data"
 }
 ```
 
