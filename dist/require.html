@@ -13285,7 +13285,10 @@ Polymer({
             var region = CWN.ds.regionLookupMap[regionName];
 
             var id = region.name;
-            var label = region.geo.properties.name || id;
+            var label = id;
+            if( region.geo.properties && region.geo.properties.name ) {
+              label = region.geo.properties.name;
+            }
 
             var enabled = false;
             if( regionName == 'California' || this.state.enabled.indexOf(regionName) > -1 ) {
