@@ -8525,6 +8525,7 @@ this.fire('dom-change');
 
         this.socket.on('connect', function() {
           console.log('Dev socket connection established');
+          $('.devTitle').html('DEV MODE').css('color', '#ccc');
         });
 
         this.socket.on('network-update-start', function (data) {
@@ -11130,7 +11131,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
       <paper-drawer-panel id="mapLayout" responsive-width="768px">
         <paper-header-panel drawer="" class="drawer">
           <paper-toolbar style="background-color: #2196f3">
-            <div class="hidden-xs">CALVIN Water Network</div>
+            <div class="hidden-xs">CALVIN Water Network <span class="devTitle"></span></div>
           </paper-toolbar>
 
           <content select="cwn-map-menu"></content>
@@ -11140,7 +11141,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
           <paper-toolbar style="background-color: #2196f3">
             <a class="btn btn-link" paper-drawer-toggle="" style="color:white"><i class="fa fa-bars" paper-drawer-toggle=""></i></a>
 
-            <div class="visible-xs-inline-block">CWN</div>
+            <div class="visible-xs-inline-block">CWN <span class="devTitle"></span></div>
 
             <div class="nav-right flex" id="mapBtns"></div>
           </paper-toolbar>
@@ -11159,8 +11160,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                 <div style="height:62px">
                     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                         <div class="logo">
-                            <span class="hidden-xs"><i class="fa fa-code-fork"></i> CALVIN Water Network</span>
-                            <span class="visible-xs"><i class="fa fa-code-fork"></i> CWN</span>
+                            <span class="hidden-xs">CALVIN Water Network <span class="devTitle"></span></span>
+                            <span class="visible-xs">CWN <span class="devTitle"></span></span>
                         </div>
 
                         <div id="leftNav" class="nav-left"></div>
@@ -13682,11 +13683,13 @@ Polymer({
             // now mark links that should be show
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
                 d = CWN.ds.data.links[i];
-                if( !d.properties._render ) {
-                    d.properties._render = {};
-                }
                 d2 = CWN.ds.lookupMap[d.properties.origin];
                 d3 = CWN.ds.lookupMap[d.properties.terminus];
+
+                this.checkRenderNs(d);
+                this.checkRenderNs(d2);
+                this.checkRenderNs(d3);
+
                 if( d2 && d3 &&
                     (d2.properties._render.show || (this.mapFilters.oneStepMode && d2.properties._render.oneStep) ) &&
                     (d3.properties._render.show || (this.mapFilters.oneStepMode && d3.properties._render.oneStep) ) &&
@@ -13696,6 +13699,13 @@ Polymer({
                     d.properties._render.show = false;
                 }
             }
+        },
+
+        checkRenderNs : function(node) {
+          if( !node ) return;
+          if( !node.properties._render ) {
+            node.properties._render = {};
+          }
         },
 
         isTextMatch : function(re, props) {
@@ -13788,6 +13798,7 @@ Polymer({
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
               var origin = this._getStateNodeLocation(node.properties.origin, state);
 
+              if( !terminal || !origin ) continue;
 
               var lineFeature;
               if( terminal.isNode && origin.isNode ) {
@@ -13869,6 +13880,8 @@ Polymer({
 
         _getStateNodeLocation : function(name, state) {
           var node = CWN.ds.lookupMap[name];
+
+          if( !node ) return null;
 
           for( var i = 0; i < node.properties.regions.length; i++ ) {
             if( state.disabled.indexOf(node.properties.regions[i]) > -1 ) {

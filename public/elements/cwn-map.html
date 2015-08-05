@@ -332,11 +332,13 @@
             // now mark links that should be show
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
                 d = CWN.ds.data.links[i];
-                if( !d.properties._render ) {
-                    d.properties._render = {};
-                }
                 d2 = CWN.ds.lookupMap[d.properties.origin];
                 d3 = CWN.ds.lookupMap[d.properties.terminus];
+
+                this.checkRenderNs(d);
+                this.checkRenderNs(d2);
+                this.checkRenderNs(d3);
+
                 if( d2 && d3 &&
                     (d2.properties._render.show || (this.mapFilters.oneStepMode && d2.properties._render.oneStep) ) &&
                     (d3.properties._render.show || (this.mapFilters.oneStepMode && d3.properties._render.oneStep) ) &&
@@ -346,6 +348,13 @@
                     d.properties._render.show = false;
                 }
             }
+        },
+
+        checkRenderNs : function(node) {
+          if( !node ) return;
+          if( !node.properties._render ) {
+            node.properties._render = {};
+          }
         },
 
         isTextMatch : function(re, props) {
@@ -438,6 +447,7 @@
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
               var origin = this._getStateNodeLocation(node.properties.origin, state);
 
+              if( !terminal || !origin ) continue;
 
               var lineFeature;
               if( terminal.isNode && origin.isNode ) {
@@ -519,6 +529,8 @@
 
         _getStateNodeLocation : function(name, state) {
           var node = CWN.ds.lookupMap[name];
+
+          if( !node ) return null;
 
           for( var i = 0; i < node.properties.regions.length; i++ ) {
             if( state.disabled.indexOf(node.properties.regions[i]) > -1 ) {
