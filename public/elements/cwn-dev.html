@@ -1,3 +1,51 @@
+<dom-module id="cwn-dev">
+  <template>
+    <div class="modal fade" id="popup">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">DEV MODE - Info</h4>
+          </div>
+          <div class="modal-body">
+            <div id="popup-socket-status"></div>
+
+            <h4>Git Info</h4>
+            <table class="table">
+              <tr>
+                <td>Branch</td>
+                <td id="popup-branch"></td>
+              </tr>
+              <tr>
+                <td>Tag</td>
+                <td id="popup-tag"></td>
+              </tr>
+              <tr>
+                <td>Commit</td>
+                <td id="popup-commit"></td>
+              </tr>
+              <tr>
+                <td>Repo</td>
+                <td id="popup-repo"></td>
+              </tr>
+            </table>
+
+            <h4>Local Directory</h4>
+            <div id="popup-wireto"></div>
+
+            <br /><br />
+            <button id="refresh" class="btn btn-warning"  on-click="refresh">Force Refresh</button>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+  </template>
+</dom-module>
+
 <script>
   Polymer({
     is : 'cwn-dev',
@@ -28,6 +76,8 @@
     },
 
     init : function() {
+      this.popup = $(this.$.popup).modal({show: false});
+
       this.loadLib(function() {
         console.log('Initializing dev socket connection');
         this.toast = document.createElement('paper-toast');
@@ -37,15 +87,19 @@
 
         this.socket.on('connect', function() {
           console.log('Dev socket connection established');
-          $('.devTitle').html('DEV MODE').css('color', '#ccc');
-        });
+          this.setTitle(true);
+        }.bind(this));
         this.socket.on('disconnect', function() {
           console.log('Dev socket connection established');
-          $('.devTitle').html('DEV MODE').css('color', 'red');
-        });
+          this.setTitle(false);
+        }.bind(this));
 
+        this.socket.on('network-wired-to', function (data) {
+          this.$['popup-wireto'].innerHTML = data.dir;
+        }.bind(this));
 
         this.socket.on('network-update-start', function (data) {
+          this.refreshing(true);
           this.toast.innerHTML = 'Network data update detected, importing to database...';
           this.toast.duration = 20000;
           this.toast.show();
@@ -60,8 +114,58 @@
           this.toast.duration = 3000;
           this.fire('update');
           this.toast.show();
+          this.refreshing(false);
         }.bind(this));
       }.bind(this));
+    },
+
+    setTitle : function(connected) {
+      $('.devTitle')
+        .html('<a style="cursor:pointer">DEV MODE <i class="fa fa-info-circle"></i></a>')
+        .find('a')
+          .css('color', connected ? '#ccc' : 'red')
+          .on('click', this.showInfo.bind(this));
+
+      if( connected ) {
+        this.$['popup-socket-status'].className = 'alert alert-success';
+        this.$['popup-socket-status'].innerHTML = 'Socket.IO dev channel connected';
+      } else {
+        this.$['popup-socket-status'].className = 'alert alert-danger';
+        this.$['popup-socket-status'].innerHTML = 'Socket.IO dev channel disconnected';
+      }
+    },
+
+    showInfo : function() {
+      this.updatePopupInfo();
+      this.popup.modal('show');
+    },
+
+    updatePopupInfo : function() {
+      if( !CWN.ds.data ) return;
+      if( !CWN.ds.data.nodes ) return;
+      if( CWN.ds.data.nodes.length == 0 ) return;
+
+      // grab any node, this is generic information
+      var repo = CWN.ds.data.nodes[0].properties.repo;
+
+      this.$['popup-branch'].innerHTML = repo.branch;
+      this.$['popup-tag'].innerHTML = repo.tag;
+      this.$['popup-commit'].innerHTML = repo.commit;
+      this.$['popup-repo'].innerHTML = '<a href="https://github.com/'+repo.repo+'" target="_blank">'+repo.repo+'</a>';
+    },
+
+    refreshing : function(refreshing) {
+      if( refreshing ) {
+        this.$.refresh.setAttribute('disabled', 'disabled');
+        this.$.refresh.innerHTML = '<i class="fa fa-circle-o-notch fa-spin"></i> Refreshing...';
+      } else {
+        this.$.refresh.removeAttribute('disabled');
+        this.$.refresh.innerHTML = 'Force Refresh';
+      }
+    },
+
+    refresh : function() {
+      this.socket.emit('force-refresh',{});
     }
   });
 </script>
