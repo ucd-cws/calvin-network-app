@@ -5,7 +5,7 @@ var http = require('http');
 
 var db = require('./lib/mongo');
 var devCon = require('./lib/dev');
-var mqeLib = require('MongoQueryEngine');
+var mqeLib = require('mongo-query-engine');
 
 var options, app, server, logger, conf;
 
