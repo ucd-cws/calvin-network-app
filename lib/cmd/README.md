@@ -48,3 +48,11 @@ node lib/cmd -m node -f editLocation [path] [prmname] [properties]
 // ex:
 node lib/cmd -m node -f editLocation . C87 "{description: 'my new update'}"
 ```
+
+#### Dump Node Locations
+Dump csv of all node prmnames, path and location.  This function reads from database not a data
+repository on the filesystem.
+
+```
+node lib/cmd -m network -f dumpLocation
+```
