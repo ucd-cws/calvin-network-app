@@ -40,10 +40,9 @@ Polymer({
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        this.label = this.feature.properties.prmname.replace(/_/g, ' ');
+        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' <small>to</small> ');
 
-        this.$.regions.innerHTML = this.feature.properties.regions ?
-          '<i>'+this.feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</i>' : '';
+        this.$.regions.update(this.feature);
 
 
         this.origins = [];
