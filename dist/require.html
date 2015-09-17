@@ -10093,7 +10093,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     <template>
         <span hidden$="{{!valid}}">
             <cwn-app-icon type$="{{type}}" width="22" height="22" fillfromtype="true"></cwn-app-icon>
-            <a href="{{link}}">{{prmname}}</a>
+            <a href="{{link}}">{{prmname}}</a> <span style="vertical-align:top; color: #ccc">{{type}}</span>
         </span>
 
         <span hidden$="{{valid}}">{{prmname}}</span>
@@ -11034,11 +11034,11 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
       var link, icon = '';
 
       if( feature.properties.type == 'Link Group' ) {
-        link = '<a>Line Group</a>';
+        link = '<a style="font-size:18px">Line Group</a>';
       } else if ( feature.properties.type == 'Region' ) {
-        link = '<a class="region" index="'+i+'" style="cusor:pointer">'+feature.properties.name+'</a>';
+        link = '<a class="region" index="'+i+'" style="cusor:pointer;font-size:18px">'+feature.properties.name+'</a>';
       } else {
-        link = '<a href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a>';
+        link = '<a href="#info/'+feature.properties.prmname+'" style="font-size:18px">'+feature.properties.prmname+'</a>';
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
       }
 
@@ -11047,7 +11047,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         '<div class="flex">'+
           '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+
           (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
-          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+          (feature.properties.regions ? '<div><cwn-region-label prmname="'+feature.properties.prmname+'"></cwn-region-label></div>' : '')+
         '</div>'+
       '</div>'
     }
@@ -11206,6 +11206,14 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             -webkit-transform: translate3d(0, 0, 0);
             transform: translate3d(0, 0, 0);
         }
+        .linkLegend {
+          width: 100px;
+          height: 25px;
+          display: inline-block;
+          margin: 10px;
+          box-shadow: 0 0 5px black;
+          vertical-align: middle;
+        }
     </style>
 
     <template>
@@ -11215,7 +11223,6 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
 
-                  
                     <div class="form-group">
                       <label for="filter-input" class="col-sm-2 control-label">Filter</label>
                       <div class="col-sm-10">
@@ -11244,6 +11251,19 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="filter-types" class="col-sm-2 control-label">Link Legend</label>
+                        <div class="col-sm-10">
+                          <h4><div class="linkLegend" id="toSink"></div> Flow to Sink</h4>
+                          <h4><div class="linkLegend" id="fromDemand"></div> Flow from Demand</h4>
+                          <h4><div class="linkLegend" id="groundwaterToDemand"></div> Groundwater to Demand</h4>
+                          <h4><div class="linkLegend" id="recharge"></div> Recharge</h4>
+                          <h4><div class="linkLegend" id="region"></div> To/from a Region</h4>
+
+
+                        </div>
+                    </div>
+
                   </div>
                 </div>
             </div>
@@ -11265,6 +11285,12 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
               oneStepMode : true,
               text : '',
           };
+
+          this.$.toSink.style.backgroundColor = CWN.colors.darkCyan;
+          this.$.fromDemand.style.backgroundColor = CWN.colors.red;
+          this.$.groundwaterToDemand.style.backgroundColor = CWN.colors.lightGrey;
+          this.$.recharge.style.backgroundColor = CWN.colors.green;
+          this.$.region.style.backgroundColor = CWN.colors.orange;
         },
 
         setLegend : function(legend) {
@@ -13487,17 +13513,16 @@ Polymer({
         },
 
         renderRegionLine : function(ctx, xyPoints, config, feature) {
-          color = 'orange';
 
-          ctx.beginPath();
-          ctx.strokeStyle = color;
+          /*ctx.beginPath();
+          ctx.strokeStyle = CWN.colors.orange;
           ctx.lineWidth = 6;
           ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
           ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
-          ctx.stroke();
+          ctx.stroke();*/
 
           ctx.beginPath();
-          ctx.strokeStyle = 'blue';
+          ctx.strokeStyle = CWN.colors.orange;
           ctx.lineWidth = 2;
           ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
           ctx.lineTo(xyPoints[1].x, xyPoints[1].y);

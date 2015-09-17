@@ -76,8 +76,8 @@ function renderBasicPolygon(ctx, xyPoints, map, feature, render) {
   }
   ctx.lineTo(xyPoints[0].x, xyPoints[0].y);
 
-  ctx.strokeStyle = render.hover ? 'red' : 'rgba('+CWN.colors.rgb.blue.join(',')+',.8)';
-  ctx.fillStyle = render.fillStyle ? render.fillStyle : 'rgba('+CWN.colors.rgb.blue.join(',')+',.4)';
+  ctx.strokeStyle = render.hover ? 'red' : 'rgba('+CWN.colors.rgb.blue.join(',')+',.6)';
+  ctx.fillStyle = render.fillStyle ? render.fillStyle : 'rgba('+CWN.colors.rgb.lightBlue.join(',')+',.6)';
   ctx.lineWidth = 4;
 
   ctx.stroke();
@@ -103,16 +103,20 @@ function renderBasicPolygon(ctx, xyPoints, map, feature, render) {
 }
 
 function getLineColor(feature) {
-    var color = CWN.colors.salmon;
+    var color = 'white';
+
+    var origin = CWN.ds.lookupMap[feature.properties.origin];
+    var terminus = CWN.ds.lookupMap[feature.properties.terminus];
+
     if( feature.properties.renderInfo ) {
-        if( feature.properties.renderInfo.type == 'flowToSink' ) {
-          color = CWN.colors.lightGrey;
-        } else if( feature.properties.renderInfo.type == 'returnFlowFromDemand' ) {
+        if( terminus && terminus.properties.type == 'Sink' ) {
+          color = CWN.colors.darkCyan;
+        } else if( origin && origin.properties.type.match(/demand/i) ) {
             color = CWN.colors.red;
-        } else if( feature.properties.renderInfo.type == 'gwToDemand' ) {
-            color = CWN.colors.black;
-        } else if( feature.properties.renderInfo.type == 'artificalRecharge' ) {
-            color = CWN.colors.purple;
+        } else if( origin && terminus && terminus.properties.type.match(/demand/i) && origin.properties.type == 'Groundwater Storage' ) {
+            color = CWN.colors.lightGrey;
+        } else if( feature.properties.description.match(/recharge/i, '') ) {
+            color = CWN.colors.green;
         }
     }
 

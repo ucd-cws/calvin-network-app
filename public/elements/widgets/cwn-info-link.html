@@ -16,7 +16,7 @@
     <template>
         <span hidden$="{{!valid}}">
             <cwn-app-icon type$="{{type}}" width="22" height="22" fillFromType="true"></cwn-app-icon>
-            <a href="{{link}}">{{prmname}}</a>
+            <a href="{{link}}">{{prmname}}</a> <span style="vertical-align:top; color: #ccc">{{type}}</span>
         </span>
 
         <span hidden$="{{valid}}">{{prmname}}</span>

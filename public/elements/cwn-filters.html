@@ -14,6 +14,14 @@
             -webkit-transform: translate3d(0, 0, 0);
             transform: translate3d(0, 0, 0);
         }
+        .linkLegend {
+          width: 100px;
+          height: 25px;
+          display: inline-block;
+          margin: 10px;
+          box-shadow: 0 0 5px black;
+          vertical-align: middle;
+        }
     </style>
 
     <template>
@@ -23,31 +31,6 @@
                 <div class="col-md-10 col-md-offset-1">
                   <div class="form-horizontal">
 
-                  <!--
-                    <div class="form-group">
-                        <label for="filter-input" class="col-sm-2 control-label"></label>
-                        <div class="col-sm-10">
-                          <label class="checkbox-inline">
-                            <input type="checkbox"
-                                checked$="[[filters.calibrationMode]]"
-                                on-change="setCalibrationMode" /> Calibration Mode
-                            <p class="help-block">Show calibration links and nodes, mark nodes attached to calibartion links</p>
-                          </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="filter-input" class="col-sm-2 control-label"></label>
-                        <div class="col-sm-10">
-                          <label class="checkbox-inline">
-                            <input type="checkbox"
-                                checked="[[filters.oneStepMode]]"
-                                on-change="setOneStepMode"  /> One Step Mode
-                            <p class="help-block">Partially show nodes that have been filtered out but are connected to a visible node</p>
-                          </label>
-                        </div>
-                    </div>
-                  -->
                     <div class="form-group">
                       <label for="filter-input" class="col-sm-2 control-label">Filter</label>
                       <div class="col-sm-10">
@@ -79,6 +62,19 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="filter-types" class="col-sm-2 control-label">Link Legend</label>
+                        <div class="col-sm-10">
+                          <h4><div class="linkLegend" id="toSink"></div> Flow to Sink</h4>
+                          <h4><div class="linkLegend" id="fromDemand"></div> Flow from Demand</h4>
+                          <h4><div class="linkLegend" id="groundwaterToDemand"></div> Groundwater to Demand</h4>
+                          <h4><div class="linkLegend" id="recharge"></div> Recharge</h4>
+                          <h4><div class="linkLegend" id="region"></div> To/from a Region</h4>
+
+
+                        </div>
+                    </div>
+
                   </div>
                 </div>
             </div>
@@ -100,6 +96,12 @@
               oneStepMode : true,
               text : '',
           };
+
+          this.$.toSink.style.backgroundColor = CWN.colors.darkCyan;
+          this.$.fromDemand.style.backgroundColor = CWN.colors.red;
+          this.$.groundwaterToDemand.style.backgroundColor = CWN.colors.lightGrey;
+          this.$.recharge.style.backgroundColor = CWN.colors.green;
+          this.$.region.style.backgroundColor = CWN.colors.orange;
         },
 
         setLegend : function(legend) {
