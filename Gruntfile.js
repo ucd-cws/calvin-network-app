@@ -36,7 +36,7 @@ module.exports = function (grunt) {
 
     // Register group tasks
     grunt.registerTask('build', [
-        'jshint',
+        //'jshint',
         'clean',
         'browserify',
         'copyto',

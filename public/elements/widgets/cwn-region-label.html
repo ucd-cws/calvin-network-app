@@ -1,0 +1,48 @@
+<script>
+  Polymer({
+    is : 'cwn-region-label',
+
+    properties : {
+      prmname : {
+        type : String,
+        observer : 'prmnameObserver'
+      }
+    },
+
+    ready : function() {
+      this.style.display = 'inline-block';
+    },
+
+    prmnameObserver : function() {
+      var node = CWN.ds.lookupMap[this.prmname];
+      if( !node ) return;
+
+      this.update(node);
+    },
+
+    update : function(feature) {
+      this.innerHTML = '';
+      if( !feature.properties ) return;
+      if( !feature.properties.regions ) return;
+
+      var html = [];
+      for( var i = 0; i < feature.properties.regions.length; i++ ) {
+        var r = feature.properties.regions[i];
+        //if( r.toLowerCase() == 'california' ) continue;
+
+        html.push('<span class="label label-default">'+this.getLabel(r)+'</span>');
+      }
+
+
+      this.innerHTML = html.join(' <i class="fa fa-angle-right" style="vertical-align:middle"></i> ');
+
+    },
+
+    getLabel : function(name) {
+      if( CWN.ds.regionLookupMap[name] && CWN.ds.regionLookupMap[name].geo.properties.name ) {
+        return CWN.ds.regionLookupMap[name].geo.properties.name;
+      }
+      return name;
+    }
+  });
+</script>

@@ -100,7 +100,7 @@
         '<div class="flex">'+
           '<h4><a style="font-size: 18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a> <small>'+feature.properties.type+'</small></h4>'+
           (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
-          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+          '<div><cwn-region-label prmname="'+feature.properties.prmname+'"></cwn-region-label></div>'+
         '</div>'+
       '</div>'
     }

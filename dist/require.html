@@ -8486,6 +8486,54 @@ this.fire('dom-change');
 
 
 
+<script>
+  Polymer({
+    is : 'cwn-region-label',
+
+    properties : {
+      prmname : {
+        type : String,
+        observer : 'prmnameObserver'
+      }
+    },
+
+    ready : function() {
+      this.style.display = 'inline-block';
+    },
+
+    prmnameObserver : function() {
+      var node = CWN.ds.lookupMap[this.prmname];
+      if( !node ) return;
+
+      this.update(node);
+    },
+
+    update : function(feature) {
+      this.innerHTML = '';
+      if( !feature.properties ) return;
+      if( !feature.properties.regions ) return;
+
+      var html = [];
+      for( var i = 0; i < feature.properties.regions.length; i++ ) {
+        var r = feature.properties.regions[i];
+        //if( r.toLowerCase() == 'california' ) continue;
+
+        html.push('<span class="label label-default">'+this.getLabel(r)+'</span>');
+      }
+
+
+      this.innerHTML = html.join(' <i class="fa fa-angle-right" style="vertical-align:middle"></i> ');
+
+    },
+
+    getLabel : function(name) {
+      if( CWN.ds.regionLookupMap[name] && CWN.ds.regionLookupMap[name].geo.properties.name ) {
+        return CWN.ds.regionLookupMap[name].geo.properties.name;
+      }
+      return name;
+    }
+  });
+</script>
 </head><body><div hidden="" by-vulcanize=""><dom-module id="paper-drawer-panel" assetpath="/public/bower_components/paper-drawer-panel/">
   <style>
 /**
@@ -10390,7 +10438,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
     <template>
         <canvas id="canvas"></canvas>
-        <i id="icon" class="fa fa-code-fork" style="vertical-align:super"></i>
+        <i id="icon" class="fa fa-long-arrow-right" style="vertical-align:super"></i>
     </template>
 </dom-module>
 
@@ -11373,7 +11421,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         '<div class="flex">'+
           '<h4><a style="font-size: 18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname+'</a> <small>'+feature.properties.type+'</small></h4>'+
           (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
-          (feature.properties.regions ? '<div style="font-style:italic">'+feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</div>' : '')+
+          '<div><cwn-region-label prmname="'+feature.properties.prmname+'"></cwn-region-label></div>'+
         '</div>'+
       '</div>'
     }
@@ -11497,14 +11545,14 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                     <td>
                       <cwn-app-icon type$="{{type}}" width="72" height="72" fillfromtype="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
                     </td><td>
-                      <h3>{{label}}</h3>
+                      <h3 id="label"></h3>
                       <div><b>{{feature.properties.type}}</b></div>
                     </td>
                   </tr>
                 </tbody></table>
                 <div style="padding: 10px 10px 0 10px; color: #888">{{feature.properties.description}}</div>
 
-                <div id="regions"></div>
+                <cwn-region-label id="regions"></cwn-region-label>
 
                 <div hidden$="{{!showNavLinks}}" style="margin-top: 15px; border-top: 1px solid #eee">
                   <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
@@ -11597,10 +11645,9 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        this.label = this.feature.properties.prmname.replace(/_/g, ' ');
+        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' <small>to</small> ');
 
-        this.$.regions.innerHTML = this.feature.properties.regions ?
-          '<i>'+this.feature.properties.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</i>' : '';
+        this.$.regions.update(this.feature);
 
 
         this.origins = [];

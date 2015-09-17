@@ -74,14 +74,14 @@
                     <td>
                       <cwn-app-icon type$="{{type}}" width="72" height="72" fillFromType="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
                     </td><td>
-                      <h3>{{label}}</h3>
+                      <h3 id="label"></h3>
                       <div><b>{{feature.properties.type}}</b></div>
                     </td>
                   </tr>
                 </table>
                 <div style="padding: 10px 10px 0 10px; color: #888">{{feature.properties.description}}</div>
 
-                <div id="regions"></div>
+                <cwn-region-label id="regions"></cwn-region-label>
 
                 <div hidden$="{{!showNavLinks}}" style="margin-top: 15px; border-top: 1px solid #eee">
                   <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
