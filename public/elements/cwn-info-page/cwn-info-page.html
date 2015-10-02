@@ -1,6 +1,6 @@
-<!--<polymer-element name="cwn-info-page" attributes="ds settings leaflet islocal">-->
 <link rel="import" href="node/cwn-node-info.html" />
 <link rel="import" href="cost/cwn-cost-info.html" />
+<link rel="import" href="cwn-output-info.html" />
 
 <dom-module id="cwn-info-page">
     <style>
@@ -90,6 +90,10 @@
             </div>
           </div>
           <!-- End Climate -->
+
+          <div class="card">
+            <cwn-output-info id="outputs"></cwn-output-info>
+          </div>
 
         </div>
         <div class="col-md-6">

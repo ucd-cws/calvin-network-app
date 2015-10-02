@@ -1,0 +1,59 @@
+<dom-module id="cwn-output-info">
+  <template>
+    <h2 class="page-header">Outputs</h2>
+
+    <div id="nodata" class="alert alert-info">
+      This node has no output data associated with it.
+    </div>
+
+    <div id="loading" style="display:none">
+      <h4><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</h4>
+    </div>
+
+    <div id="flow" style="display:none">
+      <div>Flow</div>
+      <cwn-date-linechart id="chart" animate></cwn-date-linechart>
+    </div>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+      is : 'cwn-output-info',
+
+      update : function(feature) {
+        this.feature = feature;
+
+        this.$.flow.style.display = 'none';
+
+        if( this.feature.properties.hasOutputs ) {
+          this.$.nodata.style.display = 'none';
+          this.$.loading.style.display = 'block';
+          this.load();
+        } else {
+          this.$.nodata.style.display = 'block';
+          this.$.loading.style.display = 'none';
+        }
+      },
+
+      load : function() {
+        CWN.ds.loadOutput(this.feature.properties.prmname, function(resp){
+          this.$.loading.style.display = 'none';
+          if( resp.error ) {
+            return alert(resp.message);
+          }
+
+          this.data = resp;
+
+          if( this.data.flow ) {
+            this.renderFlow();
+          }
+        }.bind(this));
+      },
+
+      renderFlow : function() {
+        this.$.flow.style.display = 'block';
+        this.$.chart.update(this.data.flow);
+      }
+  });
+</script>

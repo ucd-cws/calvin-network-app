@@ -3,16 +3,23 @@
 var csvStringify = require('csv-stringify');
 var async = require('async');
 
+var outputCollection = global.setup.database.collection('outputs');
+
 module.exports = function() {
     return {
         name: 'network',
         get : getNetwork,
+        getOutput : getOutput,
         dumpLocation : dumpLocation
     };
 };
 
 function getNetwork(callback) {
   global.setup.collection.find({}).toArray(callback);
+}
+
+function getOutput(prmname, callback) {
+  outputCollection.findOne({prmname: prmname}, {_id:0}, callback);
 }
 
 function dumpLocation(callback) {

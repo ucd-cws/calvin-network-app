@@ -111,6 +111,7 @@ Polymer({
       this.climateLoadError = false;
       this.climateLoading = false;
 
+      this.hasOutputs = false;
       this.eacChart.data = [];
       this.evaporationData = null;
       this.hasInflows = false;
@@ -124,6 +125,13 @@ Polymer({
       }
 
       this.renderClimateData(props.inflows, props.el_ar_cap, props.evaporation);
+
+
+      this.$.outputs.update(this.feature);
+      if( this.feature.properties.hasOutputs ) {
+        this.hasOutputs = true;
+      }
+
       this.updateDateSliderVisibility();
 
       this.async(function(){
@@ -251,7 +259,7 @@ Polymer({
     },
 
     updateDateSliderVisibility : function() {
-      this.$.dateRangeSlider.style.display = (this.hasInflows || this.hasTimeSeries || this.hasEvaporation) ? 'block' : 'none';
+      this.$.dateRangeSlider.style.display = (this.hasOutputs || this.hasInflows || this.hasTimeSeries || this.hasEvaporation ) ? 'block' : 'none';
     },
 
     stampEacChart : function() {

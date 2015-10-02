@@ -22,6 +22,7 @@
 	       // collection where the queryable items are stored
 	       "mainCollection"  : "network",
 	       "regionCollection" : "regions",
+         "outputCollection" : "outputs",
 
          "indexedFilters" : ["properties.type", "properties.regions"],
 

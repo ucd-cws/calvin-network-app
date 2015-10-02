@@ -7,6 +7,8 @@ function Datastore() {
     this.islocal = false;
     this.loading = true;
 
+    this.outputs = {};
+
     this.data = {
         nodes : [],
         links : [],
@@ -48,6 +50,23 @@ function Datastore() {
             callback();
           }
         }.bind(this));
+    }
+
+    this.loadOutput = function(prmname, callback) {
+      if( this.outputs[prmname] ) {
+        return callback(this.outputs[prmname]);
+      }
+
+      var url = window.location.protocol+'//'+window.location.host+'/network/output';
+      url += '?prmname='+prmname;
+      $.get(url, function(resp){
+        if( resp.error ) {
+          return callback(resp);
+        }
+
+        this.outputs[prmname] = resp;
+        callback(resp);
+      }.bind(this));
     }
 
     this.loadNetwork = function(network, callback) {
