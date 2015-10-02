@@ -113,6 +113,11 @@ function readNodes(dir, nodes, gitInfo, callback) {
           filename : file
         };
 
+        // see if we have a readme file
+        if( fs.existsSync(dir+'/README.md') ) {
+          d.properties.readme = fs.readFileSync(dir+'/README.md', 'utf-8');
+        }
+
         readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties', function(){
 
           d.properties.repo.dir = dir.replace(re, '');

@@ -132,12 +132,24 @@ Polymer({
         this.hasOutputs = true;
       }
 
+      this.updateReadme();
+
       this.updateDateSliderVisibility();
 
       this.async(function(){
         this.$.dateslider.resize();
       });
 
+    },
+
+    updateReadme : function() {
+        if( !this.feature.properties.readme ) {
+          this.$.readme.style.display = 'none';
+          return;
+        }
+
+        this.$.readme.style.display = 'block';
+        this.$.readmeMarkdown.innerHTML = marked(this.feature.properties.readme);
     },
 
     renderClimateData : function(inflows, el_ar_cap, evaporation) {
