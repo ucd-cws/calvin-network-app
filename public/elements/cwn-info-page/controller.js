@@ -186,15 +186,16 @@ Polymer({
     },
 
     updateReadme : function() {
-        if( !this.feature.properties.extras.readme ) {
-          this.$.readme.style.display = 'none';
+        if( this.feature.properties.extras && this.feature.properties.extras.readme ) {
+          this.$.readme.style.display = 'block';
+          CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+            this.$.readmeMarkdown.innerHTML = marked(resp.readme);
+          }.bind(this));
           return;
         }
 
-        this.$.readme.style.display = 'block';
-        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
-          this.$.readmeMarkdown.innerHTML = marked(resp.readme);
-        }.bind(this));
+        this.$.readme.style.display = 'none';
+        return;
     },
 
     renderClimateData : function(el_ar_cap) {
