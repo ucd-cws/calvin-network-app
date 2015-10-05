@@ -186,13 +186,15 @@ Polymer({
     },
 
     updateReadme : function() {
-        if( !this.feature.properties.readme ) {
+        if( !this.feature.properties.extras.readme ) {
           this.$.readme.style.display = 'none';
           return;
         }
 
         this.$.readme.style.display = 'block';
-        this.$.readmeMarkdown.innerHTML = marked(this.feature.properties.readme);
+        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+          this.$.readmeMarkdown.innerHTML = marked(resp.readme);
+        }.bind(this));
     },
 
     renderClimateData : function(el_ar_cap) {
