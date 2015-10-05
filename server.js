@@ -5,7 +5,8 @@ var http = require('http');
 
 var db = require('./lib/mongo');
 var devCon = require('./lib/dev');
-var mqeLib = require('mongo-query-engine');
+//var mqeLib = require('mongo-query-engine');
+var mqeLib = require('/Users/jrmerz/dev/CSTARS/mongo-query-engine');
 
 var options, app, server, logger, conf;
 
@@ -28,24 +29,26 @@ options = {
         config.use(require(config.get('mqe-local')));
       }
 
-      db.config(config.get('mqe'), function(database) {
+      db.config(config.get('mqe'), function(err, database) {
 
         var mqeConfig = config.get('mqe');
         mqeConfig.rest.getParamParser = function(query) {
           if( query.id ) {
             return {'_id': query.id };
           } else if ( query.prmname ) {
-            console.log({'properties.prmname': query.prmname});
             return {'properties.prmname': query.prmname};
           }
           return {'_id': query._id};
         };
 
+        var processor = require('./lib/processQuery')(database);
+
         mqeLib.init({
             config: config.get('mqe'),
             app: app,
             express: express,
-            mongo: database
+            mongo: database,
+            process : processor
           }, function(){
             global.setup = mqeLib.getSetup();
             logger = global.setup.logger;
@@ -69,10 +72,6 @@ app.on('start', function () {
     logger.info('Environment: %s', app.kraken.get('env:env'));
     logger.info('Static root: '+conf.get('middleware').static.module.arguments[0]);
 });
-
-
-
-
 
 
 /*
