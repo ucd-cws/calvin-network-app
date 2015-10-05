@@ -7,7 +7,7 @@ function Datastore() {
     this.islocal = false;
     this.loading = true;
 
-    this.outputs = {};
+    this.extras = {};
 
     this.data = {
         nodes : [],
@@ -52,20 +52,28 @@ function Datastore() {
         }.bind(this));
     }
 
-    this.loadOutput = function(prmname, callback) {
-      if( this.outputs[prmname] ) {
-        return callback(this.outputs[prmname]);
+    this.loadExtras = function(prmname, callback) {
+      if( this.extras[prmname] ) {
+        if( this.extras[prmname].__loading__ ) {
+          this.extras[prmname].handlers.push(callback);
+        } else {
+          callback(this.extras[prmname]);
+        }
+        return;
       }
 
-      var url = window.location.protocol+'//'+window.location.host+'/network/output';
+      this.extras[prmname] = {
+        __loading__ : true,
+        handlers : [callback]
+      };
+
+      var url = window.location.protocol+'//'+window.location.host+'/network/extras';
       url += '?prmname='+prmname;
       $.get(url, function(resp){
-        if( resp.error ) {
-          return callback(resp);
+        for( var i = 0; i < this.extras[prmname].handlers.length; i++ ) {
+          this.extras[prmname].handlers[i](resp);
         }
-
-        this.outputs[prmname] = resp;
-        callback(resp);
+        this.extras[prmname] = resp;
       }.bind(this));
     }
 

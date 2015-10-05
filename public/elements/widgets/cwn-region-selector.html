@@ -66,7 +66,7 @@
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
       }
 
-      return '<div class="layout horizontal">'+
+      return '<div class="layout horizontal" '+(feature.properties.description || feature.properties.regions ? 'style="margin-bottom: 15px"' : '')+'>'+
         '<div style="padding:15px 5px; width: 50px">'+icon+'</div>'+
         '<div class="flex">'+
           '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+

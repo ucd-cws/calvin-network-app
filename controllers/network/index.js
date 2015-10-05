@@ -20,13 +20,13 @@ module.exports = function (router) {
       });
     });
 
-    router.get('/output', function (req, res) {
+    router.get('/extras', function (req, res) {
       var prmname = req.query.prmname;
       if( !prmname ) {
         return res.send({error:true, message:'prmname required'});
       }
 
-      model.getOutput(prmname, function(err, data){
+      model.getExtras(prmname, function(err, data) {
         if( err ) {
           res.send({error: true, message: err});
         } else {

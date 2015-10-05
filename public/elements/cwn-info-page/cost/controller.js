@@ -77,7 +77,12 @@ Polymer({
         this.showBounds = false;
         this.showConstantBounds = false;
 
-        if( !this.feature.properties.costs || !this.feature.properties.bounds ) {
+        var hasBounds = false;
+        if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
+          hasBounds = true;
+        }
+
+        if( !this.feature.properties.costs || !hasBounds ) {
           $(this).parent().hide();
           return;
         }
@@ -85,7 +90,7 @@ Polymer({
         $(this).parent().show();
         this.showCostData = true;
 
-        if( this.feature.properties.bounds ) this.renderBounds(this.feature.properties.bounds);
+        if( hasBounds ) this.loadBounds();
 
 
         this.renderCostData(this.feature.properties.costs);
@@ -141,6 +146,12 @@ Polymer({
       } else {
         alert('Unknown cost type: '+d.type);
       }
+    },
+
+    loadBounds : function() {
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        this.renderBounds(resp.bounds);
+      }.bind(this));
     },
 
     /*

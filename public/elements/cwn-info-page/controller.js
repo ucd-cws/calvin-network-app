@@ -161,13 +161,13 @@ Polymer({
       this.hasEvaporation = false;
 
       var props = this.feature.properties;
-      if( props.inflows || props.el_ar_cap || props.evaporation) {
+      if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation)) {
         this.showClimateData = true;
       } else {
         this.showClimateData = false;
       }
 
-      this.renderClimateData(props.inflows, props.el_ar_cap, props.evaporation);
+      this.renderClimateData(props.el_ar_cap);
 
 
       this.$.outputs.update(this.feature);
@@ -195,39 +195,9 @@ Polymer({
         this.$.readmeMarkdown.innerHTML = marked(this.feature.properties.readme);
     },
 
-    renderClimateData : function(inflows, el_ar_cap, evaporation) {
-
-      if( inflows ) {
-        this.hasInflows = true;
-        this.$.inflowCharts.innerHTML = '';
-
-        for( var name in inflows ) {
-          /*var inflow = {
-            label : name,
-            description : inflows[name].description || '',
-            data : inflows[name].inflow
-          };*/
-
-          var chart = document.createElement('cwn-date-linechart');
-          chart.label = (inflows[name].description || name || ''),
-          chart.data = inflows[name].inflow;
-
-          this.$.inflowCharts.appendChild(chart);
-        }
-
-        this.$.inflows.style.display = 'block';
-      } else {
-        this.$.inflows.style.display = 'none';
-      }
-
-      if( evaporation ) {
-        this.hasEvaporation = true;
-        this.$.evaporationChart.update(evaporation);
-        this.evaporationData = evaporation;
-        this.$.evaporation.style.display = 'block';
-      } else {
-        this.$.evaporation.style.display = 'none';
-      }
+    renderClimateData : function(el_ar_cap) {
+      this.renderInflows();
+      this.renderEvaporation();
 
       this.eacChart.data = [];
       if( el_ar_cap ) {
@@ -277,6 +247,43 @@ Polymer({
 
 
       this.updateDateSliderVisibility();
+    },
+
+    renderInflows : function() {
+      this.$.inflows.style.display = 'none';
+
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        if( resp.inflows ) {
+          this.hasInflows = true;
+          this.$.inflowCharts.innerHTML = '';
+
+          for( var name in resp.inflows  ) {
+            var chart = document.createElement('cwn-date-linechart');
+            chart.label = (resp.inflows[name].description || name || ''),
+            chart.data = resp.inflows[name].inflow;
+
+            this.$.inflowCharts.appendChild(chart);
+          }
+
+          this.$.inflows.style.display = 'block';
+        } else {
+          this.$.inflows.style.display = 'none';
+        }
+      }.bind(this));
+    },
+
+    renderEvaporation : function() {
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        var evaporation = resp.evaporation;
+        if( evaporation ) {
+          this.hasEvaporation = true;
+          this.$.evaporationChart.update(evaporation);
+          this.evaporationData = evaporation;
+          this.$.evaporation.style.display = 'block';
+        } else {
+          this.$.evaporation.style.display = 'none';
+        }
+      }.bind(this));
     },
 
     updateDateFilters : function(e) {
