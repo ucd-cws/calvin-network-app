@@ -164,9 +164,9 @@
             this.dragStartLeft = parseInt(e.target.style.left || 0);
             this.dragStartX = this.getX(e);
 
-            if( this.dragging.id == 'startTab' ) {
+            if( this.dragging.getAttribute('id') == 'startTab' ) {
                 this.otherStartLeft = parseInt(this.$.endTab.style.left || 0 );
-            } else if( this.dragging.id == 'endTab' ) {
+            } else if( this.dragging.getAttribute('id') == 'endTab' ) {
                 this.otherStartLeft = parseInt(this.$.startTab.style.left || 0 );
             }
             //console.log('Drag start: '+this.dragging.id);
@@ -174,7 +174,7 @@
 
         onDrag : function(e) {
             if( this.dragging == null ) return;
-            if( this.dragging.id == 'slider' ) return this.onSliderDrag(e);
+            if( this.dragging.getAttribute('id') == 'slider' ) return this.onSliderDrag(e);
 
             var pos = this.getPosition(e);
 
@@ -184,9 +184,9 @@
 
             this.dragging.innerHTML = result.toISOString().split('T')[0];
 
-            if( this.dragging.id == 'startTab' ) {
+            if( this.dragging.getAttribute('id')== 'startTab' ) {
                 this.setLeftPos(pos);
-            } else if( this.dragging.id == 'endTab' ) {
+            } else if( this.dragging.getAttribute('id') == 'endTab' ) {
                 this.setRightPos(pos);
             }
         },
@@ -218,23 +218,23 @@
             this.current.end = result;
         },
 
-        endDrag : function(e) {
+        endDrag : function() {
             if( this.dragging == null ) return;
 
             //console.log('Drag end: '+this.dragging.id);
 
             var parentX = $(this).offset().left;
-            var pos = $(this.$[this.dragging.id]).offset().left - parentX;
+            var pos = $(this.$[this.dragging.getAttribute('id')]).offset().left - parentX;
 
             var cDay = Math.floor(this.numDays * (pos / this.cWidth));
 
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
 
-            if( this.dragging.id == 'startTab' ) this.current.start = result;
-            else if( this.dragging.id == 'endTab' ) this.current.end = result;
+            if( this.dragging.getAttribute('id') == 'startTab' ) this.current.start = result;
+            else if( this.dragging.getAttribute('id') == 'endTab' ) this.current.end = result;
 
-            if( this.dragging.id != 'slider' ) {
+            if( this.dragging.getAttribute('id') != 'slider' ) {
                 this.dragging.innerHTML = result.toISOString().split('T')[0];
             }
 
@@ -260,12 +260,13 @@
         getPosition : function(e) {
             var pos = this.dragStartLeft + (this.getX(e) - this.dragStartX);
 
+
             if( pos < 0 ) pos = 0;
             if( pos > this.cWidth ) pos = this.cWidth;
 
-            if( this.dragging.id == 'startTab' && pos > this.otherStartLeft ) {
+            if( this.dragging.getAttribute('id') == 'startTab' && pos > this.otherStartLeft ) {
                 pos = this.otherStartLeft;
-            } else if( this.dragging.id == 'endTab' && pos < this.otherStartLeft ) {
+            } else if( this.dragging.getAttribute('id') == 'endTab' && pos < this.otherStartLeft ) {
                 pos = this.otherStartLeft;
             }
 
@@ -285,6 +286,7 @@
                     return this.lastTouchX;
                 }
             }
+            if( e.clientX !== undefined ) return e.clientX;
             return 0; // bad
         }
     });
