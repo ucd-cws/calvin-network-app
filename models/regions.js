@@ -3,7 +3,7 @@ var async = require('async');
 
 var collection = global.setup.database.collection('regions');
 var networkCollection = global.setup.database.collection('network');
-var outputCollection = global.setup.database.collection('outputs');
+var extrasCollection = global.setup.database.collection('node-extras');
 
 module.exports = function() {
     return {
@@ -54,7 +54,7 @@ function runAggregate(originlist, terminallist, callback) {
     }
 
     var sum = {};
-    outputCollection
+    extrasCollection
       .find({prmname : {'$in' : list}},{flow: 1})
       .toArray(function(err, results){
         if( err ) {
