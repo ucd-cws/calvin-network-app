@@ -33,48 +33,48 @@ Polymer({
 
       this.map = {};
 
-        // Elevation / Area / Capacity charts
-        this.eacChart = {
-          type : 'ComboChart',
-          cols : [
-            {id: 'capacity', label: 'capacity', type: 'number'},
-            {id: 'elevation', label: 'elevation', type: 'number'},
-            {id: 'area', label: 'area', type: 'number'},
-            {id: 'initial', type: 'number', label: 'initial'},
-            {id: 'tooltip', type: 'string', role:'tooltip'}
+      // Elevation / Area / Capacity charts
+      this.eacChart = {
+        type : 'ComboChart',
+        cols : [
+          {id: 'capacity', label: 'capacity', type: 'number'},
+          {id: 'elevation', label: 'elevation', type: 'number'},
+          {id: 'area', label: 'area', type: 'number'},
+          {id: 'initial', type: 'number', label: 'initial'},
+          {id: 'tooltip', type: 'string', role:'tooltip'}
+        ],
+        data : [],
+        options : {
+          hAxis : {
+            title : 'Capacity (kAF)'
+          },
+          vAxes : [
+            {title:'Elevation (ft)'}, // axis 0
+            {title:'Area (ac)'} // Axis 1
           ],
-          data : [],
-          options : {
-            hAxis : {
-              title : 'Capacity (kAF)'
-            },
-            vAxes : [
-              {title:'Elevation (ft)'}, // axis 0
-              {title:'Area (ac)'} // Axis 1
-            ],
-            seriesType: "bars",
-            series :{
-              0: {type: "line", targetAxisIndex:0},
-              1: {type: "line", targetAxisIndex:1},
-              2: {targetAxisIndex: 0},
-            },
-            interpolateNulls : true,
-            legend : {
-              position: 'top'
-            }
+          seriesType: "bars",
+          series :{
+            0: {type: "line", targetAxisIndex:0},
+            1: {type: "line", targetAxisIndex:1},
+            2: {targetAxisIndex: 0},
+          },
+          interpolateNulls : true,
+          legend : {
+            position: 'top'
           }
-        };
+        }
+      };
 
-        // date filtering
-        this.filters = {
-          start : null,
-          stop : null
-        },
+      // date filtering
+      this.filters = {
+        start : null,
+        stop : null
+      },
 
-        // dom controller stuff
-        this.hasTimeSeries = false;
-        this.showClimateData = false;
-        this.charts = {};
+      // dom controller stuff
+      this.hasTimeSeries = false;
+      this.showClimateData = false;
+      this.charts = {};
 
     },
 
@@ -90,17 +90,60 @@ Polymer({
 
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
-        if( this.feature = CWN.ds.lookupMap[loc[1]] ) {
+        if( this.feature && this.feature.prmname == loc[1] ) {
           this.update();
         } else {
-          this.feature = CWN.ds.lookupMap[loc[1]];
+          this.setFeature(loc[1]);
         }
       }
     },
 
-    setFeature : function(feature) {
-      this.feature = feature;
+    setFeature : function(prmname) {
+      if( CWN.ds.lookupMap[prmname] ) {
+        this.feature = CWN.ds.lookupMap[prmname];
+      } else {
+        // see if this is a region to feature
+        this.setRegionToRegion(prmname);
+      }
+
       this.update();
+    },
+
+    setRegionToRegion : function(prmname) {
+      var parts = prmname.split('-');
+
+      if( parts.length == 0 ) {
+        this.feature = null;
+        return;
+      }
+
+      var node = {
+        properties : {
+          prmname : prmname,
+          origin : null,
+          terminus : null,
+          type : 'Region Link'
+        }
+      };
+
+      if( CWN.ds.lookupMap[parts[0]] ) {
+        node.properties.origin = CWN.ds.lookupMap[parts[0]].properties.prmname;
+      } else if( CWN.ds.regionLookupMap[parts[0]] ) {
+        node.properties.origin = CWN.ds.regionLookupMap[parts[0]].name;
+      }
+
+      if( CWN.ds.lookupMap[parts[1]] ) {
+        node.properties.terminus = CWN.ds.lookupMap[parts[1]].properties.prmname;
+      } else if( CWN.ds.regionLookupMap[parts[1]] ) {
+        node.properties.terminus = CWN.ds.regionLookupMap[parts[1]].name;
+      }
+
+      if( !node.properties.origin || !node.properties.terminus ) {
+        this.feature = null;
+        return;
+      }
+
+      this.feature = node;
     },
 
     update : function() {
@@ -271,7 +314,12 @@ Polymer({
     },
 
     updateDateSliderVisibility : function() {
-      this.$.dateRangeSlider.style.display = (this.hasOutputs || this.hasInflows || this.hasTimeSeries || this.hasEvaporation ) ? 'block' : 'none';
+      var isRegionLink = false;
+      if( this.feature && this.feature.properties.type == 'Region Link' ) {
+        isRegionLink = true;
+      }
+
+      this.$.dateRangeSlider.style.display = (isRegionLink || this.hasOutputs || this.hasInflows || this.hasTimeSeries || this.hasEvaporation ) ? 'block' : 'none';
     },
 
     stampEacChart : function() {

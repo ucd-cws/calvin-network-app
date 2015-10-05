@@ -19,8 +19,10 @@ var Region = function(root, name, branch) {
 
         if( file === 'region.geojson' ) {
             var json = fs.readFileSync(dir+'/'+file, 'utf-8');
+
+            var prmname = name.replace(/-/g,'_');
             this.geo = JSON.parse(json);
-            this.geo.properties.id = name;
+            this.geo.properties.id = prmname;
             this.isARegion = true;
             this.isAFakeRegion = false;
             return;
@@ -82,7 +84,7 @@ var Region = function(root, name, branch) {
         }
 
         var json = {
-            name : this.name,
+            name : this.name.replace(/-/g,'_'),
             //root : this.root,
             nodes : this.nodes,
             geo : this.geo

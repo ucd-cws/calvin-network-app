@@ -220,7 +220,7 @@
         setInfoFeature : function() {
           var name = window.location.hash.replace('#','').split('/')[1];
           name = decodeURIComponent(name);
-          this.$.info.setFeature(CWN.ds.lookupMap[name]);
+          this.$.info.setFeature(name);
         },
 
         onDataLoad : function() {

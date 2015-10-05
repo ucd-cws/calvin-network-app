@@ -40,7 +40,7 @@ Polymer({
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' <small>to</small> ');
+        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g,' ').replace(/-/g, ' <small>to</small> ');
 
         this.$.regions.update(this.feature);
 

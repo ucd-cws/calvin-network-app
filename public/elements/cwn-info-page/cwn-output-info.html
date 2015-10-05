@@ -22,6 +22,10 @@
       is : 'cwn-output-info',
 
       update : function(feature) {
+        if( this.feature && feature.properties.prmname == this.feature.properties.prmname ) {
+          return;
+        }
+
         this.feature = feature;
 
         this.$.flow.style.display = 'none';
@@ -30,10 +34,42 @@
           this.$.nodata.style.display = 'none';
           this.$.loading.style.display = 'block';
           this.load();
+        } else if( this.feature.properties.type == 'Region Link' ) {
+          this.$.nodata.style.display = 'none';
+          this.$.loading.style.display = 'block';
+          this.loadAggregate();
         } else {
           this.$.nodata.style.display = 'block';
           this.$.loading.style.display = 'none';
         }
+      },
+
+      loadAggregate : function() {
+        $.get('/regions/aggregate?origin='+this.feature.properties.origin+'&terminus='+this.feature.properties.terminus,
+          function(resp1) {
+            $.get('/regions/aggregate?origin='+this.feature.properties.terminus+'&terminus='+this.feature.properties.origin,
+              function(resp2) {
+                this.$.loading.style.display = 'none';
+                var data = [[
+                  'date',
+                  this.feature.properties.origin+' to '+this.feature.properties.terminus,
+                  this.feature.properties.terminus+' to '+this.feature.properties.origin
+                ]];
+
+                if( resp1.flows ) {
+                  for( var key in resp1.flows ) {
+                    data.push([key, resp1.flows[key] || 0, resp2.flows[key] || 0]);
+                  }
+                }
+
+                console.log(data);
+                this.data = {
+                  flow : data
+                }
+                this.renderFlow();
+            }.bind(this));
+          }.bind(this)
+        );
       },
 
       load : function() {

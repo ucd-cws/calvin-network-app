@@ -438,7 +438,7 @@
           }
 
           for( var i = 0; i < nodes.length; i++ ) {
-            var node = CWN.ds.filenameLookupMap[nodes[i]];
+            var node = CWN.ds.lookupMap[nodes[i]];
 
             // TODO: why!?
             if( !node ) continue;
@@ -505,7 +505,8 @@
                   coordinates : [origin.center, terminal.center]
                 },
                 properties : {
-                  type : 'Link Group',
+                  prmname : origin.name+'-'+terminal.name,
+                  type : 'Region Link',
                   lines : [$.extend(true, {}, node.properties)],
                 }
               },
