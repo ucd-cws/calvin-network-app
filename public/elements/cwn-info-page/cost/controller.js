@@ -62,7 +62,6 @@ Polymer({
     update : function() {
         if( !this.feature ) return;
 
-        this.noCostData = true;
 
         this.constraintChart.data = [];
         this.constraintChart.isTimeSeries = false;
@@ -78,9 +77,12 @@ Polymer({
         this.showBounds = false;
         this.showConstantBounds = false;
 
-        if( !this.feature.properties.costs || !this.feature.properties.bounds ) return;
+        if( !this.feature.properties.costs || !this.feature.properties.bounds ) {
+          $(this).parent().hide();
+          return;
+        }
 
-        this.noCostData = false;
+        $(this).parent().show();
         this.showCostData = true;
 
         if( this.feature.properties.bounds ) this.renderBounds(this.feature.properties.bounds);

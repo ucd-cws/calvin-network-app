@@ -37,12 +37,9 @@
         <div class="col-md-6">
 
           <!-- Start Climate -->
-          <div class="card">
+          <div class="card" hidden$="{{!showClimateData}}">
             <h2 class="page-header">Climate</h2>
 
-            <div class="alert alert-info" hidden$="{{showClimateData}}">
-              This node has no climate data associated with it.
-            </div>
             <div class="alert alert-error" hidden$="{{!climateLoadError}}">
               Error loading climate data.
             </div>

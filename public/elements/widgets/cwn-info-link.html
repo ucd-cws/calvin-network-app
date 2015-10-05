@@ -19,7 +19,11 @@
             <a href="{{link}}">{{prmname}}</a> <span style="vertical-align:top; color: #ccc">{{type}}</span>
         </span>
 
-        <span hidden$="{{valid}}">{{prmname}}</span>
+        <span hidden$="{{!region}}">
+            <span>{{label}}</span> <span style="vertical-align:top; color: #ccc">{{type}}</span>
+        </span>
+
+        <span hidden$="{{!unknown}}">{{prmname}}</span>
     </template>
 </dom-module>
 
@@ -40,7 +44,14 @@
           this.prmname = '';
           this.link = '';
           this.type = '';
+          this.label = '';
+          this.reset();
+        },
+
+        reset : function() {
           this.valid = false;
+          this.unknown = false;
+          this.region = false;
         },
 
         attached : function() {
@@ -49,9 +60,17 @@
 
         update : function() {
           if( CWN.ds.loading ) return;
+          this.reset();
+
+          if( CWN.ds.regionLookupMap[this.prmname] ) {
+            this.region = true;
+            this.type = 'Region';
+            this.label = CWN.ds.regionLookupMap[this.prmname].geo.properties.name;
+            return;
+          }
 
           if( !CWN.ds.lookupMap[this.prmname] ) {
-              this.valid = false;
+              this.unknown = true;
               return;
           }
 

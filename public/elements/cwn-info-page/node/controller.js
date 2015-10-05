@@ -147,7 +147,9 @@ Polymer({
         this.showNavLinks = true;
 
         if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-            this.showNavLinks = false;
+          this.showNavLinks = false;
+        } else if( this.feature.properties.type == 'Region Link' ) {
+          this.showNavLinks = false;
         }
     },
 

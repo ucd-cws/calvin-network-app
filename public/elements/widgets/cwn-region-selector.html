@@ -58,7 +58,7 @@
       var link, icon = '';
 
       if( feature.properties.type == 'Region Link' ) {
-        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace('_',' ').replace('-',' to ')+'</a> ';
+        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/-/g,' to ')+'</a> ';
       } else if ( feature.properties.type == 'Region' ) {
         link = '<a class="region" index="'+i+'" style="cusor:pointer;font-size:18px">'+feature.properties.name+'</a>';
       } else {

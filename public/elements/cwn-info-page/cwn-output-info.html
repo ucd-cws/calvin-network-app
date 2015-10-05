@@ -2,10 +2,6 @@
   <template>
     <h2 class="page-header">Outputs</h2>
 
-    <div id="nodata" class="alert alert-info">
-      This node has no output data associated with it.
-    </div>
-
     <div id="loading" style="display:none">
       <h4><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</h4>
     </div>
@@ -29,17 +25,18 @@
         this.feature = feature;
 
         this.$.flow.style.display = 'none';
+        this.net = false;
 
         if( this.feature.properties.hasOutputs ) {
-          this.$.nodata.style.display = 'none';
+          $(this).parent().show();
           this.$.loading.style.display = 'block';
           this.load();
         } else if( this.feature.properties.type == 'Region Link' ) {
-          this.$.nodata.style.display = 'none';
+          $(this).parent().show();
           this.$.loading.style.display = 'block';
           this.loadAggregate();
         } else {
-          this.$.nodata.style.display = 'block';
+          $(this).parent().hide();
           this.$.loading.style.display = 'none';
         }
       },
@@ -62,7 +59,6 @@
                   }
                 }
 
-                console.log(data);
                 this.data = {
                   flow : data
                 }
@@ -88,6 +84,10 @@
       },
 
       renderFlow : function() {
+        if( this.data.flow.length <= 1 ) {
+          $(this).parent().hide();
+          return;
+        }
         this.$.flow.style.display = 'block';
         this.$.chart.update(this.data.flow);
       }
