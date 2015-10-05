@@ -44,9 +44,22 @@ var Region = function(root, name, branch) {
           }
 
         } else if ( stat.isDirectory() && (childIsNode || childIsLink) ) {
-          //console.log('-- '+dir+' '+file);
-          //this.nodes.push(file.replace(/\.geojson/, ''));
-          this.nodes.push(file);
+          // read in prmname
+          var prmname = file, filename = '';
+          if( childIsNode ) {
+            filename = dir+'/'+file+'/node.geojson';
+          } else {
+            filename = dir+'/'+file+'/link.geojson';
+          }
+
+          try {
+            var n = eval('('+ fs.readFileSync(filename,'utf-8').replace(/[\r\n]/g,'') +')');
+            this.nodes.push(n.properties.prmname);
+          } catch(e) {
+            console.log('JSON parse error: '+dir+' '+file);
+          }
+
+
         } else {
           console.log('Ignored: '+dir+' '+file);
         }

@@ -20,4 +20,20 @@ module.exports = function (router) {
       });
     });
 
+    router.get('/aggregate', function (req, res) {
+      var origin = req.query.origin;
+      var terminus = req.query.terminus;
+      if( !origin || !terminus ) {
+        return res.send({error:true, message:'origin and terminus required'});
+      }
+
+      model.getAggergate(origin, terminus, function(err, data){
+        if( err ) {
+          res.send({error: true, message: err});
+        } else {
+          res.send(data);
+        }
+      });
+    });
+
 };
