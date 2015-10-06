@@ -14083,8 +14083,8 @@ Polymer({
             }
           }
 
-          for( var i = 0; i < nodes.length; i++ ) {
-            var node = CWN.ds.lookupMap[nodes[i]];
+          for( var prmname in nodes ) {
+            var node = CWN.ds.lookupMap[prmname];
 
             // TODO: why!?
             if( !node ) continue;
