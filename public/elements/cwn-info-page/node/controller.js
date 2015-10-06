@@ -40,10 +40,21 @@ Polymer({
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g,' ').replace(/-/g, ' <small>to</small> ');
+        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+          this.$.label.innerHTML = this.feature.properties.origin.replace(/_/g, ' ')+' <small>to</small> '+this.feature.properties.terminus.replace(/_/g, ' ');
+        } else if( this.feature.properties.type == 'Region Link') {
+          this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to/from</small> ').replace(/_/g, ' ');
+        } else {
+          this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' ');
+        }
+
+        if( this.feature.properties.type == 'Region Link') {
+          $(this).find('.node-info-header').css('visibility','hidden');
+        } else {
+          $(this).find('.node-info-header').css('visibility','visible');
+        }
 
         this.$.regions.update(this.feature);
-
 
         this.origins = [];
         this.terminals = [];
@@ -169,6 +180,28 @@ Polymer({
 
 
       this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
+    },
+
+    setRegionLinkInfo : function(info) {
+      for( var i = 0; i < info.origin.links.length; i++ ) {
+        this.origins.push({
+            name: info.origin.links[i],
+            hasLink : false,
+            link: '#info/'+info.origin.links[i],
+            description: ''
+        });
+      }
+      for( var i = 0; i < info.terminus.links.length; i++ ) {
+        this.terminals.push({
+            name: info.terminus.links[i],
+            hasLink : false,
+            link: '#info/'+info.terminus.links[i],
+            description: ''
+        });
+      }
+
+      this.origins = $.extend(true, [], this.origins);
+      this.terminals = $.extend(true, [], this.terminals);
     },
 
     goTo : function() {

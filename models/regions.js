@@ -80,10 +80,10 @@ function sumFlow(sum, item) {
       continue;
     }
 
-    if( !sum[item[i][0]] ) {
-      sum[item[i][0]] = item[i][1];
+    if( sum[item[i][0]] === undefined ) {
+      sum[item[i][0]] = item[i][1] || 0;
     } else {
-      sum[item[i][0]] += item[i][1];
+      sum[item[i][0]] += item[i][1] || 0;
     }
   }
 }

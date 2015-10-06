@@ -18,7 +18,7 @@
     <template>
 
       <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
-        <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
+        <cwn-node-info id="nodeInfo" feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
 
       <!-- End Header Card -->
@@ -89,7 +89,7 @@
           <!-- End Climate -->
 
           <div class="card">
-            <cwn-output-info id="outputs"></cwn-output-info>
+            <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
           </div>
 
         </div>

@@ -110,7 +110,7 @@ Polymer({
     },
 
     setRegionToRegion : function(prmname) {
-      var parts = prmname.split('-');
+      var parts = prmname.split('--');
 
       if( parts.length == 0 ) {
         this.feature = null;
@@ -349,6 +349,10 @@ Polymer({
                 this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
             });
         }
+    },
+
+    onRegionLinkUpdate : function(e) {
+      this.$.nodeInfo.setRegionLinkInfo(e.detail);
     }
 
 });

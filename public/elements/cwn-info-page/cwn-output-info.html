@@ -63,6 +63,18 @@
                   flow : data
                 }
                 this.renderFlow();
+
+                this.fire('region-link-update', {
+                  origin : {
+                    prmname : this.feature.properties.origin,
+                    links : resp1.links
+                  },
+                  terminus : {
+                    prmname : this.feature.properties.terminus,
+                    links : resp2.links
+                  }
+                });
+
             }.bind(this));
           }.bind(this)
         );
