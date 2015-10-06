@@ -11063,7 +11063,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
       var link, icon = '';
 
       if( feature.properties.type == 'Region Link' ) {
-        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/-/g,' to ')+'</a> ';
+        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/--/g,' to ')+'</a> ';
       } else if ( feature.properties.type == 'Region' ) {
         link = '<a class="region" index="'+i+'" style="cusor:pointer;font-size:18px">'+feature.properties.name+'</a>';
       } else {
@@ -11556,7 +11556,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
           
           <div class="col-md-4 no-float">
-            <h4 class="page-header" style="text-align:right">Origins</h4>
+            <h4 class="page-header node-info-header" style="text-align:right">Origins</h4>
             <div>
 
               <div id="origin">
@@ -11621,7 +11621,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
           
           <div class="col-md-4">
-            <h4 class="page-header">Terminals</h4>
+            <h4 class="page-header node-info-header">Terminals</h4>
 
             <div id="terminal">
               <div>
@@ -11700,10 +11700,21 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g,' ').replace(/-/g, ' <small>to</small> ');
+        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+          this.$.label.innerHTML = this.feature.properties.origin.replace(/_/g, ' ')+' <small>to</small> '+this.feature.properties.terminus.replace(/_/g, ' ');
+        } else if( this.feature.properties.type == 'Region Link') {
+          this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to/from</small> ').replace(/_/g, ' ');
+        } else {
+          this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' ');
+        }
+
+        if( this.feature.properties.type == 'Region Link') {
+          $(this).find('.node-info-header').css('visibility','hidden');
+        } else {
+          $(this).find('.node-info-header').css('visibility','visible');
+        }
 
         this.$.regions.update(this.feature);
-
 
         this.origins = [];
         this.terminals = [];
@@ -11829,6 +11840,28 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
 
       this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
+    },
+
+    setRegionLinkInfo : function(info) {
+      for( var i = 0; i < info.origin.links.length; i++ ) {
+        this.origins.push({
+            name: info.origin.links[i],
+            hasLink : false,
+            link: '#info/'+info.origin.links[i],
+            description: ''
+        });
+      }
+      for( var i = 0; i < info.terminus.links.length; i++ ) {
+        this.terminals.push({
+            name: info.terminus.links[i],
+            hasLink : false,
+            link: '#info/'+info.terminus.links[i],
+            description: ''
+        });
+      }
+
+      this.origins = $.extend(true, [], this.origins);
+      this.terminals = $.extend(true, [], this.terminals);
     },
 
     goTo : function() {
@@ -12428,6 +12461,18 @@ Polymer({
                   flow : data
                 }
                 this.renderFlow();
+
+                this.fire('region-link-update', {
+                  origin : {
+                    prmname : this.feature.properties.origin,
+                    links : resp1.links
+                  },
+                  terminus : {
+                    prmname : this.feature.properties.terminus,
+                    links : resp2.links
+                  }
+                });
+
             }.bind(this));
           }.bind(this)
         );
@@ -12474,7 +12519,7 @@ Polymer({
     <template>
 
       <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
-        <cwn-node-info feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
+        <cwn-node-info id="nodeInfo" feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
       </div>
 
       
@@ -12529,7 +12574,7 @@ Polymer({
           
 
           <div class="card">
-            <cwn-output-info id="outputs"></cwn-output-info>
+            <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
           </div>
 
         </div>
@@ -12665,7 +12710,7 @@ Polymer({
     },
 
     setRegionToRegion : function(prmname) {
-      var parts = prmname.split('-');
+      var parts = prmname.split('--');
 
       if( parts.length == 0 ) {
         this.feature = null;
@@ -12904,6 +12949,10 @@ Polymer({
                 this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
             });
         }
+    },
+
+    onRegionLinkUpdate : function(e) {
+      this.$.nodeInfo.setRegionLinkInfo(e.detail);
     }
 
 });
@@ -14102,7 +14151,7 @@ Polymer({
                   coordinates : [origin.center, terminal.center]
                 },
                 properties : {
-                  prmname : origin.name+'-'+terminal.name,
+                  prmname : origin.name+'--'+terminal.name,
                   type : 'Region Link',
                   lines : [$.extend(true, {}, node.properties)],
                 }
