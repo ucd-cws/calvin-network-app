@@ -153,13 +153,13 @@ function setRegions(region, path, regions, regionNames, lookup) {
   region.parents = path.split(' ');
   var newPath = (path.length > 0 ? path+' ' : '') + region.name;
 
-  if( region.nodes && region.nodes.length > 0 ) {
+  if( region.nodes && Object.keys(region.nodes).length > 0 ) {
     var min = null;
     var max = null;
 
-    region.nodes.forEach(function(nodeName){
-      if( lookup[nodeName] ) {
-        var node = lookup[nodeName];
+    for( var prmname in region.nodes ) {
+      if( lookup[prmname] ) {
+        var node = lookup[prmname];
         node.properties.regions = newPath.split(' ');
 
         if( node.properties.type !== 'Diversion' && node.properties.type !== 'Return Flow' && node.geometry ) {
@@ -169,9 +169,9 @@ function setRegions(region, path, regions, regionNames, lookup) {
           updateMinMax(min, max, node.geometry.coordinates);
         }
       } else {
-        console.log('Unable to find node: '+nodeName+' in region '+newPath);
+        console.log('Unable to find node: '+prmname+' in region '+newPath);
       }
-    });
+    }
 
     // set a bounding box if no geometry given
     if( Object.keys(region.geo).length == 0 && min && max ) {

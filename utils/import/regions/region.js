@@ -3,7 +3,7 @@ var fs = require('fs');
 var Region = function(root, name, branch) {
 
     this.subregions = [];
-    this.nodes = [];
+    this.nodes = {};
     this.geo = {};
     this.isARegion = false;
     this.isAFakeRegion = true; // a sub directory, no nodes or links or region file children
@@ -40,8 +40,8 @@ var Region = function(root, name, branch) {
             this.subregions.push(r);
             this.isARegion = true;
           } else if ( r.isAFakeRegion ) {
-            for( var i = 0; i < r.nodes.length; i++ ) {
-              this.nodes.push(r.nodes[i]);
+            for( var prmname in r.nodes ) {
+              this.nodes[prmname] = r.nodes[prmname];
             }
           }
 
@@ -56,7 +56,8 @@ var Region = function(root, name, branch) {
 
           try {
             var n = eval('('+ fs.readFileSync(filename,'utf-8').replace(/[\r\n]/g,'') +')');
-            this.nodes.push(n.properties.prmname);
+            this.nodes[n.properties.prmname] = n.properties.type;
+
           } catch(e) {
             console.log('JSON parse error: '+dir+' '+file);
           }

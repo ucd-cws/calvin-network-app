@@ -23,11 +23,11 @@ function aggregate(origin, terminus, callback) {
 
   getNodeList(origin, {}, function(err, originlist){
     originlist = Object.keys(originlist);
+
     getNodeList(terminus, {}, function(err, terminallist){
       terminallist = Object.keys(terminallist);
 
       runAggregate(originlist, terminallist, function(err, result){
-        console.log(new Date().getTime() - t);
         callback(err, result);
 
       });
@@ -100,9 +100,9 @@ function getNodeList(name, list, callback) {
       return callback(null, list);
     }
 
-    for( var i = 0; i < result.nodes.length; i++ ) {
-      if( result.nodes[i].indexOf('-') > -1 ) continue;
-      list[result.nodes[i]] = 1;
+    for( var key in result.nodes ) {
+      if( result.nodes[key] === 'Diversion' || result.nodes[key] === 'Return Flow' ) continue;
+      list[key] = 1;
     }
 
     if( result.subregions ) {
