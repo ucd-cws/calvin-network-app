@@ -10096,7 +10096,11 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             <a href="{{link}}">{{prmname}}</a> <span style="vertical-align:top; color: #ccc">{{type}}</span>
         </span>
 
-        <span hidden$="{{valid}}">{{prmname}}</span>
+        <span hidden$="{{!region}}">
+            <span>{{label}}</span> <span style="vertical-align:top; color: #ccc">{{type}}</span>
+        </span>
+
+        <span hidden$="{{!unknown}}">{{prmname}}</span>
     </template>
 </dom-module>
 
@@ -10117,7 +10121,14 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
           this.prmname = '';
           this.link = '';
           this.type = '';
+          this.label = '';
+          this.reset();
+        },
+
+        reset : function() {
           this.valid = false;
+          this.unknown = false;
+          this.region = false;
         },
 
         attached : function() {
@@ -10126,9 +10137,17 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
         update : function() {
           if( CWN.ds.loading ) return;
+          this.reset();
+
+          if( CWN.ds.regionLookupMap[this.prmname] ) {
+            this.region = true;
+            this.type = 'Region';
+            this.label = CWN.ds.regionLookupMap[this.prmname].geo.properties.name;
+            return;
+          }
 
           if( !CWN.ds.lookupMap[this.prmname] ) {
-              this.valid = false;
+              this.unknown = true;
               return;
           }
 
@@ -10304,9 +10323,9 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             this.dragStartLeft = parseInt(e.target.style.left || 0);
             this.dragStartX = this.getX(e);
 
-            if( this.dragging.id == 'startTab' ) {
+            if( this.dragging.getAttribute('id') == 'startTab' ) {
                 this.otherStartLeft = parseInt(this.$.endTab.style.left || 0 );
-            } else if( this.dragging.id == 'endTab' ) {
+            } else if( this.dragging.getAttribute('id') == 'endTab' ) {
                 this.otherStartLeft = parseInt(this.$.startTab.style.left || 0 );
             }
             //console.log('Drag start: '+this.dragging.id);
@@ -10314,7 +10333,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
         onDrag : function(e) {
             if( this.dragging == null ) return;
-            if( this.dragging.id == 'slider' ) return this.onSliderDrag(e);
+            if( this.dragging.getAttribute('id') == 'slider' ) return this.onSliderDrag(e);
 
             var pos = this.getPosition(e);
 
@@ -10324,9 +10343,9 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
             this.dragging.innerHTML = result.toISOString().split('T')[0];
 
-            if( this.dragging.id == 'startTab' ) {
+            if( this.dragging.getAttribute('id')== 'startTab' ) {
                 this.setLeftPos(pos);
-            } else if( this.dragging.id == 'endTab' ) {
+            } else if( this.dragging.getAttribute('id') == 'endTab' ) {
                 this.setRightPos(pos);
             }
         },
@@ -10358,23 +10377,23 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             this.current.end = result;
         },
 
-        endDrag : function(e) {
+        endDrag : function() {
             if( this.dragging == null ) return;
 
             //console.log('Drag end: '+this.dragging.id);
 
             var parentX = $(this).offset().left;
-            var pos = $(this.$[this.dragging.id]).offset().left - parentX;
+            var pos = $(this.$[this.dragging.getAttribute('id')]).offset().left - parentX;
 
             var cDay = Math.floor(this.numDays * (pos / this.cWidth));
 
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
 
-            if( this.dragging.id == 'startTab' ) this.current.start = result;
-            else if( this.dragging.id == 'endTab' ) this.current.end = result;
+            if( this.dragging.getAttribute('id') == 'startTab' ) this.current.start = result;
+            else if( this.dragging.getAttribute('id') == 'endTab' ) this.current.end = result;
 
-            if( this.dragging.id != 'slider' ) {
+            if( this.dragging.getAttribute('id') != 'slider' ) {
                 this.dragging.innerHTML = result.toISOString().split('T')[0];
             }
 
@@ -10400,12 +10419,13 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         getPosition : function(e) {
             var pos = this.dragStartLeft + (this.getX(e) - this.dragStartX);
 
+
             if( pos < 0 ) pos = 0;
             if( pos > this.cWidth ) pos = this.cWidth;
 
-            if( this.dragging.id == 'startTab' && pos > this.otherStartLeft ) {
+            if( this.dragging.getAttribute('id') == 'startTab' && pos > this.otherStartLeft ) {
                 pos = this.otherStartLeft;
-            } else if( this.dragging.id == 'endTab' && pos < this.otherStartLeft ) {
+            } else if( this.dragging.getAttribute('id') == 'endTab' && pos < this.otherStartLeft ) {
                 pos = this.otherStartLeft;
             }
 
@@ -10425,6 +10445,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                     return this.lastTouchX;
                 }
             }
+            if( e.clientX !== undefined ) return e.clientX;
             return 0; // bad
         }
     });
@@ -10439,6 +10460,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     <template>
         <canvas id="canvas"></canvas>
         <i id="icon" class="fa fa-long-arrow-right" style="vertical-align:super"></i>
+        <i id="regionLinkIcon" class="fa fa-exchange" style="vertical-align:super"></i>
     </template>
 </dom-module>
 
@@ -10496,14 +10518,21 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             if( !this.$.icon ) return;
 
             this.$.icon.style.fontSize = this.fontSize+'px';
+            this.$.regionLinkIcon.style.fontSize = this.fontSize+'px';
         },
 
         onTypeChange : function() {
             if( this.type == 'Diversion' || this.type == 'Return Flow' ) {
                 $(this.$.canvas).hide();
+                $(this.$.regionLinkIcon).hide();
                 $(this.$.icon).show();
+            } else if( this.type == 'Region Link' ) {
+              $(this.$.canvas).hide();
+              $(this.$.regionLinkIcon).show();
+              $(this.$.icon).hide();
             } else {
                 $(this.$.icon).hide();
+                $(this.$.regionLinkIcon).hide();
                 $(this.$.canvas).show();
                 this.redraw();
             }
@@ -11033,8 +11062,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     renderFeature : function(feature, i) {
       var link, icon = '';
 
-      if( feature.properties.type == 'Link Group' ) {
-        link = '<a style="font-size:18px">Line Group</a>';
+      if( feature.properties.type == 'Region Link' ) {
+        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/-/g,' to ')+'</a> ';
       } else if ( feature.properties.type == 'Region' ) {
         link = '<a class="region" index="'+i+'" style="cusor:pointer;font-size:18px">'+feature.properties.name+'</a>';
       } else {
@@ -11042,7 +11071,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
       }
 
-      return '<div class="layout horizontal">'+
+      return '<div class="layout horizontal" '+(feature.properties.description || feature.properties.regions ? 'style="margin-bottom: 15px"' : '')+'>'+
         '<div style="padding:15px 5px; width: 50px">'+icon+'</div>'+
         '<div class="flex">'+
           '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+
@@ -11571,7 +11600,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                     <td>
                       <cwn-app-icon type$="{{type}}" width="72" height="72" fillfromtype="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
                     </td><td>
-                      <h3 id="label"></h3>
+                      <h3 id="label" style="text-transform: capitalize"></h3>
                       <div><b>{{feature.properties.type}}</b></div>
                     </td>
                   </tr>
@@ -11671,7 +11700,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' <small>to</small> ');
+        this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g,' ').replace(/-/g, ' <small>to</small> ');
 
         this.$.regions.update(this.feature);
 
@@ -11778,7 +11807,9 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         this.showNavLinks = true;
 
         if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-            this.showNavLinks = false;
+          this.showNavLinks = false;
+        } else if( this.feature.properties.type == 'Region Link' ) {
+          this.showNavLinks = false;
         }
     },
 
@@ -11816,10 +11847,6 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 <dom-module id="cwn-cost-info" assetpath="/public/elements/cwn-info-page/cost/">
     <template>
         <h2 class="page-header">Costs</h2>
-
-        <div class="alert alert-info" hidden$="{{!noCostData}}">
-          This node has no cost data associated with it.
-        </div>
 
         <div hidden$="{{!showCostData}}">
           <div hidden$="{{!showMonthlyVariableCost}}">
@@ -11924,7 +11951,6 @@ Polymer({
     update : function() {
         if( !this.feature ) return;
 
-        this.noCostData = true;
 
         this.constraintChart.data = [];
         this.constraintChart.isTimeSeries = false;
@@ -11940,12 +11966,20 @@ Polymer({
         this.showBounds = false;
         this.showConstantBounds = false;
 
-        if( !this.feature.properties.costs || !this.feature.properties.bounds ) return;
+        var hasBounds = false;
+        if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
+          hasBounds = true;
+        }
 
-        this.noCostData = false;
+        if( !this.feature.properties.costs || !hasBounds ) {
+          $(this).parent().hide();
+          return;
+        }
+
+        $(this).parent().show();
         this.showCostData = true;
 
-        if( this.feature.properties.bounds ) this.renderBounds(this.feature.properties.bounds);
+        if( hasBounds ) this.loadBounds();
 
 
         this.renderCostData(this.feature.properties.costs);
@@ -12001,6 +12035,12 @@ Polymer({
       } else {
         alert('Unknown cost type: '+d.type);
       }
+    },
+
+    loadBounds : function() {
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        this.renderBounds(resp.bounds);
+      }.bind(this));
     },
 
     /*
@@ -12323,6 +12363,101 @@ Polymer({
 
 });
 </script>
+<dom-module id="cwn-output-info" assetpath="/public/elements/cwn-info-page/">
+  <template>
+    <h2 class="page-header">Outputs</h2>
+
+    <div id="loading" style="display:none">
+      <h4><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</h4>
+    </div>
+
+    <div id="flow" style="display:none">
+      <div>Flow</div>
+      <cwn-date-linechart id="chart" animate=""></cwn-date-linechart>
+    </div>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+      is : 'cwn-output-info',
+
+      update : function(feature) {
+        if( this.feature && feature.properties.prmname == this.feature.properties.prmname ) {
+          return;
+        }
+
+        this.feature = feature;
+
+        this.$.flow.style.display = 'none';
+        this.net = false;
+
+        if( this.feature.properties.extras && this.feature.properties.extras.flow ) {
+          $(this).parent().show();
+          this.$.loading.style.display = 'block';
+          this.load();
+        } else if( this.feature.properties.type == 'Region Link' ) {
+          $(this).parent().show();
+          this.$.loading.style.display = 'block';
+          this.loadAggregate();
+        } else {
+          $(this).parent().hide();
+          this.$.loading.style.display = 'none';
+        }
+      },
+
+      loadAggregate : function() {
+        $.get('/regions/aggregate?origin='+this.feature.properties.origin+'&terminus='+this.feature.properties.terminus,
+          function(resp1) {
+            $.get('/regions/aggregate?origin='+this.feature.properties.terminus+'&terminus='+this.feature.properties.origin,
+              function(resp2) {
+                this.$.loading.style.display = 'none';
+                var data = [[
+                  'date',
+                  this.feature.properties.origin+' to '+this.feature.properties.terminus,
+                  this.feature.properties.terminus+' to '+this.feature.properties.origin
+                ]];
+
+                if( resp1.flows ) {
+                  for( var key in resp1.flows ) {
+                    data.push([key, resp1.flows[key] || 0, resp2.flows[key] || 0]);
+                  }
+                }
+
+                this.data = {
+                  flow : data
+                }
+                this.renderFlow();
+            }.bind(this));
+          }.bind(this)
+        );
+      },
+
+      load : function() {
+        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+          this.$.loading.style.display = 'none';
+          if( resp.error ) {
+            return alert(resp.message);
+          }
+
+          this.data = resp;
+
+          if( this.data.flow ) {
+            this.renderFlow();
+          }
+        }.bind(this));
+      },
+
+      renderFlow : function() {
+        if( this.data.flow.length <= 1 ) {
+          $(this).parent().hide();
+          return;
+        }
+        this.$.flow.style.display = 'block';
+        this.$.chart.update(this.data.flow);
+      }
+  });
+</script>
 <dom-module id="cwn-info-page" assetpath="/public/elements/cwn-info-page/">
     <style>
       :host {
@@ -12355,12 +12490,9 @@ Polymer({
         <div class="col-md-6">
 
           
-          <div class="card">
+          <div class="card" hidden$="{{!showClimateData}}">
             <h2 class="page-header">Climate</h2>
 
-            <div class="alert alert-info" hidden$="{{showClimateData}}">
-              This node has no climate data associated with it.
-            </div>
             <div class="alert alert-error" hidden$="{{!climateLoadError}}">
               Error loading climate data.
             </div>
@@ -12396,6 +12528,10 @@ Polymer({
           </div>
           
 
+          <div class="card">
+            <cwn-output-info id="outputs"></cwn-output-info>
+          </div>
+
         </div>
         <div class="col-md-6">
 
@@ -12407,6 +12543,11 @@ Polymer({
           
 
         </div>
+      </div>
+
+      <div class="card" id="readme" style="display:none">
+        <h4 class="page-header">README</h4>
+        <div id="readmeMarkdown"></div>
       </div>
 
 
@@ -12447,48 +12588,48 @@ Polymer({
 
       this.map = {};
 
-        // Elevation / Area / Capacity charts
-        this.eacChart = {
-          type : 'ComboChart',
-          cols : [
-            {id: 'capacity', label: 'capacity', type: 'number'},
-            {id: 'elevation', label: 'elevation', type: 'number'},
-            {id: 'area', label: 'area', type: 'number'},
-            {id: 'initial', type: 'number', label: 'initial'},
-            {id: 'tooltip', type: 'string', role:'tooltip'}
+      // Elevation / Area / Capacity charts
+      this.eacChart = {
+        type : 'ComboChart',
+        cols : [
+          {id: 'capacity', label: 'capacity', type: 'number'},
+          {id: 'elevation', label: 'elevation', type: 'number'},
+          {id: 'area', label: 'area', type: 'number'},
+          {id: 'initial', type: 'number', label: 'initial'},
+          {id: 'tooltip', type: 'string', role:'tooltip'}
+        ],
+        data : [],
+        options : {
+          hAxis : {
+            title : 'Capacity (kAF)'
+          },
+          vAxes : [
+            {title:'Elevation (ft)'}, // axis 0
+            {title:'Area (ac)'} // Axis 1
           ],
-          data : [],
-          options : {
-            hAxis : {
-              title : 'Capacity (kAF)'
-            },
-            vAxes : [
-              {title:'Elevation (ft)'}, // axis 0
-              {title:'Area (ac)'} // Axis 1
-            ],
-            seriesType: "bars",
-            series :{
-              0: {type: "line", targetAxisIndex:0},
-              1: {type: "line", targetAxisIndex:1},
-              2: {targetAxisIndex: 0},
-            },
-            interpolateNulls : true,
-            legend : {
-              position: 'top'
-            }
+          seriesType: "bars",
+          series :{
+            0: {type: "line", targetAxisIndex:0},
+            1: {type: "line", targetAxisIndex:1},
+            2: {targetAxisIndex: 0},
+          },
+          interpolateNulls : true,
+          legend : {
+            position: 'top'
           }
-        };
+        }
+      };
 
-        // date filtering
-        this.filters = {
-          start : null,
-          stop : null
-        },
+      // date filtering
+      this.filters = {
+        start : null,
+        stop : null
+      },
 
-        // dom controller stuff
-        this.hasTimeSeries = false;
-        this.showClimateData = false;
-        this.charts = {};
+      // dom controller stuff
+      this.hasTimeSeries = false;
+      this.showClimateData = false;
+      this.charts = {};
 
     },
 
@@ -12504,17 +12645,60 @@ Polymer({
 
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
-        if( this.feature = CWN.ds.lookupMap[loc[1]] ) {
+        if( this.feature && this.feature.prmname == loc[1] ) {
           this.update();
         } else {
-          this.feature = CWN.ds.lookupMap[loc[1]];
+          this.setFeature(loc[1]);
         }
       }
     },
 
-    setFeature : function(feature) {
-      this.feature = feature;
+    setFeature : function(prmname) {
+      if( CWN.ds.lookupMap[prmname] ) {
+        this.feature = CWN.ds.lookupMap[prmname];
+      } else {
+        // see if this is a region to feature
+        this.setRegionToRegion(prmname);
+      }
+
       this.update();
+    },
+
+    setRegionToRegion : function(prmname) {
+      var parts = prmname.split('-');
+
+      if( parts.length == 0 ) {
+        this.feature = null;
+        return;
+      }
+
+      var node = {
+        properties : {
+          prmname : prmname,
+          origin : null,
+          terminus : null,
+          type : 'Region Link'
+        }
+      };
+
+      if( CWN.ds.lookupMap[parts[0]] ) {
+        node.properties.origin = CWN.ds.lookupMap[parts[0]].properties.prmname;
+      } else if( CWN.ds.regionLookupMap[parts[0]] ) {
+        node.properties.origin = CWN.ds.regionLookupMap[parts[0]].name;
+      }
+
+      if( CWN.ds.lookupMap[parts[1]] ) {
+        node.properties.terminus = CWN.ds.lookupMap[parts[1]].properties.prmname;
+      } else if( CWN.ds.regionLookupMap[parts[1]] ) {
+        node.properties.terminus = CWN.ds.regionLookupMap[parts[1]].name;
+      }
+
+      if( !node.properties.origin || !node.properties.terminus ) {
+        this.feature = null;
+        return;
+      }
+
+      this.feature = node;
     },
 
     update : function() {
@@ -12525,19 +12709,29 @@ Polymer({
       this.climateLoadError = false;
       this.climateLoading = false;
 
+      this.hasOutputs = false;
       this.eacChart.data = [];
       this.evaporationData = null;
       this.hasInflows = false;
       this.hasEvaporation = false;
 
       var props = this.feature.properties;
-      if( props.inflows || props.el_ar_cap || props.evaporation) {
+      if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation)) {
         this.showClimateData = true;
       } else {
         this.showClimateData = false;
       }
 
-      this.renderClimateData(props.inflows, props.el_ar_cap, props.evaporation);
+      this.renderClimateData(props.el_ar_cap);
+
+
+      this.$.outputs.update(this.feature);
+      if( this.feature.properties.hasOutputs ) {
+        this.hasOutputs = true;
+      }
+
+      this.updateReadme();
+
       this.updateDateSliderVisibility();
 
       this.async(function(){
@@ -12546,39 +12740,22 @@ Polymer({
 
     },
 
-    renderClimateData : function(inflows, el_ar_cap, evaporation) {
-
-      if( inflows ) {
-        this.hasInflows = true;
-        this.$.inflowCharts.innerHTML = '';
-
-        for( var name in inflows ) {
-          /*var inflow = {
-            label : name,
-            description : inflows[name].description || '',
-            data : inflows[name].inflow
-          };*/
-
-          var chart = document.createElement('cwn-date-linechart');
-          chart.label = (inflows[name].description || name || ''),
-          chart.data = inflows[name].inflow;
-
-          this.$.inflowCharts.appendChild(chart);
+    updateReadme : function() {
+        if( this.feature.properties.extras && this.feature.properties.extras.readme ) {
+          this.$.readme.style.display = 'block';
+          CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+            this.$.readmeMarkdown.innerHTML = marked(resp.readme);
+          }.bind(this));
+          return;
         }
 
-        this.$.inflows.style.display = 'block';
-      } else {
-        this.$.inflows.style.display = 'none';
-      }
+        this.$.readme.style.display = 'none';
+        return;
+    },
 
-      if( evaporation ) {
-        this.hasEvaporation = true;
-        this.$.evaporationChart.update(evaporation);
-        this.evaporationData = evaporation;
-        this.$.evaporation.style.display = 'block';
-      } else {
-        this.$.evaporation.style.display = 'none';
-      }
+    renderClimateData : function(el_ar_cap) {
+      this.renderInflows();
+      this.renderEvaporation();
 
       this.eacChart.data = [];
       if( el_ar_cap ) {
@@ -12630,6 +12807,43 @@ Polymer({
       this.updateDateSliderVisibility();
     },
 
+    renderInflows : function() {
+      this.$.inflows.style.display = 'none';
+
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        if( resp.inflows ) {
+          this.hasInflows = true;
+          this.$.inflowCharts.innerHTML = '';
+
+          for( var name in resp.inflows  ) {
+            var chart = document.createElement('cwn-date-linechart');
+            chart.label = (resp.inflows[name].description || name || ''),
+            chart.data = resp.inflows[name].inflow;
+
+            this.$.inflowCharts.appendChild(chart);
+          }
+
+          this.$.inflows.style.display = 'block';
+        } else {
+          this.$.inflows.style.display = 'none';
+        }
+      }.bind(this));
+    },
+
+    renderEvaporation : function() {
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        var evaporation = resp.evaporation;
+        if( evaporation ) {
+          this.hasEvaporation = true;
+          this.$.evaporationChart.update(evaporation);
+          this.evaporationData = evaporation;
+          this.$.evaporation.style.display = 'block';
+        } else {
+          this.$.evaporation.style.display = 'none';
+        }
+      }.bind(this));
+    },
+
     updateDateFilters : function(e) {
       var eles = this.querySelectorAll('cwn-date-linechart');
 
@@ -12665,7 +12879,12 @@ Polymer({
     },
 
     updateDateSliderVisibility : function() {
-      this.$.dateRangeSlider.style.display = (this.hasInflows || this.hasTimeSeries || this.hasEvaporation) ? 'block' : 'none';
+      var isRegionLink = false;
+      if( this.feature && this.feature.properties.type == 'Region Link' ) {
+        isRegionLink = true;
+      }
+
+      this.$.dateRangeSlider.style.display = (isRegionLink || this.hasOutputs || this.hasInflows || this.hasTimeSeries || this.hasEvaporation ) ? 'block' : 'none';
     },
 
     stampEacChart : function() {
@@ -13816,7 +14035,7 @@ Polymer({
           }
 
           for( var i = 0; i < nodes.length; i++ ) {
-            var node = CWN.ds.filenameLookupMap[nodes[i]];
+            var node = CWN.ds.lookupMap[nodes[i]];
 
             // TODO: why!?
             if( !node ) continue;
@@ -13883,7 +14102,8 @@ Polymer({
                   coordinates : [origin.center, terminal.center]
                 },
                 properties : {
-                  type : 'Link Group',
+                  prmname : origin.name+'-'+terminal.name,
+                  type : 'Region Link',
                   lines : [$.extend(true, {}, node.properties)],
                 }
               },
@@ -14330,7 +14550,7 @@ Polymer({
         setInfoFeature : function() {
           var name = window.location.hash.replace('#','').split('/')[1];
           name = decodeURIComponent(name);
-          this.$.info.setFeature(CWN.ds.lookupMap[name]);
+          this.$.info.setFeature(name);
         },
 
         onDataLoad : function() {
