@@ -49,15 +49,21 @@ Polymer({
         }
 
         if( this.feature.properties.type == 'Region Link') {
-          $(this).find('.node-info-header').css('visibility','hidden');
+          $(this).find('.node-info-header').css('display','none');
+          this.$.origin.style.marginTop = '30px';
+          this.$.terminal.style.marginTop = '30px';
         } else {
-          $(this).find('.node-info-header').css('visibility','visible');
+          $(this).find('.node-info-header').css('display','block');
+          this.$.origin.style.marginTop = '0';
+          this.$.terminal.style.marginTop = '0';
         }
 
         this.$.regions.update(this.feature);
 
         this.origins = [];
         this.terminals = [];
+        this.$.originExtra.innerHTML = '';
+        this.$.terminusExtra.innerHTML = '';
 
         var link, node, types = ['origins', 'terminals'];
         types.forEach(function(type){
@@ -89,6 +95,8 @@ Polymer({
           this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+
             this.feature.properties.repo.github+'" target="_blank">'+
             '<i class="fa fa-github"></i> Show on GitHub</a>';
+        } else {
+          this.$.githubLink.innerHTML = '';
         }
 
         // stupid polymer hack! when will this stop!!!!!!!!!!
@@ -187,17 +195,28 @@ Polymer({
         this.origins.push({
             name: info.origin.links[i],
             hasLink : false,
+            hideArrow : true,
             link: '#info/'+info.origin.links[i],
             description: ''
         });
       }
+
+      if( info.origin.links.length > 0 ) {
+        this.$.originExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.terminus.replace(/_/g,' ')+'</h5>';
+      }
+
       for( var i = 0; i < info.terminus.links.length; i++ ) {
         this.terminals.push({
             name: info.terminus.links[i],
             hasLink : false,
+            hideArrow : true,
             link: '#info/'+info.terminus.links[i],
             description: ''
         });
+      }
+
+      if( info.terminus.links.length > 0 ) {
+        this.$.terminusExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.origin.replace(/_/g,' ')+'</h5>';
       }
 
       this.origins = $.extend(true, [], this.origins);

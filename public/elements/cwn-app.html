@@ -212,7 +212,7 @@
 
         setPage : function() {
           for( var key in this.PAGES ) {
-            if( this.selectedPage == this.PAGES[key] ) $(this.$[key]).show();
+            if( this.selectedPage == this.PAGES[key] ) this.$[key].style.display = 'block';
             else $(this.$[key]).hide();
           }
         },

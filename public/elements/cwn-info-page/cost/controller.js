@@ -6,10 +6,6 @@ Polymer({
         feature : {
             type : Object,
             observer : 'update'
-        },
-        hasTimeSeries : {
-            type : Boolean,
-            notify : true
         }
     },
 
@@ -267,117 +263,6 @@ Polymer({
       return data.bound[index];
     },
 
-    /*renderBounds : function(bounds) {
-
-      if( bounds.constraint_type == 'Bounded' ) {
-        var length = this.getContraintsLength(bounds);
-        if( length < 12 ) length = 12;
-
-        for( var i = 0; i < length; i++ ) {
-          this.constraintChart.data.push(this.getConstraintRow(bounds, i));
-        }
-
-      } else if( bounds.constraint_type == 'Constrained' ) {
-
-        if( bounds.constraint.bound_type == 'Constant') {
-
-          this.constraintChart.constant = bounds.constraint.bound;
-
-        } else if( bounds.constraint.bound_type == 'Monthly') {
-
-          for( var i = 0; i < 12; i++ ) {
-            this.constraintChart.data.push([
-              this.months[i],
-              bounds.constraint.bound[i],
-              null,
-              null,
-              'Constrained: '+bounds.constraint.bound[i]
-            ]);
-          }
-
-        } if( bounds.constraint.bound_type == 'TimeSeries') {
-
-          this.constraintChart.isTimeSeries = true;
-          this.hasTimeSeries = true;
-          for( var i = 0; i < bounds.constraint.bound.length; i++ ) {
-            this.constraintChart.data.push([
-              bounds.constraint.date[i],
-              bounds.constraint.bound[i],
-              null,
-              null,
-              'Constrained: '+bounds.constraint.bound[i]
-            ]);
-          }
-
-        }
-
-      } else {
-        console.log('Unknown Constraint Type: '+bounds.constraint_type);
-      }
-
-      this.updateConstraintUi();
-    },
-
-    getConstraintRow : function(bounds, index) {
-      var row = [];
-
-      if( bounds.lower && bounds.lower.bound_type == 'TimeSeries' ) {
-        row.push(bounds.lower.date[index]);
-      } else if ( bounds.upper && bounds.upper.bound_type == 'TimeSeries' ) {
-        row.push(bounds.upper.date[index]);
-      } else {
-        row.push(this.months[index]);
-      }
-
-      var tooltip = row[0]+'\n';
-
-      if( bounds.upper ) {
-        if( bounds.upper.bound_type == 'Constant' ) {
-          row.push(bounds.upper.bound);
-          row.push(bounds.upper.bound);
-          tooltip += 'Upper: '+bounds.upper.bound;
-        } else if ( bounds.upper.bound_type == 'TimeSeries' || bounds.upper.bound_type == 'Monthly') {
-          var i = index;
-          if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
-            i = parseInt(row[0].split("-")[1])-1;
-          }
-
-          row.push(bounds.upper.bound[i]);
-          row.push(bounds.upper.bound[i]);
-          tooltip += 'Upper: '+bounds.upper.bound[i];
-        } else if ( bounds.upper.bound_type == 'None' ) {
-          tooltip += 'Upper: None';
-        }
-      }
-
-      if( bounds.lower ) {
-
-        if( bounds.lower.bound_type == 'Constant' ) {
-          row.push(bounds.lower.bound);
-          tooltip += ', Lower: '+bounds.lower.bound;
-        } else if ( bounds.lower.bound_type == 'TimeSeries' || bounds.lower.bound_type == 'Monthly' ) {
-          var i = index;
-          if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
-            i = parseInt(row[0].split("-")[1])-1;
-          }
-
-          row.push(bounds.lower.bound[i]);
-          tooltip += ', Lower: '+bounds.lower.bound[i];
-        } else if ( bounds.lower.bound_type == 'None' ) {
-          row.push(0);
-          tooltip += ', Lower: 0';
-        } else {
-           tooltip += ', Lower: Unknown';
-        }
-
-      }
-
-      while(row.length < 4) row.push(null);
-
-      row.push(tooltip);
-
-      return row;
-    },*/
 
     getContraintsLength : function(bounds) {
       var l = 0;

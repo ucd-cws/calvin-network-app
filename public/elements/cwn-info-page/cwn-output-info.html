@@ -42,42 +42,37 @@
       },
 
       loadAggregate : function() {
-        $.get('/regions/aggregate?origin='+this.feature.properties.origin+'&terminus='+this.feature.properties.terminus,
-          function(resp1) {
-            $.get('/regions/aggregate?origin='+this.feature.properties.terminus+'&terminus='+this.feature.properties.origin,
-              function(resp2) {
-                this.$.loading.style.display = 'none';
-                var data = [[
-                  'date',
-                  this.feature.properties.origin+' to '+this.feature.properties.terminus,
-                  this.feature.properties.terminus+' to '+this.feature.properties.origin
-                ]];
+        CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
+          this.$.loading.style.display = 'none';
 
-                if( resp1.flows ) {
-                  for( var key in resp1.flows ) {
-                    data.push([key, resp1.flows[key] || 0, resp2.flows[key] || 0]);
-                  }
-                }
+          var data = [[
+            'date',
+            this.feature.properties.origin+' to '+this.feature.properties.terminus,
+            this.feature.properties.terminus+' to '+this.feature.properties.origin
+          ]];
 
-                this.data = {
-                  flow : data
-                }
-                this.renderFlow();
+          if( resp.origin.flows ) {
+            for( var key in resp.origin.flows ) {
+              data.push([key, resp.origin.flows[key] || 0, resp.terminus.flows[key] || 0]);
+            }
+          }
 
-                this.fire('region-link-update', {
-                  origin : {
-                    prmname : this.feature.properties.origin,
-                    links : resp1.links
-                  },
-                  terminus : {
-                    prmname : this.feature.properties.terminus,
-                    links : resp2.links
-                  }
-                });
+          this.data = {
+            flow : data
+          }
+          this.renderFlow();
 
-            }.bind(this));
-          }.bind(this)
-        );
+          this.fire('region-link-update', {
+            origin : {
+              prmname : this.feature.properties.origin,
+              links : resp.origin.links
+            },
+            terminus : {
+              prmname : this.feature.properties.terminus,
+              links : resp.terminus.links
+            }
+          });
+        }.bind(this));
       },
 
       load : function() {

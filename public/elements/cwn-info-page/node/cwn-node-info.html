@@ -44,18 +44,21 @@
                 </div>
               </div>
 
+              <div id="originExtra" style="text-align:right"></div>
 
               <template is="dom-repeat" items="{{origins}}">
                 <div style="text-align:right;margin-bottom:20px">
                   <div>
                     <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
 
-                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                      <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                    </a>
+                    <span hidden$="{{item.hideArrow}}">
+                      <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                        <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                      </a>
 
-                    <span hidden$="{{item.hasLink}}">
-                        <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      <span hidden$="{{item.hasLink}}">
+                          <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      </span>
                     </span>
 
                   </div>
@@ -113,16 +116,20 @@
               </div>
             </div>
 
+            <div id="terminusExtra"></div>
+
             <template is="dom-repeat" items="{{terminals}}">
               <div style="margin-bottom:20px">
                 <div>
 
-                  <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                    <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                  </a>
+                  <span hidden$="{{item.hideArrow}}">
+                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                      <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                    </a>
 
-                  <span hidden$="{{item.hasLink}}">
-                      <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                    <span hidden$="{{item.hasLink}}">
+                        <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                    </span>
                   </span>
 
                   &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>

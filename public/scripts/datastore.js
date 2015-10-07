@@ -8,6 +8,7 @@ function Datastore() {
     this.loading = true;
 
     this.extras = {};
+    this.aggregate = {};
 
     this.data = {
         nodes : [],
@@ -39,7 +40,8 @@ function Datastore() {
     }
 
     this.reload = function(callback) {
-        //this.islocal = local;
+      this.extras = {};
+      this.aggregate = {};
 
         this.loadNetwork(this.network, function(err){
           this.loading = false;
@@ -50,6 +52,39 @@ function Datastore() {
             callback();
           }
         }.bind(this));
+    }
+
+    this.loadAggregate = function(origin, terminus, callback) {
+      var prmname = origin+'--'+terminus;
+      if( this.aggregate[prmname] ) {
+        if( this.aggregate[prmname].__loading__ ) {
+          this.aggregate[prmname].handlers.push(callback);
+        } else {
+          callback(this.aggregate[prmname]);
+        }
+        return;
+      }
+
+      this.aggregate[prmname] = {
+        __loading__ : true,
+        handlers : [callback]
+      };
+
+      $.get('/regions/aggregate?origin='+origin+'&terminus='+terminus,
+        function(resp1) {
+          $.get('/regions/aggregate?origin='+terminus+'&terminus='+origin,
+            function(resp2) {
+              var data = {
+                origin : resp1,
+                terminus : resp2
+              };
+
+              for( var i = 0; i < this.aggregate[prmname].handlers.length; i++ ) {
+                this.aggregate[prmname].handlers[i](data);
+              }
+              this.aggregate[prmname] = data;
+          }.bind(this));
+      }.bind(this));
     }
 
     this.loadExtras = function(prmname, callback) {

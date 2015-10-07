@@ -1,33 +1,42 @@
-<!--<polymer-element name="cwn-dateslider" attributes="start stop">-->
-
 <dom-module id="cwn-dateslider">
     <style>
         :host {
             display: block;
+            position : fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-top: 1px solid #ccc;
+            box-shadow: 0 0 5px #888;
         }
         .slider-tabs {
-            margin-right: 100px;
-            height: 80px;
+            /*margin-right: 100px;*/
+            margin: 20px 30px 0 30px;
             position: relative;
+
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -o-user-select: none;
+            user-select: none;
         }
         .slider-tab {
-            height : 35px;
-            min-width : 35px;
-            border: 1px solid #ccc;
             position: absolute;
-            top: 0;
+            top: -15px;
             left: 0;
             z-index: 4;
+
+
+            transform: translateX(-15px);
+            -ms-transform: translateX(-15px);
+            -webkit-transform: translateX(-15px);
+            -moz-transform: translateX(-15px);
 
             transition: none;
             -webkit-transition: none;
             -moz-transition: none;
             -ms-transition: none;
-
-            border-radius: 0 4px 4px 0 !important;
-            -webkit-border-radius: 0 4px 4px 0 !important;
-            -moz-border-radius: 0 4px 4px 0 !important;
-            -ms-border-radius: 0 4px 4px 0 !important;
 
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -43,7 +52,8 @@
         }
         .progress {
             position: relative !important;
-            margin-right: 100px;
+            /*margin-right: 100px;*/
+            margin-top: 15px;
         }
         .progress-bar {
             position: absolute !important;
@@ -54,14 +64,18 @@
 
     <template>
         <div class="slider-tabs">
-            <div id="startTab" class="slider-tab btn btn-default"></div>
-            <div id="startLine" class="line" style="height:45px; top: 35px; border-left-color: #ccc"></div>
-            <div id="endTab" style="top:40px" class="slider-tab btn btn-primary"></div>
-            <div id="endLine" class="line" style="height:5px; top: 75px"></div>
+            <div id="startTab" class="slider-tab btn btn-default">&nbsp;</div>
+            <div id="endTab" class="slider-tab btn btn-default">&nbsp;</div>
+            <div class="progress">
+              <div class="progress-bar" id="slider" style="left:0;right:0"></div>
+            </div>
+            <div class="layout horizontal center">
+              <span id="startTabDate"></span>
+              <div style="text-align:center; font-weight:bold" class="flex">Date Range</div>
+              <span id="endTabDate"></span>
+            </div>
         </div>
-        <div class="progress">
-          <div class="progress-bar" id="slider" style="left:0;right:0"></div>
-        </div>
+
     </template>
 </dom-module>
 
@@ -146,8 +160,8 @@
             this.setLeftPos(leftPos);
             this.setRightPos(rightPos);
 
-            this.$.startTab.innerHTML = this.current.start.toISOString().split('T')[0];
-            this.$.endTab.innerHTML = this.current.end.toISOString().split('T')[0];
+            this.$.startTabDate.innerHTML = this.current.start.toISOString().split('T')[0];
+            this.$.endTabDate.innerHTML = this.current.end.toISOString().split('T')[0];
         },
 
         startDrag : function(e) {
@@ -182,7 +196,7 @@
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
 
-            this.dragging.innerHTML = result.toISOString().split('T')[0];
+            this.$[this.dragging.getAttribute('id')+'Date'].innerHTML = result.toISOString().split('T')[0];
 
             if( this.dragging.getAttribute('id')== 'startTab' ) {
                 this.setLeftPos(pos);
@@ -207,14 +221,14 @@
             var cDay = Math.floor(this.numDays * (frontPos / this.cWidth));
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
-            this.$.startTab.innerHTML = result.toISOString().split('T')[0];
+            this.$.startTabDate.innerHTML = result.toISOString().split('T')[0];
             this.current.start = result;
 
             //this.$.endTab.style.left = backPos+'px';
             cDay = Math.floor(this.numDays * (backPos / this.cWidth));
             result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
-            this.$.endTab.innerHTML = result.toISOString().split('T')[0];
+            this.$.endTabDate.innerHTML = result.toISOString().split('T')[0];
             this.current.end = result;
         },
 
@@ -235,7 +249,7 @@
             else if( this.dragging.getAttribute('id') == 'endTab' ) this.current.end = result;
 
             if( this.dragging.getAttribute('id') != 'slider' ) {
-                this.dragging.innerHTML = result.toISOString().split('T')[0];
+                this.$[this.dragging.getAttribute('id')+'Date'].innerHTML = result.toISOString().split('T')[0];
             }
 
             this.dragging = null;
@@ -245,13 +259,11 @@
 
         setLeftPos : function(pos) {
             this.$.startTab.style.left = pos + 'px';
-            this.$.startLine.style.left = pos + 'px';
             this.$.slider.style.left = pos + 'px';
         },
 
         setRightPos : function(pos) {
             this.$.endTab.style.left = pos + 'px';
-            this.$.endLine.style.left = pos + 'px';
 
             pos = this.cWidth - pos;
             this.$.slider.style.right = pos + 'px';
@@ -288,6 +300,68 @@
             }
             if( e.clientX !== undefined ) return e.clientX;
             return 0; // bad
+        },
+
+        setFeature : function(feature) {
+          if( feature ) this.feature = feature;
+          if( !this.feature ) return;
+
+          this._updateVisibility();
+        },
+
+        _updateVisibility : function() {
+          var respCount = 0;
+          var requestCount = 1;
+          var hasTimeBounds = false;
+          var hasRegionData = false;
+
+          function onResponse() {
+            respCount++;
+            if( respCount != requestCount ) return;
+
+            var show = false;
+            var extras = this.feature.properties.extras;
+            if( (extras && (extras.evaporation || extras.inflows || extras.flow)) || hasTimeBounds || hasRegionData ) {
+              show = true;
+            }
+
+            this.style.display = show ? 'block' : 'none';
+            if( show ) this.resize();
+          }
+
+          // how many requests are we making?
+          if( this.feature.properties.type == 'Region Link' ) requestCount++;
+          if( this.feature.properties.extras && this.feature.properties.extras.bounds ) requestCount++;
+
+          // grab the aggregate region link data
+          if( this.feature.properties.type == 'Region Link' ) {
+            CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp){
+              if( Object.keys(resp.origin.flows).length > 0 ) hasRegionData = true;
+              else if( Object.keys(resp.terminus.links).length > 0 ) hasRegionData = true;
+
+              onResponse.call(this);
+            }.bind(this));
+          }
+
+          // grab the bounds data
+          if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
+            CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+              if( !resp.bounds ) return;
+
+              for( var i = 0; i < resp.bounds.length; i++ ) {
+                if( resp.bounds[i].type == 'UBT' || resp.bounds[i].type == 'LBT' ||
+                    resp.bounds[i].type == 'EQC' || resp.bounds[i].type == 'EQT') {
+                  hasTimeBounds = true;
+                  break;
+                }
+              }
+
+              onResponse.call(this);
+            }.bind(this));
+          }
+
+          // first check
+          onResponse.call(this);
         }
     });
 </script>

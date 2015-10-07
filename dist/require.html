@@ -10163,30 +10163,41 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     <style>
         :host {
             display: block;
+            position : fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-top: 1px solid #ccc;
+            box-shadow: 0 0 5px #888;
         }
         .slider-tabs {
-            margin-right: 100px;
-            height: 80px;
+            /*margin-right: 100px;*/
+            margin: 20px 30px 0 30px;
             position: relative;
+
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -o-user-select: none;
+            user-select: none;
         }
         .slider-tab {
-            height : 35px;
-            min-width : 35px;
-            border: 1px solid #ccc;
             position: absolute;
-            top: 0;
+            top: -15px;
             left: 0;
             z-index: 4;
+
+
+            transform: translateX(-15px);
+            -ms-transform: translateX(-15px);
+            -webkit-transform: translateX(-15px);
+            -moz-transform: translateX(-15px);
 
             transition: none;
             -webkit-transition: none;
             -moz-transition: none;
             -ms-transition: none;
-
-            border-radius: 0 4px 4px 0 !important;
-            -webkit-border-radius: 0 4px 4px 0 !important;
-            -moz-border-radius: 0 4px 4px 0 !important;
-            -ms-border-radius: 0 4px 4px 0 !important;
 
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -10202,7 +10213,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
         .progress {
             position: relative !important;
-            margin-right: 100px;
+            /*margin-right: 100px;*/
+            margin-top: 15px;
         }
         .progress-bar {
             position: absolute !important;
@@ -10213,14 +10225,18 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
     <template>
         <div class="slider-tabs">
-            <div id="startTab" class="slider-tab btn btn-default"></div>
-            <div id="startLine" class="line" style="height:45px; top: 35px; border-left-color: #ccc"></div>
-            <div id="endTab" style="top:40px" class="slider-tab btn btn-primary"></div>
-            <div id="endLine" class="line" style="height:5px; top: 75px"></div>
+            <div id="startTab" class="slider-tab btn btn-default">&nbsp;</div>
+            <div id="endTab" class="slider-tab btn btn-default">&nbsp;</div>
+            <div class="progress">
+              <div class="progress-bar" id="slider" style="left:0;right:0"></div>
+            </div>
+            <div class="layout horizontal center">
+              <span id="startTabDate"></span>
+              <div style="text-align:center; font-weight:bold" class="flex">Date Range</div>
+              <span id="endTabDate"></span>
+            </div>
         </div>
-        <div class="progress">
-          <div class="progress-bar" id="slider" style="left:0;right:0"></div>
-        </div>
+
     </template>
 </dom-module>
 
@@ -10305,8 +10321,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             this.setLeftPos(leftPos);
             this.setRightPos(rightPos);
 
-            this.$.startTab.innerHTML = this.current.start.toISOString().split('T')[0];
-            this.$.endTab.innerHTML = this.current.end.toISOString().split('T')[0];
+            this.$.startTabDate.innerHTML = this.current.start.toISOString().split('T')[0];
+            this.$.endTabDate.innerHTML = this.current.end.toISOString().split('T')[0];
         },
 
         startDrag : function(e) {
@@ -10341,7 +10357,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
 
-            this.dragging.innerHTML = result.toISOString().split('T')[0];
+            this.$[this.dragging.getAttribute('id')+'Date'].innerHTML = result.toISOString().split('T')[0];
 
             if( this.dragging.getAttribute('id')== 'startTab' ) {
                 this.setLeftPos(pos);
@@ -10366,14 +10382,14 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             var cDay = Math.floor(this.numDays * (frontPos / this.cWidth));
             var result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
-            this.$.startTab.innerHTML = result.toISOString().split('T')[0];
+            this.$.startTabDate.innerHTML = result.toISOString().split('T')[0];
             this.current.start = result;
 
             //this.$.endTab.style.left = backPos+'px';
             cDay = Math.floor(this.numDays * (backPos / this.cWidth));
             result = new Date(this.startDate);
             result.setDate(this.startDate.getDate() + cDay);
-            this.$.endTab.innerHTML = result.toISOString().split('T')[0];
+            this.$.endTabDate.innerHTML = result.toISOString().split('T')[0];
             this.current.end = result;
         },
 
@@ -10394,7 +10410,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             else if( this.dragging.getAttribute('id') == 'endTab' ) this.current.end = result;
 
             if( this.dragging.getAttribute('id') != 'slider' ) {
-                this.dragging.innerHTML = result.toISOString().split('T')[0];
+                this.$[this.dragging.getAttribute('id')+'Date'].innerHTML = result.toISOString().split('T')[0];
             }
 
             this.dragging = null;
@@ -10404,13 +10420,11 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
         setLeftPos : function(pos) {
             this.$.startTab.style.left = pos + 'px';
-            this.$.startLine.style.left = pos + 'px';
             this.$.slider.style.left = pos + 'px';
         },
 
         setRightPos : function(pos) {
             this.$.endTab.style.left = pos + 'px';
-            this.$.endLine.style.left = pos + 'px';
 
             pos = this.cWidth - pos;
             this.$.slider.style.right = pos + 'px';
@@ -10447,6 +10461,68 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             }
             if( e.clientX !== undefined ) return e.clientX;
             return 0; // bad
+        },
+
+        setFeature : function(feature) {
+          if( feature ) this.feature = feature;
+          if( !this.feature ) return;
+
+          this._updateVisibility();
+        },
+
+        _updateVisibility : function() {
+          var respCount = 0;
+          var requestCount = 1;
+          var hasTimeBounds = false;
+          var hasRegionData = false;
+
+          function onResponse() {
+            respCount++;
+            if( respCount != requestCount ) return;
+
+            var show = false;
+            var extras = this.feature.properties.extras;
+            if( (extras && (extras.evaporation || extras.inflows || extras.flow)) || hasTimeBounds || hasRegionData ) {
+              show = true;
+            }
+
+            this.style.display = show ? 'block' : 'none';
+            if( show ) this.resize();
+          }
+
+          // how many requests are we making?
+          if( this.feature.properties.type == 'Region Link' ) requestCount++;
+          if( this.feature.properties.extras && this.feature.properties.extras.bounds ) requestCount++;
+
+          // grab the aggregate region link data
+          if( this.feature.properties.type == 'Region Link' ) {
+            CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp){
+              if( Object.keys(resp.origin.flows).length > 0 ) hasRegionData = true;
+              else if( Object.keys(resp.terminus.links).length > 0 ) hasRegionData = true;
+
+              onResponse.call(this);
+            }.bind(this));
+          }
+
+          // grab the bounds data
+          if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
+            CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+              if( !resp.bounds ) return;
+
+              for( var i = 0; i < resp.bounds.length; i++ ) {
+                if( resp.bounds[i].type == 'UBT' || resp.bounds[i].type == 'LBT' ||
+                    resp.bounds[i].type == 'EQC' || resp.bounds[i].type == 'EQT') {
+                  hasTimeBounds = true;
+                  break;
+                }
+              }
+
+              onResponse.call(this);
+            }.bind(this));
+          }
+
+          // first check
+          onResponse.call(this);
         }
     });
 </script>
@@ -11570,18 +11646,21 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                 </div>
               </div>
 
+              <div id="originExtra" style="text-align:right"></div>
 
               <template is="dom-repeat" items="{{origins}}">
                 <div style="text-align:right;margin-bottom:20px">
                   <div>
                     <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
 
-                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                      <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                    </a>
+                    <span hidden$="{{item.hideArrow}}">
+                      <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                        <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                      </a>
 
-                    <span hidden$="{{item.hasLink}}">
-                        <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      <span hidden$="{{item.hasLink}}">
+                          <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      </span>
                     </span>
 
                   </div>
@@ -11632,16 +11711,20 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
               </div>
             </div>
 
+            <div id="terminusExtra"></div>
+
             <template is="dom-repeat" items="{{terminals}}">
               <div style="margin-bottom:20px">
                 <div>
 
-                  <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                    <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                  </a>
+                  <span hidden$="{{item.hideArrow}}">
+                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                      <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                    </a>
 
-                  <span hidden$="{{item.hasLink}}">
-                      <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                    <span hidden$="{{item.hasLink}}">
+                        <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                    </span>
                   </span>
 
                   &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
@@ -11709,15 +11792,21 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
 
         if( this.feature.properties.type == 'Region Link') {
-          $(this).find('.node-info-header').css('visibility','hidden');
+          $(this).find('.node-info-header').css('display','none');
+          this.$.origin.style.marginTop = '30px';
+          this.$.terminal.style.marginTop = '30px';
         } else {
-          $(this).find('.node-info-header').css('visibility','visible');
+          $(this).find('.node-info-header').css('display','block');
+          this.$.origin.style.marginTop = '0';
+          this.$.terminal.style.marginTop = '0';
         }
 
         this.$.regions.update(this.feature);
 
         this.origins = [];
         this.terminals = [];
+        this.$.originExtra.innerHTML = '';
+        this.$.terminusExtra.innerHTML = '';
 
         var link, node, types = ['origins', 'terminals'];
         types.forEach(function(type){
@@ -11749,6 +11838,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
           this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+
             this.feature.properties.repo.github+'" target="_blank">'+
             '<i class="fa fa-github"></i> Show on GitHub</a>';
+        } else {
+          this.$.githubLink.innerHTML = '';
         }
 
         // stupid polymer hack! when will this stop!!!!!!!!!!
@@ -11847,17 +11938,28 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         this.origins.push({
             name: info.origin.links[i],
             hasLink : false,
+            hideArrow : true,
             link: '#info/'+info.origin.links[i],
             description: ''
         });
       }
+
+      if( info.origin.links.length > 0 ) {
+        this.$.originExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.terminus.replace(/_/g,' ')+'</h5>';
+      }
+
       for( var i = 0; i < info.terminus.links.length; i++ ) {
         this.terminals.push({
             name: info.terminus.links[i],
             hasLink : false,
+            hideArrow : true,
             link: '#info/'+info.terminus.links[i],
             description: ''
         });
+      }
+
+      if( info.terminus.links.length > 0 ) {
+        this.$.terminusExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.origin.replace(/_/g,' ')+'</h5>';
       }
 
       this.origins = $.extend(true, [], this.origins);
@@ -11928,10 +12030,6 @@ Polymer({
         feature : {
             type : Object,
             observer : 'update'
-        },
-        hasTimeSeries : {
-            type : Boolean,
-            notify : true
         }
     },
 
@@ -12189,117 +12287,6 @@ Polymer({
       return data.bound[index];
     },
 
-    /*renderBounds : function(bounds) {
-
-      if( bounds.constraint_type == 'Bounded' ) {
-        var length = this.getContraintsLength(bounds);
-        if( length < 12 ) length = 12;
-
-        for( var i = 0; i < length; i++ ) {
-          this.constraintChart.data.push(this.getConstraintRow(bounds, i));
-        }
-
-      } else if( bounds.constraint_type == 'Constrained' ) {
-
-        if( bounds.constraint.bound_type == 'Constant') {
-
-          this.constraintChart.constant = bounds.constraint.bound;
-
-        } else if( bounds.constraint.bound_type == 'Monthly') {
-
-          for( var i = 0; i < 12; i++ ) {
-            this.constraintChart.data.push([
-              this.months[i],
-              bounds.constraint.bound[i],
-              null,
-              null,
-              'Constrained: '+bounds.constraint.bound[i]
-            ]);
-          }
-
-        } if( bounds.constraint.bound_type == 'TimeSeries') {
-
-          this.constraintChart.isTimeSeries = true;
-          this.hasTimeSeries = true;
-          for( var i = 0; i < bounds.constraint.bound.length; i++ ) {
-            this.constraintChart.data.push([
-              bounds.constraint.date[i],
-              bounds.constraint.bound[i],
-              null,
-              null,
-              'Constrained: '+bounds.constraint.bound[i]
-            ]);
-          }
-
-        }
-
-      } else {
-        console.log('Unknown Constraint Type: '+bounds.constraint_type);
-      }
-
-      this.updateConstraintUi();
-    },
-
-    getConstraintRow : function(bounds, index) {
-      var row = [];
-
-      if( bounds.lower && bounds.lower.bound_type == 'TimeSeries' ) {
-        row.push(bounds.lower.date[index]);
-      } else if ( bounds.upper && bounds.upper.bound_type == 'TimeSeries' ) {
-        row.push(bounds.upper.date[index]);
-      } else {
-        row.push(this.months[index]);
-      }
-
-      var tooltip = row[0]+'\n';
-
-      if( bounds.upper ) {
-        if( bounds.upper.bound_type == 'Constant' ) {
-          row.push(bounds.upper.bound);
-          row.push(bounds.upper.bound);
-          tooltip += 'Upper: '+bounds.upper.bound;
-        } else if ( bounds.upper.bound_type == 'TimeSeries' || bounds.upper.bound_type == 'Monthly') {
-          var i = index;
-          if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
-            i = parseInt(row[0].split("-")[1])-1;
-          }
-
-          row.push(bounds.upper.bound[i]);
-          row.push(bounds.upper.bound[i]);
-          tooltip += 'Upper: '+bounds.upper.bound[i];
-        } else if ( bounds.upper.bound_type == 'None' ) {
-          tooltip += 'Upper: None';
-        }
-      }
-
-      if( bounds.lower ) {
-
-        if( bounds.lower.bound_type == 'Constant' ) {
-          row.push(bounds.lower.bound);
-          tooltip += ', Lower: '+bounds.lower.bound;
-        } else if ( bounds.lower.bound_type == 'TimeSeries' || bounds.lower.bound_type == 'Monthly' ) {
-          var i = index;
-          if( i > 11 && bounds.upper.bound_type == 'Monthly' ) {
-            i = parseInt(row[0].split("-")[1])-1;
-          }
-
-          row.push(bounds.lower.bound[i]);
-          tooltip += ', Lower: '+bounds.lower.bound[i];
-        } else if ( bounds.lower.bound_type == 'None' ) {
-          row.push(0);
-          tooltip += ', Lower: 0';
-        } else {
-           tooltip += ', Lower: Unknown';
-        }
-
-      }
-
-      while(row.length < 4) row.push(null);
-
-      row.push(tooltip);
-
-      return row;
-    },*/
 
     getContraintsLength : function(bounds) {
       var l = 0;
@@ -12440,42 +12427,37 @@ Polymer({
       },
 
       loadAggregate : function() {
-        $.get('/regions/aggregate?origin='+this.feature.properties.origin+'&terminus='+this.feature.properties.terminus,
-          function(resp1) {
-            $.get('/regions/aggregate?origin='+this.feature.properties.terminus+'&terminus='+this.feature.properties.origin,
-              function(resp2) {
-                this.$.loading.style.display = 'none';
-                var data = [[
-                  'date',
-                  this.feature.properties.origin+' to '+this.feature.properties.terminus,
-                  this.feature.properties.terminus+' to '+this.feature.properties.origin
-                ]];
+        CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
+          this.$.loading.style.display = 'none';
 
-                if( resp1.flows ) {
-                  for( var key in resp1.flows ) {
-                    data.push([key, resp1.flows[key] || 0, resp2.flows[key] || 0]);
-                  }
-                }
+          var data = [[
+            'date',
+            this.feature.properties.origin+' to '+this.feature.properties.terminus,
+            this.feature.properties.terminus+' to '+this.feature.properties.origin
+          ]];
 
-                this.data = {
-                  flow : data
-                }
-                this.renderFlow();
+          if( resp.origin.flows ) {
+            for( var key in resp.origin.flows ) {
+              data.push([key, resp.origin.flows[key] || 0, resp.terminus.flows[key] || 0]);
+            }
+          }
 
-                this.fire('region-link-update', {
-                  origin : {
-                    prmname : this.feature.properties.origin,
-                    links : resp1.links
-                  },
-                  terminus : {
-                    prmname : this.feature.properties.terminus,
-                    links : resp2.links
-                  }
-                });
+          this.data = {
+            flow : data
+          }
+          this.renderFlow();
 
-            }.bind(this));
-          }.bind(this)
-        );
+          this.fire('region-link-update', {
+            origin : {
+              prmname : this.feature.properties.origin,
+              links : resp.origin.links
+            },
+            terminus : {
+              prmname : this.feature.properties.terminus,
+              links : resp.terminus.links
+            }
+          });
+        }.bind(this));
       },
 
       load : function() {
@@ -12508,6 +12490,7 @@ Polymer({
       :host {
         display: block;
         overflow-x: hidden;
+        margin-bottom: 100px;
       }
       .card {
         margin: 10px 10px 10px 10px;
@@ -12523,13 +12506,7 @@ Polymer({
       </div>
 
       
-      <div id="dateRangeSlider">
-        <div style="padding:20px 50px 5px 50px">
-          <h4>Date Range</h4>
-          <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="updateDateFilters">
-          </cwn-dateslider>
-        </div>
-      </div>
+
 
       <div class="row" hidden$="{{loading}}">
         <div class="col-md-6">
@@ -12556,7 +12533,6 @@ Polymer({
                 <div id="inflowCharts"></div>
               </div>
 
-
               <div id="eacChartRoot"></div>
               <template id="eacChart" is="dom-template">
                 <h4>Elevation / Area / Capacity</h4>
@@ -12573,16 +12549,12 @@ Polymer({
           </div>
           
 
-          <div class="card">
-            <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
-          </div>
-
         </div>
         <div class="col-md-6">
 
           
           <div class="card">
-            <cwn-cost-info feature="{{feature}}" has-time-series="{{hasTimeSeries}}">
+            <cwn-cost-info feature="{{feature}}">
             </cwn-cost-info>
           </div>
           
@@ -12590,24 +12562,24 @@ Polymer({
         </div>
       </div>
 
+      <div class="card">
+        <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
+      </div>
+
       <div class="card" id="readme" style="display:none">
         <h4 class="page-header">README</h4>
         <div id="readmeMarkdown"></div>
       </div>
 
+      <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="updateDateFilters">
+      </cwn-dateslider>
+
 
     </template>
 </dom-module>
-<script>Polymer({
+<script>
+Polymer({
     is : 'cwn-info-page',
-
-    properties : {
-      hasTimeSeries : {
-        type : Boolean,
-        notify : true,
-        observer : 'updateDateSliderVisibility'
-      }
-    },
 
     ready : function() {
       this.feature = null;
@@ -12778,7 +12750,6 @@ Polymer({
       this.updateReadme();
 
       this.updateDateSliderVisibility();
-
       this.async(function(){
         this.$.dateslider.resize();
       });
@@ -12924,12 +12895,7 @@ Polymer({
     },
 
     updateDateSliderVisibility : function() {
-      var isRegionLink = false;
-      if( this.feature && this.feature.properties.type == 'Region Link' ) {
-        isRegionLink = true;
-      }
-
-      this.$.dateRangeSlider.style.display = (isRegionLink || this.hasOutputs || this.hasInflows || this.hasTimeSeries || this.hasEvaporation ) ? 'block' : 'none';
+      this.$.dateslider.setFeature(this.feature);
     },
 
     stampEacChart : function() {
@@ -12954,7 +12920,6 @@ Polymer({
     onRegionLinkUpdate : function(e) {
       this.$.nodeInfo.setRegionLinkInfo(e.detail);
     }
-
 });
 </script>
 <dom-module id="cwn-graph" assetpath="/public/elements/">
@@ -14591,7 +14556,7 @@ Polymer({
 
         setPage : function() {
           for( var key in this.PAGES ) {
-            if( this.selectedPage == this.PAGES[key] ) $(this.$[key]).show();
+            if( this.selectedPage == this.PAGES[key] ) this.$[key].style.display = 'block';
             else $(this.$[key]).hide();
           }
         },
