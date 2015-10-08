@@ -56,3 +56,10 @@ repository on the filesystem.
 ```
 node lib/cmd -m network -f dumpLocation
 ```
+
+#### Aggregate
+Aggregate flow data between a node and a region or two regions
+
+```
+node lib/cmd -m regions -f aggregate [origin prmname] [terminal prmname]
+```
