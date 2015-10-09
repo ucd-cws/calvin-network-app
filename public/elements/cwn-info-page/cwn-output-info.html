@@ -34,6 +34,10 @@
         } else if( this.feature.properties.type == 'Region Link' ) {
           $(this).parent().show();
           this.$.loading.style.display = 'block';
+          this.loadLinkAggregate();
+       } else if( this.feature.properties.type == 'Region' ) {
+          $(this).parent().show();
+          this.$.loading.style.display = 'block';
           this.loadAggregate();
         } else {
           $(this).parent().hide();
@@ -42,13 +46,33 @@
       },
 
       loadAggregate : function() {
+        CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp) {
+          this.$.loading.style.display = 'none';
+
+          var data = [['date','kaf']];
+
+          if( resp.flow ) {
+            for( var key in resp.flow ) {
+              data.push([key, resp.flow[key] || 0]);
+            }
+          }
+
+          this.data = {
+            flow : data
+          }
+          this.renderFlow();
+        }.bind(this));
+      },
+
+      loadLinkAggregate : function() {
+        // TODO: include units in aggregate response
         CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
           this.$.loading.style.display = 'none';
 
           var data = [[
             'date',
-            this.feature.properties.origin+' to '+this.feature.properties.terminus,
-            this.feature.properties.terminus+' to '+this.feature.properties.origin
+            this.feature.properties.origin+' to '+this.feature.properties.terminus+' (kaf)',
+            this.feature.properties.terminus+' to '+this.feature.properties.origin+' (kaf)'
           ]];
 
           if( resp.origin.flow ) {

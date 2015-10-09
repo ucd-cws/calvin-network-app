@@ -124,14 +124,80 @@ Polymer({
     },
 
     setFeature : function(prmname) {
+      if( this.prmname == prmname ) return;
+      if( prmname ) this.prmname = prmname;
+
       if( CWN.ds.lookupMap[prmname] ) {
         this.feature = CWN.ds.lookupMap[prmname];
+      } else if( CWN.ds.regionLookupMap[prmname] ) {
+        this.setRegion(prmname);
       } else {
         // see if this is a region to feature
         this.setRegionToRegion(prmname);
       }
 
       this.update();
+    },
+
+    setRegion : function(prmname) {
+      var region = CWN.ds.regionLookupMap[prmname];
+
+      var nodes = [];
+      var origins = [];
+      var terminals = [];
+      var node;
+
+      for( var key in CWN.ds.lookupMap ) {
+        node = CWN.ds.lookupMap[key].properties;
+        if( !node ) continue;
+
+        if( node.type !== 'Diversion' && node.type !== 'Return Flow' ) {
+          if( node.regions && node.regions.indexOf(prmname) > -1 ) {
+            nodes.push(node.prmname);
+          }
+        }
+      }
+
+      for( var key in CWN.ds.lookupMap ) {
+        node = CWN.ds.lookupMap[key].properties;
+        if( !node ) continue;
+        if( node.type === 'Diversion' || node.type === 'Return Flow' ) {
+          var index = nodes.indexOf(node.origin);
+          if( index > -1 ) {
+            origins.push({
+              link_prmname : node.prmname,
+              prmname : nodes[index]
+            });
+            continue;
+          }
+
+          var index = nodes.indexOf(node.terminus);
+          if( index > -1 ) {
+            terminals.push({
+              link_prmname : node.prmname,
+              prmname : nodes[index]
+            });
+          }
+        }
+      }
+
+
+      this.feature = {
+        properties : {
+          prmname : prmname,
+          type : 'Region',
+          nodes : nodes,
+          origins : origins,
+          terminals : terminals,
+          parents : region.parents,
+          subregions : region.subregions,
+          repo : region.geo.properties.repo,
+          label : region.geo.properties.name,
+          description : region.geo.properties.region
+        }
+      };
+
+      console.log(this.feature);
     },
 
     setRegionToRegion : function(prmname) {

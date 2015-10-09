@@ -18,7 +18,7 @@ module.exports = function(dir, callback) {
   git.info(dir, function(gitInfo) {
     console.log(gitInfo);
 
-    var ca = new Region(dir);
+    var ca = new Region(dir, null, gitInfo.branch);
     ca.name = 'California';
 
     var json = ca.toJSON();

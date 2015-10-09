@@ -10,6 +10,7 @@
         <canvas id="canvas"></canvas>
         <i id="icon" class="fa fa-long-arrow-right" style="vertical-align:super"></i>
         <i id="regionLinkIcon" class="fa fa-exchange" style="vertical-align:super"></i>
+        <span id="regionIcon" style="vertical-align:super">&#931;<i id="regionIconSub" style="vertical-align:bottom">i</i></span>
     </template>
 </dom-module>
 
@@ -68,24 +69,26 @@
 
             this.$.icon.style.fontSize = this.fontSize+'px';
             this.$.regionLinkIcon.style.fontSize = this.fontSize+'px';
+            this.$.regionIcon.style.fontSize = this.fontSize+'px';
+            this.$.regionIconSub.style.fontSize = Math.ceil(this.fontSize*.6)+'px';
         },
 
         onTypeChange : function() {
-            if( this.type == 'Diversion' || this.type == 'Return Flow' ) {
-                $(this.$.canvas).hide();
-                $(this.$.regionLinkIcon).hide();
-                $(this.$.icon).show();
-            } else if( this.type == 'Region Link' ) {
-              $(this.$.canvas).hide();
-              $(this.$.regionLinkIcon).show();
-              $(this.$.icon).hide();
-            } else {
-                $(this.$.icon).hide();
-                $(this.$.regionLinkIcon).hide();
-                $(this.$.canvas).show();
-                this.redraw();
-            }
+          $(this.$.canvas).hide();
+          $(this.$.regionLinkIcon).hide();
+          $(this.$.regionIcon).hide();
+          $(this.$.icon).hide();
 
+          if( this.type == 'Diversion' || this.type == 'Return Flow' ) {
+            $(this.$.icon).show();
+          } else if( this.type == 'Region Link' ) {
+            $(this.$.regionLinkIcon).show();
+          } else if( this.type == 'Region' ) {
+            $(this.$.regionIcon).show();
+          } else {
+            $(this.$.canvas).show();
+            this.redraw();
+          }
         },
 
         redraw : function() {

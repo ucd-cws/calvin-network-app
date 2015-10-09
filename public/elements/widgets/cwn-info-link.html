@@ -34,7 +34,6 @@
 
         properties : {
             prmname : {
-              notify : true,
               type : String,
               observer : 'update'
             }
@@ -55,7 +54,12 @@
         },
 
         attached : function() {
-          CWN.ds.on('load', this.update.bind(this));
+          if( !this.prmname && this.getAttribute('prmname') ) {
+            this.prmname = this.getAttribute('prmname');
+          }
+
+          if( CWN.ds.loading ) CWN.ds.on('load', this.update.bind(this));
+          else this.update();
         },
 
         update : function() {

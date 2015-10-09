@@ -44,11 +44,13 @@ Polymer({
           this.$.label.innerHTML = this.feature.properties.origin.replace(/_/g, ' ')+' <small>to</small> '+this.feature.properties.terminus.replace(/_/g, ' ');
         } else if( this.feature.properties.type == 'Region Link') {
           this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to/from</small> ').replace(/_/g, ' ');
+        } else if( this.feature.properties.type == 'Region') {
+          this.$.label.innerHTML = this.feature.properties.label;
         } else {
           this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' ');
         }
 
-        if( this.feature.properties.type == 'Region Link') {
+        if( this.feature.properties.type == 'Region Link' ) {
           $(this).find('.node-info-header').css('display','none');
           this.$.origin.style.marginTop = '30px';
           this.$.terminal.style.marginTop = '30px';
@@ -57,6 +59,15 @@ Polymer({
           this.$.origin.style.marginTop = '0';
           this.$.terminal.style.marginTop = '0';
         }
+
+        if( this.feature.properties.type == 'Region' ) {
+          $(this).find('.node-info-list').addClass('overflow');
+          this.renderRegionNodes();
+        } else {
+          $(this).find('.node-info-list').removeClass('overflow');
+          this.$.regionNodes.innerHTML = '';
+        }
+
 
         this.$.regions.update(this.feature);
 
@@ -80,8 +91,8 @@ Polymer({
                   description: node ? node.properties.description : ''
                 });
               } else {
-                this.origins.push({
-                    name: this.feature.properties.origins[i].prmname,
+                this[type].push({
+                    name: this.feature.properties[type][i].prmname,
                     hasLink : false,
                     link: '',
                     description: ''
@@ -145,6 +156,37 @@ Polymer({
         }
     },
 
+    renderRegionNodes : function() {
+      var cols = ['','',''], col, node, c = 0;
+      for( var i = 0; i < this.feature.properties.nodes.length; i++ ) {
+        col = c % 3;
+
+        node = CWN.ds.lookupMap[this.feature.properties.nodes[i]];
+        if( !node ) continue;
+
+        cols[col] +=
+          '<cwn-info-link prmname="'+node.properties.prmname+'"></cwn-info-link>'+
+          '<div class="info-block" style="margin-bottom: 15px">'+(node.properties.description || '')+'</div>';
+        c++;
+      }
+
+      this.$.regionNodes.innerHTML =
+        '<div><a class="btn btn-link btn-toggle">Node List</a></div>'+
+        '<div class="well" style="display:none">'+
+          '<div class="row">'+
+            '<div class="col-sm-4">'+
+              cols.join('</div><div class="col-sm-4"')+
+            '</div>'+
+          '</div>'+
+        '</div>';
+
+      $(this.$.regionNodes)
+        .find('.btn-toggle')
+        .on('click', function(){
+          $(this.$.regionNodes).find('.well').toggle('slow');
+        }.bind(this));
+    },
+
     onTerminalUpdate : function() {
         if( !CWN.ds ) return;
 
@@ -167,7 +209,7 @@ Polymer({
 
         if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
           this.showNavLinks = false;
-        } else if( this.feature.properties.type == 'Region Link' ) {
+        } else if( this.feature.properties.type == 'Region Link' || this.feature.properties.type == 'Region' ) {
           this.showNavLinks = false;
         }
     },

@@ -23,6 +23,10 @@
         [hidden] {
           display:none;
         }
+        .overflow {
+          max-height: 300px;
+          overflow: auto;
+        }
     </style>
 
     <template>
@@ -46,25 +50,27 @@
 
               <div id="originExtra" style="text-align:right"></div>
 
-              <template is="dom-repeat" items="{{origins}}">
-                <div style="text-align:right;margin-bottom:20px">
-                  <div>
-                    <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
+              <div class="node-info-list">
+                <template is="dom-repeat" items="{{origins}}">
+                  <div style="text-align:right;margin-bottom:20px">
+                    <div>
+                      <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
 
-                    <span hidden$="{{item.hideArrow}}">
-                      <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                        <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                      </a>
+                      <span hidden$="{{item.hideArrow}}">
+                        <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                          <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                        </a>
 
-                      <span hidden$="{{item.hasLink}}">
-                          <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                        <span hidden$="{{item.hasLink}}">
+                            <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                        </span>
                       </span>
-                    </span>
 
+                    </div>
+                    <div class="description" hidden$="{{!item.description}}" style="margin-right: 55px">{{item.description}}</div>
                   </div>
-                  <div class="description" hidden$="{{!item.description}}" style="margin-right: 55px">{{item.description}}</div>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
           </div>
           <!-- End Origins -->
@@ -91,14 +97,7 @@
                   <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
                 </div>
                 <div id="githubLink"></div>
-                <!--
-                <div hidden$="{{!islocal}}">
-                    <div>
-                      <a class="btn btn-link" href="{{editUrl}}">
-                      <i class="fa fa-pencil"></i> Edit</a>
-                    </div>
-                </div>
-              -->
+
               </div>
           </div>
           <!-- End Feature -->
@@ -118,32 +117,36 @@
 
             <div id="terminusExtra"></div>
 
-            <template is="dom-repeat" items="{{terminals}}">
-              <div style="margin-bottom:20px">
-                <div>
+            <div class="node-info-list">
+              <template is="dom-repeat" items="{{terminals}}">
+                <div style="margin-bottom:20px">
+                  <div>
 
-                  <span hidden$="{{item.hideArrow}}">
-                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                      <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                    </a>
+                    <span hidden$="{{item.hideArrow}}">
+                      <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                        <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                      </a>
 
-                    <span hidden$="{{item.hasLink}}">
-                        <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      <span hidden$="{{item.hasLink}}">
+                          <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      </span>
                     </span>
-                  </span>
 
-                  &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
+                    &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
 
+                  </div>
+                  <div hidden$="{{!item.description}}">
+                    <div class="description" style="margin-left: 55px">{{item.description}}</div>
+                  </div>
                 </div>
-                <div hidden$="{{!item.description}}">
-                  <div class="description" style="margin-left: 55px">{{item.description}}</div>
-                </div>
-              </div>
-            </template>
+              </template>
+            </div>
           </div>
           <!-- End Terminals -->
 
         </div>
+
+        <div id="regionNodes"></div>
     </template>
 </dom-module>
 <script src="controller.js"></script>
