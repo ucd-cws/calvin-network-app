@@ -12,7 +12,7 @@ addEventListener('DOMContentLoaded', resolve);
 }
 }
 }());
-Polymer = {
+window.Polymer = {
 Settings: function () {
 var user = window.Polymer || {};
 location.search.slice(1).split('&').forEach(function (o) {
@@ -40,15 +40,21 @@ useNativeCustomElements: useNativeCustomElements
 (function () {
 var userPolymer = window.Polymer;
 window.Polymer = function (prototype) {
-var ctor = desugar(prototype);
-prototype = ctor.prototype;
+if (typeof prototype === 'function') {
+prototype = prototype.prototype;
+}
+if (!prototype) {
+prototype = {};
+}
+var factory = desugar(prototype);
+prototype = factory.prototype;
 var options = { prototype: prototype };
 if (prototype.extends) {
 options.extends = prototype.extends;
 }
 Polymer.telemetry._registrate(prototype);
 document.registerElement(prototype.is, options);
-return ctor;
+return factory;
 };
 var desugar = function (prototype) {
 var base = Polymer.Base;
@@ -87,12 +93,46 @@ get: function () {
 return (document._currentScript || document.currentScript).ownerDocument;
 }
 });
+Polymer.RenderStatus = {
+_ready: false,
+_callbacks: [],
+whenReady: function (cb) {
+if (this._ready) {
+cb();
+} else {
+this._callbacks.push(cb);
+}
+},
+_makeReady: function () {
+this._ready = true;
+this._callbacks.forEach(function (cb) {
+cb();
+});
+this._callbacks = [];
+},
+_catchFirstRender: function () {
+requestAnimationFrame(function () {
+Polymer.RenderStatus._makeReady();
+});
+}
+};
+if (window.HTMLImports) {
+HTMLImports.whenReady(function () {
+Polymer.RenderStatus._catchFirstRender();
+});
+} else {
+Polymer.RenderStatus._catchFirstRender();
+}
+Polymer.ImportStatus = Polymer.RenderStatus;
+Polymer.ImportStatus.whenLoaded = Polymer.ImportStatus.whenReady;
 Polymer.Base = {
 __isPolymerInstance__: true,
 _addFeature: function (feature) {
 this.extend(this, feature);
 },
 registerCallback: function () {
+this._desugarBehaviors();
+this._doBehavior('beforeRegister');
 this._registerFeatures();
 this._doBehavior('registered');
 },
@@ -103,16 +143,21 @@ this._doBehavior('created');
 this._initFeatures();
 },
 attachedCallback: function () {
+Polymer.RenderStatus.whenReady(function () {
 this.isAttached = true;
 this._doBehavior('attached');
+}.bind(this));
 },
 detachedCallback: function () {
 this.isAttached = false;
 this._doBehavior('detached');
 },
 attributeChangedCallback: function (name) {
-this._setAttributeToProperty(this, name);
+this._attributeChangedImpl(name);
 this._doBehavior('attributeChanged', arguments);
+},
+_attributeChangedImpl: function (name) {
+this._setAttributeToProperty(this, name);
 },
 extend: function (prototype, api) {
 if (prototype && api) {
@@ -171,6 +216,10 @@ return Boolean(obj && obj.__isPolymerInstance__);
 Polymer.telemetry.instanceCount = 0;
 (function () {
 var modules = {};
+var lcModules = {};
+var findModule = function (id) {
+return modules[id] || lcModules[id.toLowerCase()];
+};
 var DomModule = function () {
 return document.createElement('dom-module');
 };
@@ -185,34 +234,31 @@ var id = id || this.id || this.getAttribute('name') || this.getAttribute('is');
 if (id) {
 this.id = id;
 modules[id] = this;
+lcModules[id.toLowerCase()] = this;
 }
 },
 import: function (id, selector) {
-var m = modules[id];
+if (id) {
+var m = findModule(id);
 if (!m) {
 forceDocumentUpgrade();
-m = modules[id];
+m = findModule(id);
 }
 if (m && selector) {
 m = m.querySelector(selector);
 }
 return m;
 }
+}
 });
 var cePolyfill = window.CustomElements && !CustomElements.useNative;
-if (cePolyfill) {
-var ready = CustomElements.ready;
-CustomElements.ready = true;
-}
 document.registerElement('dom-module', DomModule);
-if (cePolyfill) {
-CustomElements.ready = ready;
-}
 function forceDocumentUpgrade() {
 if (cePolyfill) {
 var script = document._currentScript || document.currentScript;
-if (script) {
-CustomElements.upgradeAll(script.ownerDocument);
+var doc = script && script.ownerDocument;
+if (doc) {
+CustomElements.upgradeAll(doc);
 }
 }
 }
@@ -226,15 +272,24 @@ var id = module.id || module.getAttribute('name') || module.getAttribute('is');
 this.is = id;
 }
 }
+if (this.is) {
+this.is = this.is.toLowerCase();
+}
 }
 });
 Polymer.Base._addFeature({
 behaviors: [],
-_prepBehaviors: function () {
+_desugarBehaviors: function () {
 if (this.behaviors.length) {
-this.behaviors = this._flattenBehaviorsList(this.behaviors);
+this.behaviors = this._desugarSomeBehaviors(this.behaviors);
 }
-this._prepAllBehaviors(this.behaviors);
+},
+_desugarSomeBehaviors: function (behaviors) {
+behaviors = this._flattenBehaviorsList(behaviors);
+for (var i = behaviors.length - 1; i >= 0; i--) {
+this._mixinBehavior(behaviors[i]);
+}
+return behaviors;
 },
 _flattenBehaviorsList: function (behaviors) {
 var flat = [];
@@ -248,15 +303,6 @@ this._warn(this._logf('_flattenBehaviorsList', 'behavior is null, check for miss
 }
 }, this);
 return flat;
-},
-_prepAllBehaviors: function (behaviors) {
-for (var i = behaviors.length - 1; i >= 0; i--) {
-this._mixinBehavior(behaviors[i]);
-}
-for (var i = 0, l = behaviors.length; i < l; i++) {
-this._prepBehavior(behaviors[i]);
-}
-this._prepBehavior(this);
 },
 _mixinBehavior: function (b) {
 Object.getOwnPropertyNames(b).forEach(function (n) {
@@ -280,6 +326,15 @@ this.copyOwnProperty(n, b, this);
 break;
 }
 }, this);
+},
+_prepBehaviors: function () {
+this._prepFlattenedBehaviors(this.behaviors);
+},
+_prepFlattenedBehaviors: function (behaviors) {
+for (var i = 0, l = behaviors.length; i < l; i++) {
+this._prepBehavior(behaviors[i]);
+}
+this._prepBehavior(this);
 },
 _doBehavior: function (name, args) {
 this.behaviors.forEach(function (b) {
@@ -513,7 +568,7 @@ debouncer.stop();
 }
 }
 });
-Polymer.version = '1.0.8';
+Polymer.version = '1.1.5';
 Polymer.Base._addFeature({
 _registerFeatures: function () {
 this._prepIs();
@@ -538,6 +593,10 @@ _prepTemplate: function () {
 this._template = this._template || Polymer.DomModule.import(this.is, 'template');
 if (this._template && this._template.hasAttribute('is')) {
 this._warn(this._logf('_prepTemplate', 'top-level Polymer template ' + 'must not be a type-extension, found', this._template, 'Move inside simple <template>.'));
+}
+if (this._template && !this._template.content && HTMLTemplateElement.bootstrap) {
+HTMLTemplateElement.decorate(this._template);
+HTMLTemplateElement.bootstrap(this._template.content);
 }
 },
 _stampTemplate: function () {
@@ -959,6 +1018,14 @@ if (this.patch) {
 this.patch();
 }
 };
+if (window.wrap && Settings.useShadow && !Settings.useNativeShadow) {
+DomApi = function (node) {
+this.node = wrap(node);
+if (this.patch) {
+this.patch();
+}
+};
+}
 DomApi.prototype = {
 flush: function () {
 Polymer.dom.flush();
@@ -970,42 +1037,43 @@ Polymer.dom.addDebouncer(host.debounce('_distribute', host._distributeContent));
 }
 },
 appendChild: function (node) {
-var handled;
-this._removeNodeFromHost(node, true);
-if (this._nodeIsInLogicalTree(this.node)) {
-this._addLogicalInfo(node, this.node);
-this._addNodeToHost(node);
-handled = this._maybeDistribute(node, this.node);
-}
-if (!handled && !this._tryRemoveUndistributedNode(node)) {
-var container = this.node._isShadyRoot ? this.node.host : this.node;
-addToComposedParent(container, node);
-nativeAppendChild.call(container, node);
-}
-return node;
+return this._addNode(node);
 },
 insertBefore: function (node, ref_node) {
-if (!ref_node) {
-return this.appendChild(node);
-}
-var handled;
+return this._addNode(node, ref_node);
+},
+_addNode: function (node, ref_node) {
 this._removeNodeFromHost(node, true);
-if (this._nodeIsInLogicalTree(this.node)) {
-saveLightChildrenIfNeeded(this.node);
+var addedInsertionPoint;
+var root = this.getOwnerRoot();
+if (root) {
+addedInsertionPoint = this._maybeAddInsertionPoint(node, this.node);
+}
+if (this._nodeHasLogicalChildren(this.node)) {
+if (ref_node) {
 var children = this.childNodes;
 var index = children.indexOf(ref_node);
 if (index < 0) {
 throw Error('The ref_node to be inserted before is not a child ' + 'of this node');
 }
-this._addLogicalInfo(node, this.node, index);
-this._addNodeToHost(node);
-handled = this._maybeDistribute(node, this.node);
 }
-if (!handled && !this._tryRemoveUndistributedNode(node)) {
+this._addLogicalInfo(node, this.node, index);
+}
+this._addNodeToHost(node);
+if (!this._maybeDistribute(node, this.node) && !this._tryRemoveUndistributedNode(node)) {
+if (ref_node) {
 ref_node = ref_node.localName === CONTENT ? this._firstComposedNode(ref_node) : ref_node;
+}
 var container = this.node._isShadyRoot ? this.node.host : this.node;
 addToComposedParent(container, node, ref_node);
+if (ref_node) {
 nativeInsertBefore.call(container, node, ref_node);
+} else {
+nativeAppendChild.call(container, node);
+}
+}
+if (addedInsertionPoint) {
+this._updateInsertionPoints(root.host);
 }
 return node;
 },
@@ -1013,12 +1081,8 @@ removeChild: function (node) {
 if (factory(node).parentNode !== this.node) {
 console.warn('The node to be removed is not a child of this node', node);
 }
-var handled;
-if (this._nodeIsInLogicalTree(this.node)) {
 this._removeNodeFromHost(node);
-handled = this._maybeDistribute(node, this.node);
-}
-if (!handled) {
+if (!this._maybeDistribute(node, this.node)) {
 var container = this.node._isShadyRoot ? this.node.host : this.node;
 if (container === node.parentNode) {
 removeFromComposedParent(container, node);
@@ -1031,6 +1095,9 @@ replaceChild: function (node, ref_node) {
 this.insertBefore(node, ref_node);
 this.removeChild(ref_node);
 return node;
+},
+_hasCachedOwnerRoot: function (node) {
+return Boolean(node._ownerShadyRoot !== undefined);
 },
 getOwnerRoot: function () {
 return this._ownerShadyRootForNode(this.node);
@@ -1063,7 +1130,6 @@ if (hasContent) {
 var root = this._ownerShadyRootForNode(parent);
 if (root) {
 var host = root.host;
-this._updateInsertionPoints(host);
 this._lazyDistribute(host);
 }
 }
@@ -1073,19 +1139,44 @@ this._lazyDistribute(parent);
 }
 return parentNeedsDist || hasContent && !wrappedContent;
 },
+_maybeAddInsertionPoint: function (node, parent) {
+var added;
+if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE && !node.__noContent) {
+var c$ = factory(node).querySelectorAll(CONTENT);
+for (var i = 0, n, np, na; i < c$.length && (n = c$[i]); i++) {
+np = factory(n).parentNode;
+if (np === node) {
+np = parent;
+}
+na = this._maybeAddInsertionPoint(n, np);
+added = added || na;
+}
+} else if (node.localName === CONTENT) {
+saveLightChildrenIfNeeded(parent);
+saveLightChildrenIfNeeded(node);
+added = true;
+}
+return added;
+},
 _tryRemoveUndistributedNode: function (node) {
 if (this.node.shadyRoot) {
-if (node._composedParent) {
-nativeRemoveChild.call(node._composedParent, node);
+var parent = getComposedParent(node);
+if (parent) {
+nativeRemoveChild.call(parent, node);
 }
 return true;
 }
 },
 _updateInsertionPoints: function (host) {
-host.shadyRoot._insertionPoints = factory(host.shadyRoot).querySelectorAll(CONTENT);
+var i$ = host.shadyRoot._insertionPoints = factory(host.shadyRoot).querySelectorAll(CONTENT);
+for (var i = 0, c; i < i$.length; i++) {
+c = i$[i];
+saveLightChildrenIfNeeded(c);
+saveLightChildrenIfNeeded(factory(c).parentNode);
+}
 },
-_nodeIsInLogicalTree: function (node) {
-return Boolean(node._lightParent !== undefined || node._isShadyRoot || this._ownerShadyRootForNode(node) || node.shadyRoot);
+_nodeHasLogicalChildren: function (node) {
+return Boolean(node._lightChildren !== undefined);
 },
 _parentNeedsDistribution: function (parent) {
 return parent && parent.shadyRoot && hasInsertionPoint(parent.shadyRoot);
@@ -1095,6 +1186,7 @@ var hostNeedsDist;
 var root;
 var parent = node._lightParent;
 if (parent) {
+factory(node)._distributeParent();
 root = this._ownerShadyRootForNode(node);
 if (root) {
 root.host._elementRemove(node);
@@ -1107,7 +1199,7 @@ if (root && hostNeedsDist) {
 this._updateInsertionPoints(root.host);
 this._lazyDistribute(root.host);
 } else if (ensureComposedRemoval) {
-removeFromComposedParent(parent || node.parentNode, node);
+removeFromComposedParent(getComposedParent(node), node);
 }
 },
 _removeDistributedChildren: function (root, container) {
@@ -1139,14 +1231,12 @@ node = factory(node).parentNode;
 }
 },
 _addNodeToHost: function (node) {
-var checkNode = node.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? node.firstChild : node;
-var root = this._ownerShadyRootForNode(checkNode);
+var root = this.getOwnerRoot();
 if (root) {
 root.host._elementAdd(node);
 }
 },
 _addLogicalInfo: function (node, container, index) {
-saveLightChildrenIfNeeded(container);
 var children = factory(container).childNodes;
 index = index === undefined ? children.length : index;
 if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
@@ -1170,8 +1260,7 @@ children.splice(index, 1);
 node._lightParent = null;
 },
 _removeOwnerShadyRoot: function (node) {
-var hasCachedRoot = factory(node).getOwnerRoot() !== undefined;
-if (hasCachedRoot) {
+if (this._hasCachedOwnerRoot(node)) {
 var c$ = factory(node).childNodes;
 for (var i = 0, l = c$.length, n; i < l && (n = c$[i]); i++) {
 this._removeOwnerShadyRoot(n);
@@ -1334,7 +1423,7 @@ configurable: true
 },
 parentNode: {
 get: function () {
-return this.node._lightParent || (this.node.__patched ? this.node._composedParent : this.node.parentNode);
+return this.node._lightParent || getComposedParent(this.node);
 },
 configurable: true
 },
@@ -1456,6 +1545,18 @@ DomApi.prototype._getComposedInnerHTML = function () {
 return getInnerHTML(this.node, true);
 };
 } else {
+var forwardMethods = [
+'cloneNode',
+'appendChild',
+'insertBefore',
+'removeChild',
+'replaceChild'
+];
+forwardMethods.forEach(function (name) {
+DomApi.prototype[name] = function () {
+return this.node[name].apply(this.node, arguments);
+};
+});
 DomApi.prototype.querySelectorAll = function (selector) {
 return Array.prototype.slice.call(this.node.querySelectorAll(selector));
 };
@@ -1467,9 +1568,6 @@ return n;
 }
 n = n.parentNode;
 }
-};
-DomApi.prototype.cloneNode = function (deep) {
-return this.node.cloneNode(deep);
 };
 DomApi.prototype.importNode = function (externalNode, deep) {
 var doc = this.node instanceof Document ? this.node : this.node.ownerDocument;
@@ -1517,7 +1615,7 @@ return this.node.innerHTML = value;
 configurable: true
 }
 });
-var forwards = [
+var forwardProperties = [
 'parentNode',
 'firstChild',
 'lastChild',
@@ -1528,7 +1626,7 @@ var forwards = [
 'nextElementSibling',
 'previousElementSibling'
 ];
-forwards.forEach(function (name) {
+forwardProperties.forEach(function (name) {
 Object.defineProperty(DomApi.prototype, name, {
 get: function () {
 return this.node[name];
@@ -1612,6 +1710,9 @@ node._composedChildren = null;
 addNodeToComposedChildren(node, parent, children, i);
 }
 }
+function getComposedParent(node) {
+return node.__patched ? node._composedParent : node.parentNode;
+}
 function addNodeToComposedChildren(node, parent, children, i) {
 node._composedParent = parent;
 children.splice(i >= 0 ? i : children.length, 0, node);
@@ -1636,12 +1737,13 @@ node._lightChildren = c$;
 }
 }
 function hasInsertionPoint(root) {
-return Boolean(root._insertionPoints.length);
+return Boolean(root && root._insertionPoints.length);
 }
 var p = Element.prototype;
 var matchesSelector = p.matches || p.matchesSelector || p.mozMatchesSelector || p.msMatchesSelector || p.oMatchesSelector || p.webkitMatchesSelector;
 return {
 getLightChildren: getLightChildren,
+getComposedParent: getComposedParent,
 getComposedChildren: getComposedChildren,
 removeFromComposedParent: removeFromComposedParent,
 saveLightChildrenIfNeeded: saveLightChildrenIfNeeded,
@@ -1674,8 +1776,13 @@ this.shadyRoot = this.root;
 this.shadyRoot._distributionClean = false;
 this.shadyRoot._isShadyRoot = true;
 this.shadyRoot._dirtyRoots = [];
-this.shadyRoot._insertionPoints = !this._notes || this._notes._hasContent ? this.shadyRoot.querySelectorAll('content') : [];
+var i$ = this.shadyRoot._insertionPoints = !this._notes || this._notes._hasContent ? this.shadyRoot.querySelectorAll('content') : [];
 saveLightChildrenIfNeeded(this.shadyRoot);
+for (var i = 0, c; i < i$.length; i++) {
+c = i$[i];
+saveLightChildrenIfNeeded(c);
+saveLightChildrenIfNeeded(c.parentNode);
+}
 this.shadyRoot.host = this;
 },
 get domHost() {
@@ -1825,7 +1932,9 @@ var composed = getComposedChildren(container);
 var splices = Polymer.ArraySplice.calculateSplices(children, composed);
 for (var i = 0, d = 0, s; i < splices.length && (s = splices[i]); i++) {
 for (var j = 0, n; j < s.removed.length && (n = s.removed[j]); j++) {
+if (getComposedParent(n) === container) {
 remove(n);
+}
 composed.splice(s.index + d, 1);
 }
 d -= s.addedCount;
@@ -1838,6 +1947,7 @@ insertBefore(container, n, next);
 composed.splice(j, 0, n);
 }
 }
+ensureComposedParent(container, children);
 },
 _matchesContentSelect: function (node, contentElement) {
 var select = contentElement.getAttribute('select');
@@ -1867,6 +1977,7 @@ var getLightChildren = Polymer.DomApi.getLightChildren;
 var matchesSelector = Polymer.DomApi.matchesSelector;
 var hasInsertionPoint = Polymer.DomApi.hasInsertionPoint;
 var getComposedChildren = Polymer.DomApi.getComposedChildren;
+var getComposedParent = Polymer.DomApi.getComposedParent;
 var removeFromComposedParent = Polymer.DomApi.removeFromComposedParent;
 function distributeNodeInto(child, insertionPoint) {
 insertionPoint._distributedNodes.push(child);
@@ -1910,20 +2021,20 @@ if (newChildParent !== parentNode) {
 removeFromComposedParent(newChildParent, newChild);
 }
 remove(newChild);
-saveLightChildrenIfNeeded(parentNode);
 nativeInsertBefore.call(parentNode, newChild, refChild || null);
 newChild._composedParent = parentNode;
 }
 function remove(node) {
 var parentNode = getComposedParent(node);
 if (parentNode) {
-saveLightChildrenIfNeeded(parentNode);
 node._composedParent = null;
 nativeRemoveChild.call(parentNode, node);
 }
 }
-function getComposedParent(node) {
-return node.__patched ? node._composedParent : node.parentNode;
+function ensureComposedParent(parent, children) {
+for (var i = 0, n; i < children.length; i++) {
+children[i]._composedParent = parent;
+}
 }
 function getTopDistributingHost(host) {
 while (host && hostNeedsRedistribution(host)) {
@@ -2215,7 +2326,11 @@ if (!this._template) {
 this._notes = [];
 } else {
 Polymer.Annotations.prepElement = this._prepElement.bind(this);
+if (this._template._content && this._template._content._notes) {
+this._notes = this._template._content._notes;
+} else {
 this._notes = Polymer.Annotations.parseAnnotations(this._template);
+}
 this._processAnnotations(this._notes);
 Polymer.Annotations.prepElement = null;
 }
@@ -2332,7 +2447,15 @@ this.listen(node, name, listeners[key]);
 }
 },
 listen: function (node, eventName, methodName) {
-this._listen(node, eventName, this._createEventHandler(node, eventName, methodName));
+var handler = this._recallEventHandler(this, eventName, node, methodName);
+if (!handler) {
+handler = this._createEventHandler(node, eventName, methodName);
+}
+if (handler._listening) {
+return;
+}
+this._listen(node, eventName, handler);
+handler._listening = true;
 },
 _boundListenerKey: function (eventName, methodName) {
 return eventName + ':' + methodName;
@@ -2371,6 +2494,7 @@ host[methodName](e, e.detail);
 host._warn(host._logf('_createEventHandler', 'listener method `' + methodName + '` not defined'));
 }
 };
+handler._listening = false;
 this._recordEventHandler(host, eventName, node, methodName, handler);
 return handler;
 },
@@ -2378,6 +2502,7 @@ unlisten: function (node, eventName, methodName) {
 var handler = this._recallEventHandler(this, eventName, node, methodName);
 if (handler) {
 this._unlisten(node, eventName, handler);
+handler._listening = false;
 }
 },
 _listen: function (node, eventName, handler) {
@@ -2403,6 +2528,19 @@ var MOUSE_EVENTS = [
 'mouseup',
 'click'
 ];
+var MOUSE_WHICH_TO_BUTTONS = [
+0,
+1,
+4,
+2
+];
+var MOUSE_HAS_BUTTONS = function () {
+try {
+return new MouseEvent('test', { buttons: 1 }).buttons === 1;
+} catch (e) {
+return false;
+}
+}();
 var IS_TOUCH_ONLY = navigator.userAgent.match(/iP(?:[oa]d|hone)|Android/);
 var mouseCanceller = function (mouseEvent) {
 mouseEvent[HANDLED_OBJ] = { skip: true };
@@ -2441,6 +2579,34 @@ POINTERSTATE.mouse.mouseIgnoreJob = null;
 };
 POINTERSTATE.mouse.mouseIgnoreJob = Polymer.Debounce(POINTERSTATE.mouse.mouseIgnoreJob, unset, MOUSE_TIMEOUT);
 }
+function hasLeftMouseButton(ev) {
+var type = ev.type;
+if (MOUSE_EVENTS.indexOf(type) === -1) {
+return false;
+}
+if (type === 'mousemove') {
+var buttons = ev.buttons === undefined ? 1 : ev.buttons;
+if (ev instanceof window.MouseEvent && !MOUSE_HAS_BUTTONS) {
+buttons = MOUSE_WHICH_TO_BUTTONS[ev.which] || 0;
+}
+return Boolean(buttons & 1);
+} else {
+var button = ev.button === undefined ? 0 : ev.button;
+return button === 0;
+}
+}
+function isSyntheticClick(ev) {
+if (ev.type === 'click') {
+if (ev.detail === 0) {
+return true;
+}
+var t = Gestures.findOriginalTarget(ev);
+var bcr = t.getBoundingClientRect();
+var x = ev.pageX, y = ev.pageY;
+return !(x >= bcr.left && x <= bcr.right && (y >= bcr.top && y <= bcr.bottom));
+}
+return false;
+}
 var POINTERSTATE = {
 mouse: {
 target: null,
@@ -2464,6 +2630,16 @@ break;
 }
 }
 return ta;
+}
+function trackDocument(stateObj, movefn, upfn) {
+stateObj.movefn = movefn;
+stateObj.upfn = upfn;
+document.addEventListener('mousemove', movefn);
+document.addEventListener('mouseup', upfn);
+}
+function untrackDocument(stateObj) {
+document.removeEventListener('mousemove', stateObj.movefn);
+document.removeEventListener('mouseup', stateObj.upfn);
 }
 var Gestures = {
 gestures: {},
@@ -2611,9 +2787,9 @@ gd = gobj[dep];
 if (gd && gd[name]) {
 gd[name] = (gd[name] || 1) - 1;
 gd._count = (gd._count || 1) - 1;
-}
 if (gd._count === 0) {
 node.removeEventListener(dep, this.handleNative);
+}
 }
 }
 }
@@ -2670,18 +2846,48 @@ deps: [
 'touchstart',
 'touchend'
 ],
+flow: {
+start: [
+'mousedown',
+'touchstart'
+],
+end: [
+'mouseup',
+'touchend'
+]
+},
 emits: [
 'down',
 'up'
 ],
+info: {
+movefn: function () {
+},
+upfn: function () {
+}
+},
+reset: function () {
+untrackDocument(this.info);
+},
 mousedown: function (e) {
+if (!hasLeftMouseButton(e)) {
+return;
+}
 var t = Gestures.findOriginalTarget(e);
 var self = this;
-var upfn = function upfn(e) {
+var movefn = function movefn(e) {
+if (!hasLeftMouseButton(e)) {
 self.fire('up', t, e);
-document.removeEventListener('mouseup', upfn);
+untrackDocument(self.info);
+}
 };
-document.addEventListener('mouseup', upfn);
+var upfn = function upfn(e) {
+if (hasLeftMouseButton(e)) {
+self.fire('up', t, e);
+}
+untrackDocument(self.info);
+};
+trackDocument(this.info, movefn, upfn);
 this.fire('down', t, e);
 },
 touchstart: function (e) {
@@ -2732,6 +2938,10 @@ this.moves.shift();
 }
 this.moves.push(move);
 },
+movefn: function () {
+},
+upfn: function () {
+},
 prevent: false
 },
 reset: function () {
@@ -2741,6 +2951,7 @@ this.info.moves = [];
 this.info.x = 0;
 this.info.y = 0;
 this.info.prevent = false;
+untrackDocument(this.info);
 },
 hasMovedEnough: function (x, y) {
 if (this.info.prevent) {
@@ -2754,6 +2965,9 @@ var dy = Math.abs(this.info.y - y);
 return dx >= TRACK_DISTANCE || dy >= TRACK_DISTANCE;
 },
 mousedown: function (e) {
+if (!hasLeftMouseButton(e)) {
+return;
+}
 var t = Gestures.findOriginalTarget(e);
 var self = this;
 var movefn = function movefn(e) {
@@ -2764,6 +2978,10 @@ self.info.addMove({
 x: x,
 y: y
 });
+if (!hasLeftMouseButton(e)) {
+self.info.state = 'end';
+untrackDocument(self.info);
+}
 self.fire(t, e);
 self.info.started = true;
 }
@@ -2773,11 +2991,9 @@ if (self.info.started) {
 Gestures.prevent('tap');
 movefn(e);
 }
-document.removeEventListener('mousemove', movefn);
-document.removeEventListener('mouseup', upfn);
+untrackDocument(self.info);
 };
-document.addEventListener('mousemove', movefn);
-document.addEventListener('mouseup', upfn);
+trackDocument(this.info, movefn, upfn);
 this.info.x = e.clientX;
 this.info.y = e.clientY;
 },
@@ -2872,10 +3088,14 @@ this.info.x = e.clientX;
 this.info.y = e.clientY;
 },
 mousedown: function (e) {
+if (hasLeftMouseButton(e)) {
 this.save(e);
+}
 },
 click: function (e) {
+if (hasLeftMouseButton(e)) {
 this.forward(e);
+}
 },
 touchstart: function (e) {
 this.save(e.changedTouches[0]);
@@ -2887,7 +3107,7 @@ forward: function (e) {
 var dx = Math.abs(e.clientX - this.info.x);
 var dy = Math.abs(e.clientY - this.info.y);
 var t = Gestures.findOriginalTarget(e);
-if (isNaN(dx) || isNaN(dy) || dx <= TAP_DISTANCE && dy <= TAP_DISTANCE) {
+if (isNaN(dx) || isNaN(dy) || dx <= TAP_DISTANCE && dy <= TAP_DISTANCE || isSyntheticClick(e)) {
 if (!this.info.prevent) {
 Gestures.fire(t, 'tap', {
 x: e.clientX,
@@ -3130,6 +3350,12 @@ elt[n] = props[n];
 }
 }
 return elt;
+},
+isLightDescendant: function (node) {
+return this.contains(node) && Polymer.dom(this).getOwnerRoot() === Polymer.dom(node).getOwnerRoot();
+},
+isLocalDescendant: function (node) {
+return this.root === Polymer.dom(node).getOwnerRoot();
 }
 });
 Polymer.Bind = {
@@ -3508,7 +3734,7 @@ trigger: trigger
 });
 },
 _parseMethod: function (expression) {
-var m = expression.match(/(\w*)\((.*)\)/);
+var m = expression.match(/([^\s]+)\((.*)\)/);
 if (m) {
 var sig = {
 method: m[1],
@@ -3540,6 +3766,9 @@ name: arg,
 model: this._modelForPath(arg)
 };
 var fc = arg[0];
+if (fc === '-') {
+fc = arg[1];
+}
 if (fc >= '0' && fc <= '9') {
 fc = '#';
 }
@@ -3602,6 +3831,10 @@ this._handlers = [];
 },
 _marshalAttributes: function () {
 this._takeAttributesToModel(this._config);
+},
+_attributeChangedImpl: function (name) {
+var model = this._clientsReadied ? this : this._config;
+this._setAttributeToProperty(model, name);
 },
 _configValue: function (name, value) {
 this._config[name] = value;
@@ -3690,6 +3923,7 @@ var h$ = this._handlers;
 for (var i = 0, l = h$.length, h; i < l && (h = h$[i]); i++) {
 h[0].call(this, h[1], h[2]);
 }
+this._handlers = [];
 }
 });
 (function () {
@@ -3813,7 +4047,7 @@ this._boundPaths = this._boundPaths || {};
 if (from) {
 this._boundPaths[to] = from;
 } else {
-this.unbindPath(to);
+this.unlinkPaths(to);
 }
 },
 unlinkPaths: function (path) {
@@ -3822,23 +4056,13 @@ delete this._boundPaths[path];
 }
 },
 _notifyBoundPaths: function (path, value) {
-var from, to;
 for (var a in this._boundPaths) {
 var b = this._boundPaths[a];
 if (path.indexOf(a + '.') == 0) {
-from = a;
-to = b;
-break;
+this.notifyPath(this._fixPath(b, a, path), value);
+} else if (path.indexOf(b + '.') == 0) {
+this.notifyPath(this._fixPath(a, b, path), value);
 }
-if (path.indexOf(b + '.') == 0) {
-from = b;
-to = a;
-break;
-}
-}
-if (from && to) {
-var p = this._fixPath(to, from, path);
-this.notifyPath(p, value);
 }
 },
 _fixPath: function (property, root, path) {
@@ -3882,37 +4106,73 @@ var array = this.get(path);
 var args = Array.prototype.slice.call(arguments, 1);
 var len = array.length;
 var ret = array.push.apply(array, args);
+if (args.length) {
 this._notifySplice(array, path, len, args.length, []);
+}
 return ret;
 },
 pop: function (path) {
 var array = this.get(path);
+var hadLength = Boolean(array.length);
 var args = Array.prototype.slice.call(arguments, 1);
-var rem = array.slice(-1);
 var ret = array.pop.apply(array, args);
-this._notifySplice(array, path, array.length, 0, rem);
+if (hadLength) {
+this._notifySplice(array, path, array.length, 0, [ret]);
+}
 return ret;
 },
 splice: function (path, start, deleteCount) {
 var array = this.get(path);
+if (start < 0) {
+start = array.length - Math.floor(-start);
+} else {
+start = Math.floor(start);
+}
+if (!start) {
+start = 0;
+}
 var args = Array.prototype.slice.call(arguments, 1);
 var ret = array.splice.apply(array, args);
-this._notifySplice(array, path, start, args.length - 2, ret);
+var addedCount = Math.max(args.length - 2, 0);
+if (addedCount || ret.length) {
+this._notifySplice(array, path, start, addedCount, ret);
+}
 return ret;
 },
 shift: function (path) {
 var array = this.get(path);
+var hadLength = Boolean(array.length);
 var args = Array.prototype.slice.call(arguments, 1);
 var ret = array.shift.apply(array, args);
+if (hadLength) {
 this._notifySplice(array, path, 0, 0, [ret]);
+}
 return ret;
 },
 unshift: function (path) {
 var array = this.get(path);
 var args = Array.prototype.slice.call(arguments, 1);
 var ret = array.unshift.apply(array, args);
+if (args.length) {
 this._notifySplice(array, path, 0, args.length, []);
+}
 return ret;
+},
+prepareModelNotifyPath: function (model) {
+this.mixin(model, {
+fire: Polymer.Base.fire,
+notifyPath: Polymer.Base.notifyPath,
+_EVENT_CHANGED: Polymer.Base._EVENT_CHANGED,
+_notifyPath: Polymer.Base._notifyPath,
+_pathEffector: Polymer.Base._pathEffector,
+_annotationPathEffect: Polymer.Base._annotationPathEffect,
+_complexObserverPathEffect: Polymer.Base._complexObserverPathEffect,
+_annotatedComputationPathEffect: Polymer.Base._annotatedComputationPathEffect,
+_computePathEffect: Polymer.Base._computePathEffect,
+_modelForPath: Polymer.Base._modelForPath,
+_pathMatchesEffect: Polymer.Base._pathMatchesEffect,
+_notifyBoundPaths: Polymer.Base._notifyBoundPaths
+});
 }
 });
 }());
@@ -3934,7 +4194,7 @@ text = this._clean(text);
 return this._parseCss(this._lex(text), text);
 },
 _clean: function (cssText) {
-return cssText.replace(rx.comments, '').replace(rx.port, '');
+return cssText.replace(this._rx.comments, '').replace(this._rx.port, '');
 },
 _lex: function (text) {
 var root = {
@@ -3973,15 +4233,15 @@ var ss = node.previous ? node.previous.end : node.parent.start;
 t = text.substring(ss, node.start - 1);
 t = t.substring(t.lastIndexOf(';') + 1);
 var s = node.parsedSelector = node.selector = t.trim();
-node.atRule = s.indexOf(AT_START) === 0;
+node.atRule = s.indexOf(this.AT_START) === 0;
 if (node.atRule) {
-if (s.indexOf(MEDIA_START) === 0) {
+if (s.indexOf(this.MEDIA_START) === 0) {
 node.type = this.types.MEDIA_RULE;
-} else if (s.match(rx.keyframesRule)) {
+} else if (s.match(this._rx.keyframesRule)) {
 node.type = this.types.KEYFRAMES_RULE;
 }
 } else {
-if (s.indexOf(VAR_START) === 0) {
+if (s.indexOf(this.VAR_START) === 0) {
 node.type = this.types.MIXIN_RULE;
 } else {
 node.type = this.types.STYLE_RULE;
@@ -4001,12 +4261,12 @@ text = text || '';
 var cssText = '';
 if (node.cssText || node.rules) {
 var r$ = node.rules;
-if (r$ && (preserveProperties || !hasMixinRules(r$))) {
+if (r$ && (preserveProperties || !this._hasMixinRules(r$))) {
 for (var i = 0, l = r$.length, r; i < l && (r = r$[i]); i++) {
 cssText = this.stringify(r, preserveProperties, cssText);
 }
 } else {
-cssText = preserveProperties ? node.cssText : removeCustomProps(node.cssText);
+cssText = preserveProperties ? node.cssText : this.removeCustomProps(node.cssText);
 cssText = cssText.trim();
 if (cssText) {
 cssText = '  ' + cssText + '\n';
@@ -4024,6 +4284,19 @@ text += this.CLOSE_BRACE + '\n\n';
 }
 return text;
 },
+_hasMixinRules: function (rules) {
+return rules[0].selector.indexOf(this.VAR_START) >= 0;
+},
+removeCustomProps: function (cssText) {
+cssText = this.removeCustomPropAssignment(cssText);
+return this.removeCustomPropApply(cssText);
+},
+removeCustomPropAssignment: function (cssText) {
+return cssText.replace(this._rx.customProp, '').replace(this._rx.mixinProp, '');
+},
+removeCustomPropApply: function (cssText) {
+return cssText.replace(this._rx.mixinApply, '').replace(this._rx.varApply, '');
+},
 types: {
 STYLE_RULE: 1,
 KEYFRAMES_RULE: 7,
@@ -4031,18 +4304,8 @@ MEDIA_RULE: 4,
 MIXIN_RULE: 1000
 },
 OPEN_BRACE: '{',
-CLOSE_BRACE: '}'
-};
-function hasMixinRules(rules) {
-return rules[0].selector.indexOf(VAR_START) >= 0;
-}
-function removeCustomProps(cssText) {
-return cssText.replace(rx.customProp, '').replace(rx.mixinProp, '').replace(rx.mixinApply, '').replace(rx.varApply, '');
-}
-var VAR_START = '--';
-var MEDIA_START = '@media';
-var AT_START = '@';
-var rx = {
+CLOSE_BRACE: '}',
+_rx: {
 comments: /\/\*[^*]*\*+([^\/*][^*]*\*+)*\//gim,
 port: /@import[^;]*;/gim,
 customProp: /(?:^|[\s;])--[^;{]*?:[^{};]*?(?:[;\n]|$)/gim,
@@ -4050,12 +4313,17 @@ mixinProp: /(?:^|[\s;])--[^;{]*?:[^{;]*?{[^}]*?}(?:[;\n]|$)?/gim,
 mixinApply: /@apply[\s]*\([^)]*?\)[\s]*(?:[;\n]|$)?/gim,
 varApply: /[^;:]*?:[^;]*var[^;]*(?:[;\n]|$)?/gim,
 keyframesRule: /^@[^\s]*keyframes/
+},
+VAR_START: '--',
+MEDIA_START: '@media',
+AT_START: '@'
 };
 return api;
 }();
 Polymer.StyleUtil = function () {
 return {
-MODULE_STYLES_SELECTOR: 'style, link[rel=import][type~=css]',
+MODULE_STYLES_SELECTOR: 'style, link[rel=import][type~=css], template',
+INCLUDE_ATTR: 'include',
 toCssText: function (rules, callback, preserveProperties) {
 if (typeof rules === 'string') {
 rules = this.parser.parse(rules);
@@ -4082,7 +4350,10 @@ clearStyleRules: function (style) {
 style.__cssRules = null;
 },
 forEachStyleRule: function (node, callback) {
-var s = node.selector;
+if (!node) {
+return;
+}
+var s = node.parsedSelector;
 var skipRules = false;
 if (node.type === this.ruleTypes.STYLE_RULE) {
 callback(node);
@@ -4110,27 +4381,49 @@ afterNode = n$[n$.length - 1];
 target.insertBefore(style, afterNode && afterNode.nextSibling || target.firstChild);
 return style;
 },
-cssFromModule: function (moduleId) {
+cssFromModules: function (moduleIds, warnIfNotFound) {
+var modules = moduleIds.trim().split(' ');
+var cssText = '';
+for (var i = 0; i < modules.length; i++) {
+cssText += this.cssFromModule(modules[i], warnIfNotFound);
+}
+return cssText;
+},
+cssFromModule: function (moduleId, warnIfNotFound) {
 var m = Polymer.DomModule.import(moduleId);
 if (m && !m._cssText) {
-var cssText = '';
-var e$ = Array.prototype.slice.call(m.querySelectorAll(this.MODULE_STYLES_SELECTOR));
-for (var i = 0, e; i < e$.length; i++) {
-e = e$[i];
-if (e.localName === 'style') {
-e = e.__appliedElement || e;
-e.parentNode.removeChild(e);
-} else {
-e = e.import && e.import.body;
+m._cssText = this._cssFromElement(m);
 }
-if (e) {
-cssText += Polymer.ResolveUrl.resolveCss(e.textContent, e.ownerDocument);
-}
-}
-m._cssText = cssText;
+if (!m && warnIfNotFound) {
+console.warn('Could not find style data in module named', moduleId);
 }
 return m && m._cssText || '';
 },
+_cssFromElement: function (element) {
+var cssText = '';
+var content = element.content || element;
+var e$ = Array.prototype.slice.call(content.querySelectorAll(this.MODULE_STYLES_SELECTOR));
+for (var i = 0, e; i < e$.length; i++) {
+e = e$[i];
+if (e.localName === 'template') {
+cssText += this._cssFromElement(e);
+} else {
+if (e.localName === 'style') {
+var include = e.getAttribute(this.INCLUDE_ATTR);
+if (include) {
+cssText += this.cssFromModules(include, true);
+}
+e = e.__appliedElement || e;
+e.parentNode.removeChild(e);
+cssText += this.resolveCss(e.textContent, element.ownerDocument);
+} else if (e.import && e.import.body) {
+cssText += this.resolveCss(e.import.body.textContent, e.import);
+}
+}
+}
+return cssText;
+},
+resolveCss: Polymer.ResolveUrl.resolveCss,
 parser: Polymer.CssParse,
 ruleTypes: Polymer.CssParse.types
 };
@@ -4222,7 +4515,7 @@ var p$ = rule.selector.split(COMPLEX_SELECTOR_SEP);
 for (var i = 0, l = p$.length, p; i < l && (p = p$[i]); i++) {
 p$[i] = transformer.call(this, p, scope, hostScope);
 }
-rule.selector = p$.join(COMPLEX_SELECTOR_SEP);
+rule.selector = rule.transformedSelector = p$.join(COMPLEX_SELECTOR_SEP);
 },
 _transformComplexSelector: function (selector, scope, hostScope) {
 var stop = false;
@@ -4577,7 +4870,8 @@ return property && property.trim() || '';
 },
 valueForProperties: function (property, props) {
 var parts = property.split(';');
-for (var i = 0, p, m; i < parts.length && (p = parts[i]); i++) {
+for (var i = 0, p, m; i < parts.length; i++) {
+if (p = parts[i]) {
 m = p.match(this.rx.MIXIN_MATCH);
 if (m) {
 p = this.valueForProperty(props[m[1]], props);
@@ -4590,6 +4884,7 @@ pp[1] = this.valueForProperty(pp[1], props) || pp[1];
 p = pp.join(':');
 }
 parts[i] = p && p.lastIndexOf(';') === p.length - 1 ? p.slice(0, -1) : p || '';
+}
 }
 return parts.join(';');
 },
@@ -4610,7 +4905,7 @@ styleUtil.forRulesInStyles(styles, function (rule) {
 if (!rule.propertyInfo) {
 self.decorateRule(rule);
 }
-if (element && rule.propertyInfo.properties && matchesSelector.call(element, rule.selector)) {
+if (element && rule.propertyInfo.properties && matchesSelector.call(element, rule.transformedSelector || rule.parsedSelector)) {
 self.collectProperties(rule, props);
 addToBitMask(i, o);
 }
@@ -5008,9 +5303,9 @@ this._pushHost();
 this._stampTemplate();
 this._popHost();
 this._marshalAnnotationReferences();
-this._marshalHostAttributes();
 this._setupDebouncers();
 this._marshalInstanceEffects();
+this._marshalHostAttributes();
 this._marshalBehaviors();
 this._marshalAttributes();
 this._tryReady();
@@ -5023,12 +5318,14 @@ this._listenListeners(b.listeners);
 var nativeShadow = Polymer.Settings.useNativeShadow;
 var propertyUtils = Polymer.StyleProperties;
 var styleUtil = Polymer.StyleUtil;
+var cssParse = Polymer.CssParse;
 var styleDefaults = Polymer.StyleDefaults;
 var styleTransformer = Polymer.StyleTransformer;
 Polymer({
 is: 'custom-style',
 extends: 'style',
-created: function () {
+properties: { include: String },
+ready: function () {
 this._tryApply();
 },
 attached: function () {
@@ -5040,7 +5337,7 @@ if (this.parentNode && this.parentNode.localName !== 'dom-module') {
 this._appliesToDocument = true;
 var e = this.__appliedElement || this;
 styleDefaults.addStyle(e);
-if (e.textContent) {
+if (e.textContent || this.include) {
 this._apply();
 } else {
 var observer = new MutationObserver(function () {
@@ -5054,16 +5351,26 @@ observer.observe(e, { childList: true });
 },
 _apply: function () {
 var e = this.__appliedElement || this;
+if (this.include) {
+e.textContent = styleUtil.cssFromModules(this.include, true) + e.textContent;
+}
+if (e.textContent) {
+styleUtil.forEachStyleRule(styleUtil.rulesForStyle(e), function (rule) {
+styleTransformer.documentRule(rule);
+});
+this._applyCustomProperties(e);
+}
+},
+_applyCustomProperties: function (element) {
 this._computeStyleProperties();
 var props = this._styleProperties;
-var self = this;
-e.textContent = styleUtil.toCssText(styleUtil.rulesForStyle(e), function (rule) {
+var rules = styleUtil.rulesForStyle(element);
+element.textContent = styleUtil.toCssText(rules, function (rule) {
 var css = rule.cssText = rule.parsedCssText;
 if (rule.propertyInfo && rule.propertyInfo.cssText) {
-css = css.replace(propertyUtils.rx.VAR_ASSIGN, '');
+css = cssParse.removeCustomPropAssignment(css);
 rule.cssText = propertyUtils.valueForProperties(css, props);
 }
-styleTransformer.documentRule(rule);
 });
 }
 });
@@ -5073,6 +5380,7 @@ properties: { __hideTemplateChildren__: { observer: '_showHideChildren' } },
 _instanceProps: Polymer.nob,
 _parentPropPrefix: '_parent_',
 templatize: function (template) {
+this._templatized = template;
 if (!template._content) {
 template._content = template.content;
 }
@@ -5083,11 +5391,11 @@ return;
 }
 var archetype = Object.create(Polymer.Base);
 this._customPrepAnnotations(archetype, template);
+this._prepParentProperties(archetype, template);
 archetype._prepEffects();
 this._customPrepEffects(archetype);
 archetype._prepBehaviors();
 archetype._prepBindings();
-this._prepParentProperties(archetype, template);
 archetype._notifyPath = this._notifyPathImpl;
 archetype._scopeElementClass = this._scopeElementClassImpl;
 archetype.listen = this._listenImpl;
@@ -5108,10 +5416,24 @@ _showHideChildrenImpl: function (hide) {
 var c = this._children;
 for (var i = 0; i < c.length; i++) {
 var n = c[i];
-if (n.style) {
-n.style.display = hide ? 'none' : '';
-n.__hideTemplateChildren__ = hide;
+if (Boolean(hide) != Boolean(n.__hideTemplateChildren__)) {
+if (n.nodeType === Node.TEXT_NODE) {
+if (hide) {
+n.__polymerTextContent__ = n.textContent;
+n.textContent = '';
+} else {
+n.textContent = n.__polymerTextContent__;
 }
+} else if (n.style) {
+if (hide) {
+n.__polymerDisplay__ = n.style.display;
+n.style.display = 'none';
+} else {
+n.style.display = n.__polymerDisplay__;
+}
+}
+}
+n.__hideTemplateChildren__ = hide;
 }
 },
 _debounceTemplate: function (fn) {
@@ -5156,6 +5478,7 @@ delete parentProps[prop];
 proto = archetype._parentPropProto = Object.create(null);
 if (template != this) {
 Polymer.Bind.prepareModel(proto);
+Polymer.Base.prepareModelNotifyPath(proto);
 }
 for (prop in parentProps) {
 var parentProp = this._parentPropPrefix + prop;
@@ -5174,6 +5497,7 @@ Polymer.Bind.prepareInstance(template);
 template._forwardParentProp = this._forwardParentProp.bind(this);
 }
 this._extendTemplate(template, proto);
+template._pathEffector = this._pathEffectorImpl.bind(this);
 }
 },
 _createForwardPropEffector: function (prop) {
@@ -5184,7 +5508,7 @@ this._forwardParentProp(prop, value);
 _createHostPropEffector: function (prop) {
 var prefix = this._parentPropPrefix;
 return function (source, value) {
-this.dataHost[prefix + prop] = value;
+this.dataHost._templatized[prefix + prop] = value;
 };
 },
 _createInstancePropEffector: function (prop) {
@@ -5216,16 +5540,17 @@ var dot = path.indexOf('.');
 var root = dot < 0 ? path : path.slice(0, dot);
 dataHost._forwardInstancePath.call(dataHost, this, path, value);
 if (root in dataHost._parentProps) {
-dataHost.notifyPath(dataHost._parentPropPrefix + path, value);
+dataHost._templatized.notifyPath(dataHost._parentPropPrefix + path, value);
 }
 },
-_pathEffector: function (path, value, fromAbove) {
+_pathEffectorImpl: function (path, value, fromAbove) {
 if (this._forwardParentPath) {
 if (path.indexOf(this._parentPropPrefix) === 0) {
-this._forwardParentPath(path.substring(8), value);
+var subPath = path.substring(this._parentPropPrefix.length);
+this._forwardParentPath(subPath, value);
 }
 }
-Polymer.Base._pathEffector.apply(this, arguments);
+Polymer.Base._pathEffector.call(this._templatized, path, value, fromAbove);
 },
 _constructorImpl: function (model, host) {
 this._rootDataHost = host._getRootDataHost();
@@ -5268,8 +5593,9 @@ return host._scopeElementClass(node, value);
 stamp: function (model) {
 model = model || {};
 if (this._parentProps) {
+var templatized = this._templatized;
 for (var prop in this._parentProps) {
-model[prop] = this[this._parentPropPrefix + prop];
+model[prop] = templatized[this._parentPropPrefix + prop];
 }
 }
 return new this.ctor(model, this);
@@ -5377,29 +5703,36 @@ items.push(store[key]);
 return items;
 },
 _applySplices: function (splices) {
-var keySplices = [];
-for (var i = 0; i < splices.length; i++) {
-var j, o, key, s = splices[i];
+var keyMap = {}, key, i;
+splices.forEach(function (s) {
+s.addedKeys = [];
+for (i = 0; i < s.removed.length; i++) {
+key = this.getKey(s.removed[i]);
+keyMap[key] = keyMap[key] ? null : -1;
+}
+for (i = 0; i < s.addedCount; i++) {
+var item = this.userArray[s.index + i];
+key = this.getKey(item);
+key = key === undefined ? this.add(item) : key;
+keyMap[key] = keyMap[key] ? null : 1;
+s.addedKeys.push(key);
+}
+}, this);
 var removed = [];
-for (j = 0; j < s.removed.length; j++) {
-o = s.removed[j];
-key = this.remove(o);
+var added = [];
+for (var key in keyMap) {
+if (keyMap[key] < 0) {
+this.removeKey(key);
 removed.push(key);
 }
-var added = [];
-for (j = 0; j < s.addedCount; j++) {
-o = this.userArray[s.index + j];
-key = this.add(o);
+if (keyMap[key] > 0) {
 added.push(key);
 }
-keySplices.push({
-index: s.index,
-removed: removed,
-removedItems: s.removed,
-added: added
-});
 }
-return keySplices;
+return [{
+removed: removed,
+added: added
+}];
 }
 };
 Polymer.Collection.get = function (userArray) {
@@ -5494,11 +5827,13 @@ this.collection = null;
 } else {
 this._error(this._logf('dom-repeat', 'expected array for `items`,' + ' found', this.items));
 }
-this._splices = [];
+this._keySplices = [];
+this._indexSplices = [];
 this._needFullRefresh = true;
 this._debounceTemplate(this._render);
 } else if (change.path == 'items.splices') {
-this._splices = this._splices.concat(change.value.keySplices);
+this._keySplices = this._keySplices.concat(change.value.keySplices);
+this._indexSplices = this._indexSplices.concat(change.value.indexSplices);
 this._debounceTemplate(this._render);
 } else {
 var subpath = change.path.slice(6);
@@ -5535,16 +5870,17 @@ this._applyFullRefresh();
 this._needFullRefresh = false;
 } else {
 if (this._sortFn) {
-this._applySplicesUserSort(this._splices);
+this._applySplicesUserSort(this._keySplices);
 } else {
 if (this._filterFn) {
 this._applyFullRefresh();
 } else {
-this._applySplicesArrayOrder(this._splices);
+this._applySplicesArrayOrder(this._indexSplices);
 }
 }
 }
-this._splices = [];
+this._keySplices = [];
+this._indexSplices = [];
 var keyToIdx = this._keyToInstIdx = {};
 for (var i = 0; i < this._instances.length; i++) {
 var inst = this._instances[i];
@@ -5595,6 +5931,9 @@ this._instances.splice(keys.length, this._instances.length - keys.length);
 _keySort: function (a, b) {
 return this.collection.getKey(a) - this.collection.getKey(b);
 },
+_numericSort: function (a, b) {
+return a - b;
+},
 _applySplicesUserSort: function (splices) {
 var c = this.collection;
 var instances = this._instances;
@@ -5622,7 +5961,7 @@ addedKeys.push(key);
 }
 }
 if (removedIdxs.length) {
-removedIdxs.sort();
+removedIdxs.sort(this._numericSort);
 for (var i = removedIdxs.length - 1; i >= 0; i--) {
 var idx = removedIdxs[i];
 if (idx !== undefined) {
@@ -5682,10 +6021,10 @@ pool.push(inst);
 }
 }
 this._instances.splice(s.index, s.removed.length);
-for (var i = 0; i < s.added.length; i++) {
+for (var i = 0; i < s.addedKeys.length; i++) {
 var inst = {
 isPlaceholder: true,
-key: s.added[i]
+key: s.addedKeys[i]
 };
 this._instances.splice(s.index + i, 0, inst);
 }
@@ -5794,16 +6133,27 @@ is: 'array-selector',
 properties: {
 items: {
 type: Array,
-observer: '_itemsChanged'
+observer: 'clearSelection'
+},
+multi: {
+type: Boolean,
+value: false,
+observer: 'clearSelection'
 },
 selected: {
 type: Object,
 notify: true
 },
-toggle: Boolean,
-multi: Boolean
+selectedItem: {
+type: Object,
+notify: true
 },
-_itemsChanged: function () {
+toggle: {
+type: Boolean,
+value: false
+}
+},
+clearSelection: function () {
 if (Array.isArray(this.selected)) {
 for (var i = 0; i < this.selected.length; i++) {
 this.unlinkPaths('selected.' + i);
@@ -5812,49 +6162,58 @@ this.unlinkPaths('selected.' + i);
 this.unlinkPaths('selected');
 }
 if (this.multi) {
+if (!this.selected || this.selected.length) {
 this.selected = [];
+this._selectedColl = Polymer.Collection.get(this.selected);
+}
 } else {
 this.selected = null;
+this._selectedColl = null;
+}
+this.selectedItem = null;
+},
+isSelected: function (item) {
+if (this.multi) {
+return this._selectedColl.getKey(item) !== undefined;
+} else {
+return this.selected == item;
 }
 },
 deselect: function (item) {
 if (this.multi) {
-var scol = Polymer.Collection.get(this.selected);
-var sidx = this.selected.indexOf(item);
-if (sidx >= 0) {
-var skey = scol.getKey(item);
-this.splice('selected', sidx, 1);
+if (this.isSelected(item)) {
+var skey = this._selectedColl.getKey(item);
+this.arrayDelete('selected', item);
 this.unlinkPaths('selected.' + skey);
-return true;
 }
 } else {
 this.selected = null;
+this.selectedItem = null;
 this.unlinkPaths('selected');
+this.unlinkPaths('selectedItem');
 }
 },
 select: function (item) {
 var icol = Polymer.Collection.get(this.items);
 var key = icol.getKey(item);
 if (this.multi) {
-var scol = Polymer.Collection.get(this.selected);
-var skey = scol.getKey(item);
-if (skey >= 0) {
+if (this.isSelected(item)) {
 if (this.toggle) {
 this.deselect(item);
 }
 } else {
 this.push('selected', item);
-this.async(function () {
-skey = scol.getKey(item);
+var skey = this._selectedColl.getKey(item);
 this.linkPaths('selected.' + skey, 'items.' + key);
-});
 }
 } else {
 if (this.toggle && item == this.selected) {
 this.deselect();
 } else {
-this.linkPaths('selected', 'items.' + key);
 this.selected = item;
+this.selectedItem = item;
+this.linkPaths('selected', 'items.' + key);
+this.linkPaths('selectedItem', 'items.' + key);
 }
 }
 }
@@ -5892,7 +6251,6 @@ this._flushTemplates();
 _render: function () {
 if (this.if) {
 if (!this.ctor) {
-this._wrapTextNodes(this._content || this.content);
 this.templatize(this);
 }
 this._ensureInstance();
@@ -5928,16 +6286,6 @@ parent.removeChild(n);
 this._instance = null;
 }
 },
-_wrapTextNodes: function (root) {
-for (var n = root.firstChild; n; n = n.nextSibling) {
-if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) {
-var s = document.createElement('span');
-root.insertBefore(s, n);
-s.appendChild(n);
-n = s;
-}
-}
-},
 _showHideChildren: function () {
 var hidden = this.__hideTemplateChildren__ || !this.if;
 if (this._instance) {
@@ -5955,37 +6303,11 @@ this._instance.notifyPath(path, value, true);
 }
 }
 });
-Polymer.ImportStatus = {
-_ready: false,
-_callbacks: [],
-whenLoaded: function (cb) {
-if (this._ready) {
-cb();
-} else {
-this._callbacks.push(cb);
-}
-},
-_importsLoaded: function () {
-this._ready = true;
-this._callbacks.forEach(function (cb) {
-cb();
-});
-this._callbacks = [];
-}
-};
-window.addEventListener('load', function () {
-Polymer.ImportStatus._importsLoaded();
-});
-if (window.HTMLImports) {
-HTMLImports.whenReady(function () {
-Polymer.ImportStatus._importsLoaded();
-});
-}
 Polymer({
 is: 'dom-bind',
 extends: 'template',
 created: function () {
-Polymer.ImportStatus.whenLoaded(this._markImportsReady.bind(this));
+Polymer.RenderStatus.whenReady(this._markImportsReady.bind(this));
 },
 _ensureReady: function () {
 if (!this._readied) {
@@ -6344,7 +6666,20 @@ this.fire('dom-change');
     left: 0;
   }
 
-</style>
+</style><!--
+`iron-media-query` can be used to data bind to a CSS media query.
+The `query` property is a bare CSS media query.
+The `query-matches` property is a boolean representing whether the page matches that media query.
+
+Example:
+
+    <iron-media-query query="(min-width: 600px)" query-matches="{{queryMatches}}"></iron-media-query>
+
+@group Iron Elements
+@demo demo/index.html
+@hero hero.svg
+@element iron-media-query
+-->
 
 <script>
 
@@ -6370,23 +6705,47 @@ this.fire('dom-change');
       query: {
         type: String,
         observer: 'queryChanged'
+      },
+
+      _boundMQHandler: {
+        value: function() {
+          return this.queryHandler.bind(this);
+        }
       }
-
     },
 
-    created: function() {
-      this._mqHandler = this.queryHandler.bind(this);
+    attached: function() {
+      this.queryChanged();
     },
 
-    queryChanged: function(query) {
+    detached: function() {
+      this._remove();
+    },
+
+    _add: function() {
       if (this._mq) {
-        this._mq.removeListener(this._mqHandler);
+        this._mq.addListener(this._boundMQHandler);
+      }
+    },
+
+    _remove: function() {
+      if (this._mq) {
+        this._mq.removeListener(this._boundMQHandler);
+      }
+      this._mq = null;
+    },
+
+    queryChanged: function() {
+      this._remove();
+      var query = this.query;
+      if (!query) {
+        return;
       }
       if (query[0] !== '(') {
         query = '(' + query + ')';
       }
       this._mq = window.matchMedia(query);
-      this._mq.addListener(this._mqHandler);
+      this._add();
       this.queryHandler(this._mq);
     },
 
@@ -6419,7 +6778,7 @@ this.fire('dom-change');
      * the selected item or undefined if there is no selection.
      */
     get: function() {
-      return this.multi ? this.selection : this.selection[0];
+      return this.multi ? this.selection.slice() : this.selection[0];
     },
 
     /**
@@ -6505,14 +6864,39 @@ this.fire('dom-change');
   /** @polymerBehavior */
   Polymer.IronSelectableBehavior = {
 
+      /**
+       * Fired when iron-selector is activated (selected or deselected).
+       * It is fired before the selected items are changed.
+       * Cancel the event to abort selection.
+       *
+       * @event iron-activate
+       */
+
+      /**
+       * Fired when an item is selected
+       *
+       * @event iron-select
+       */
+
+      /**
+       * Fired when an item is deselected
+       *
+       * @event iron-deselect
+       */
+
+      /**
+       * Fired when the list of selectable items changes (e.g., items are
+       * added or removed). The detail of the event is a list of mutation
+       * records that describe what changed.
+       *
+       * @event iron-items-changed
+       */
+
     properties: {
 
       /**
        * If you want to use the attribute value of an element for `selected` instead of the index,
        * set this to the name of the attribute.
-       *
-       * @attribute attrForSelected
-       * @type {string}
        */
       attrForSelected: {
         type: String,
@@ -6521,9 +6905,6 @@ this.fire('dom-change');
 
       /**
        * Gets or sets the selected element. The default is to use the index of the item.
-       *
-       * @attribute selected
-       * @type {string}
        */
       selected: {
         type: String,
@@ -6532,9 +6913,6 @@ this.fire('dom-change');
 
       /**
        * Returns the currently selected item.
-       *
-       * @attribute selectedItem
-       * @type {Object}
        */
       selectedItem: {
         type: Object,
@@ -6546,10 +6924,6 @@ this.fire('dom-change');
        * The event that fires from items when they are selected. Selectable
        * will listen for this event from items and update the selection state.
        * Set to empty string to listen to no events.
-       *
-       * @attribute activateEvent
-       * @type {string}
-       * @default 'tap'
        */
       activateEvent: {
         type: String,
@@ -6558,19 +6932,13 @@ this.fire('dom-change');
       },
 
       /**
-       * This is a CSS selector sting.  If this is set, only items that matches the CSS selector
+       * This is a CSS selector string.  If this is set, only items that match the CSS selector
        * are selectable.
-       *
-       * @attribute selectable
-       * @type {string}
        */
       selectable: String,
 
       /**
        * The class to set on elements when selected.
-       *
-       * @attribute selectedClass
-       * @type {string}
        */
       selectedClass: {
         type: String,
@@ -6579,33 +6947,48 @@ this.fire('dom-change');
 
       /**
        * The attribute to set on elements when selected.
-       *
-       * @attribute selectedAttribute
-       * @type {string}
        */
       selectedAttribute: {
         type: String,
         value: null
-      }
+      },
 
+      /**
+       * The set of excluded elements where the key is the `localName`
+       * of the element that will be ignored from the item list.
+       *
+       * @type {object}
+       * @default {template: 1}
+       */
+      _excludedLocalNames: {
+        type: Object,
+        value: function() {
+          return {
+            'template': 1
+          };
+        }
+      }
     },
 
     observers: [
       '_updateSelected(attrForSelected, selected)'
     ],
 
-    excludedLocalNames: {
-      'template': 1
-    },
-
     created: function() {
       this._bindFilterItem = this._filterItem.bind(this);
       this._selection = new Polymer.IronSelection(this._applySelection.bind(this));
+      // TODO(cdata): When polymer/polymer#2535 lands, we do not need to do this
+      // book keeping anymore:
+      this.__listeningForActivate = false;
     },
 
     attached: function() {
       this._observer = this._observeItems(this);
       this._contentObserver = this._observeContent(this);
+      if (!this.selectedItem && this.selected) {
+        this._updateSelected(this.attrForSelected,this.selected)
+      }
+      this._addListener(this.activateEvent);
     },
 
     detached: function() {
@@ -6672,13 +7055,17 @@ this.fire('dom-change');
     },
 
     _addListener: function(eventName) {
+      if (!this.isAttached || this.__listeningForActivate) {
+        return;
+      }
+
+      this.__listeningForActivate = true;
       this.listen(this, eventName, '_activateHandler');
     },
 
     _removeListener: function(eventName) {
-      // There is no unlisten yet...
-      // https://github.com/Polymer/polymer/issues/1639
-      //this.removeEventListener(eventName, this._bindActivateHandler);
+      this.unlisten(this, eventName, '_activateHandler');
+      this.__listeningForActivate = false;
     },
 
     _activateEventChanged: function(eventName, old) {
@@ -6695,7 +7082,7 @@ this.fire('dom-change');
     },
 
     _filterItem: function(node) {
-      return !this.excludedLocalNames[node.localName];
+      return !this._excludedLocalNames[node.localName];
     },
 
     _valueToItem: function(value) {
@@ -6754,7 +7141,15 @@ this.fire('dom-change');
 
     // observe items change under the given node.
     _observeItems: function(node) {
-      var observer = new MutationObserver(function() {
+      // TODO(cdata): Update this when we get distributed children changed.
+      var observer = new MutationObserver(function(mutations) {
+        // Let other interested parties know about the change so that
+        // we don't have to recreate mutation observers everywher.
+        this.fire('iron-items-changed', mutations, {
+          bubbles: false,
+          cancelable: false
+        });
+
         if (this.selected != null) {
           this._updateSelected();
         }
@@ -6767,11 +7162,6 @@ this.fire('dom-change');
     },
 
     _activateHandler: function(e) {
-      // TODO: remove this when https://github.com/Polymer/polymer/issues/1639 is fixed so we
-      // can just remove the old event listener.
-      if (e.type !== this.activateEvent) {
-        return;
-      }
       var t = e.target;
       var items = this.items;
       while (t && t != this) {
@@ -6887,9 +7277,9 @@ this.fire('dom-change');
       var i = this.selectedValues.indexOf(value);
       var unselected = i < 0;
       if (unselected) {
-        this.selectedValues.push(value);
+        this.push('selectedValues',value);
       } else {
-        this.selectedValues.splice(i, 1);
+        this.splice('selectedValues',i,1);
       }
       this._selection.setItemSelected(this._valueToItem(value), unselected);
     }
@@ -6960,10 +7350,123 @@ this.fire('dom-change');
   });
 
 </script>
+<!--
+`paper-drawer-panel` contains a drawer panel and a main panel.  The drawer
+and the main panel are side-by-side with drawer on the left.  When the browser
+window size is smaller than the `responsiveWidth`, `paper-drawer-panel`
+changes to narrow layout.  In narrow layout, the drawer will be stacked on top
+of the main panel.  The drawer will slide in/out to hide/reveal the main
+panel.
 
+Use the attribute `drawer` to indicate that the element is the drawer panel and
+`main` to indicate that the element is the main panel.
+
+Example:
+
+    <paper-drawer-panel>
+      <div drawer> Drawer panel... </div>
+      <div main> Main panel... </div>
+    </paper-drawer-panel>
+
+The drawer and the main panels are not scrollable.  You can set CSS overflow
+property on the elements to make them scrollable or use `paper-header-panel`.
+
+Example:
+
+    <paper-drawer-panel>
+      <paper-header-panel drawer>
+        <paper-toolbar></paper-toolbar>
+        <div> Drawer content... </div>
+      </paper-header-panel>
+      <paper-header-panel main>
+        <paper-toolbar></paper-toolbar>
+        <div> Main content... </div>
+      </paper-header-panel>
+    </paper-drawer-panel>
+
+An element that should toggle the drawer will automatically do so if it's
+given the `paper-drawer-toggle` attribute.  Also this element will automatically
+be hidden in wide layout.
+
+Example:
+
+    <paper-drawer-panel>
+      <paper-header-panel drawer>
+        <paper-toolbar>
+          <div>Application</div>
+        </paper-toolbar>
+        <div> Drawer content... </div>
+      </paper-header-panel>
+      <paper-header-panel main>
+        <paper-toolbar>
+          <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+          <div>Title</div>
+        </paper-toolbar>
+        <div> Main content... </div>
+      </paper-header-panel>
+    </paper-drawer-panel>
+
+To position the drawer to the right, add `right-drawer` attribute.
+
+    <paper-drawer-panel right-drawer>
+      <div drawer> Drawer panel... </div>
+      <div main> Main panel... </div>
+    </paper-drawer-panel>
+
+Styling `paper-drawer-panel`
+
+To change the main container:
+
+    paper-drawer-panel {
+      --paper-drawer-panel-main-container: {
+        background-color: gray;
+      };
+    }
+
+To change the drawer container when it's in the left side:
+
+    paper-drawer-panel {
+      --paper-drawer-panel-left-drawer-container: {
+        background-color: white;
+      };
+    }
+
+To change the drawer container when it's in the right side:
+
+    paper-drawer-panel {
+      --paper-drawer-panel-right-drawer-container: {
+        background-color: white;
+      };
+    }
+
+@group Paper elements
+@element paper-drawer-panel
+@demo demo/index.html
+@hero hero.svg
+-->
+
+<!--
+The `<iron-flex-layout>` component provides simple ways to use [CSS flexible box layout](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Flexible_boxes), also known as flexbox. This component provides two different ways to use flexbox:
+
+1. [Layout classes](https://github.com/PolymerElements/iron-flex-layout/tree/master/classes). The layout class stylesheet provides a simple set of class-based flexbox rules. Layout classes let you specify layout properties directly in markup.
+
+2. [Custom CSS mixins](https://github.com/PolymerElements/iron-flex-layout/blob/master/iron-flex-layout.html). The mixin stylesheet includes custom CSS mixins that can be applied inside a CSS rule using the `@apply` function.
+
+A complete [guide](https://elements.polymer-project.org/guides/flex-layout) to `<iron-flex-layout>` is available.
+
+@group Iron Elements
+@pseudoElement iron-flex-layout
+@demo demo/index.html
+-->
+
+<style>
+  /* IE 10 support for HTML5 hidden attr */
+  [hidden] {
+    display: none !important;
+  }
+</style>
 
 <style is="custom-style">
-
   :root {
 
     --layout: {
@@ -7229,32 +7732,29 @@ this.fire('dom-change');
 
     /* fixed position */
 
-    --layout-fixed-bottom:,
-    --layout-fixed-left:,
-    --layout-fixed-right:,
     --layout-fixed-top: {
       position: fixed;
-    };
-
-    --layout-fixed-top: {
       top: 0;
       left: 0;
       right: 0;
     };
 
     --layout-fixed-right: {
+      position: fixed;
       top: 0;
       right: 0;
       bottom: 0;
     };
 
     --layout-fixed-bottom: {
+      position: fixed;
       right: 0;
       bottom: 0;
       left: 0;
     };
 
     --layout-fixed-left: {
+      position: fixed;
       top: 0;
       bottom: 0;
       left: 0;
@@ -7263,7 +7763,115 @@ this.fire('dom-change');
   }
 
 </style>
+<!--
+`paper-header-panel` contains a header section and a content panel section.
 
+__Important:__ The `paper-header-panel` will not display if its parent does not have a height.
+
+Using layout classes, you can make the `paper-header-panel` fill the screen
+
+    <body class="fullbleed layout vertical">
+      <paper-header-panel class="flex">
+        <paper-toolbar>
+          <div>Hello World!</div>
+        </paper-toolbar>
+      </paper-header-panel>
+    </body>
+
+Special support is provided for scrolling modes when one uses a paper-toolbar or equivalent for the
+header section.
+
+Example:
+
+    <paper-header-panel>
+      <paper-toolbar>Header</paper-toolbar>
+      <div>Content goes here...</div>
+    </paper-header-panel>
+
+If you want to use other than `paper-toolbar` for the header, add `paper-header` class to that
+element.
+
+Example:
+
+    <paper-header-panel>
+      <div class="paper-header">Header</div>
+      <div>Content goes here...</div>
+    </paper-header-panel>
+
+To have the content fit to the main area, use the `fit` class.
+
+    <paper-header-panel>
+      <div class="paper-header">standard</div>
+      <div class="fit">content fits 100% below the header</div>
+    </paper-header-panel>
+
+Modes
+
+Controls header and scrolling behavior. Options are `standard`, `seamed`, `waterfall`, `waterfall-tall`, `scroll` and
+`cover`. Default is `standard`.
+
+Mode | Description
+----------------|-------------
+`standard` | The header is a step above the panel. The header will consume the panel at the point of entry, preventing it from passing through to the opposite side.
+`seamed` | The header is presented as seamed with the panel.
+`waterfall` | Similar to standard mode, but header is initially presented as seamed with panel, but then separates to form the step.
+`waterfall-tall` | The header is initially taller (`tall` class is added to the header). As the user scrolls, the header separates (forming an edge) while condensing (`tall` class is removed from the header).
+`scroll` | The header keeps its seam with the panel, and is pushed off screen.
+`cover` | The panel covers the whole `paper-header-panel` including the header. This allows user to style the panel in such a way that the panel is partially covering the header.
+
+Example:
+
+    <paper-header-panel mode="waterfall">
+      <div class="paper-header">standard</div>
+      <div class="content fit">content fits 100% below the header</div>
+    </paper-header-panel>
+
+
+Styling header panel:
+
+To change the shadow that shows up underneath the header:
+
+    paper-header-panel {
+      --paper-header-panel-shadow: {
+          height: 6px;
+          bottom: -6px;
+          box-shadow: inset 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
+      };
+    }
+
+To change the panel container in different modes:
+
+    paper-slider {
+      --paper-header-panel-standard-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-seamed-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-waterfall-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-waterfall-tall-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-scroll-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-cover-container: {
+        border: 1px solid gray;
+      };
+    }
+
+@group Paper Elements
+@element paper-header-panel
+@demo demo/index.html
+@hero hero.svg
+-->
 
 <style>
 
@@ -8111,9 +8719,9 @@ this.fire('dom-change');
     --paper-orange-a400: #ff9100;
     --paper-orange-a700: #ff6500;
  
-    --paper-deep-orange-50: #ff5722;
-    --paper-deep-orange-100: #fbe9e7;
-    --paper-deep-orange-200: #ffccbc;
+    --paper-deep-orange-50: #fbe9e7;
+    --paper-deep-orange-100: #ffccbc;
+    --paper-deep-orange-200: #ffab91;
     --paper-deep-orange-300: #ff8a65;
     --paper-deep-orange-400: #ff7043;
     --paper-deep-orange-500: #ff5722;
@@ -8481,11 +9089,115 @@ this.fire('dom-change');
   }
 
 </style>
+<!--
+`paper-toolbar` is a horizontal bar containing items that can be used for
+label, navigation, search and actions.  The items place inside the
+`paper-toolbar` are projected into a `class="horizontal center layout"` container inside of
+`paper-toolbar`'s Shadow DOM.  You can use flex attributes to control the items'
+sizing.
 
+Example:
 
+    <paper-toolbar>
+      <paper-icon-button icon="menu" on-tap="menuAction"></paper-icon-button>
+      <div class="title">Title</div>
+      <paper-icon-button icon="more-vert" on-tap="moreAction"></paper-icon-button>
+    </paper-toolbar>
 
+`paper-toolbar` has a standard height, but can made be taller by setting `tall`
+class on the `paper-toolbar`.  This will make the toolbar 3x the normal height.
 
+    <paper-toolbar class="tall">
+      <paper-icon-button icon="menu"></paper-icon-button>
+    </paper-toolbar>
 
+Apply `medium-tall` class to make the toolbar medium tall.  This will make the
+toolbar 2x the normal height.
+
+    <paper-toolbar class="medium-tall">
+      <paper-icon-button icon="menu"></paper-icon-button>
+    </paper-toolbar>
+
+When `tall`, items can pin to either the top (default), middle or bottom.  Use
+`middle` class for middle content and `bottom` class for bottom content.
+
+    <paper-toolbar class="tall">
+      <paper-icon-button icon="menu"></paper-icon-button>
+      <div class="middle title">Middle Title</div>
+      <div class="bottom title">Bottom Title</div>
+    </paper-toolbar>
+
+For `medium-tall` toolbar, the middle and bottom contents overlap and are
+pinned to the bottom.  But `middleJustify` and `bottomJustify` attributes are
+still honored separately.
+
+To make an element completely fit at the bottom of the toolbar, use `fit` along
+with `bottom`.
+
+    <paper-toolbar class="tall">
+      <div id="progressBar" class="bottom fit"></div>
+    </paper-toolbar>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--paper-toolbar-background` | Toolbar background color     | `--default-primary-color`
+`--paper-toolbar-color`      | Toolbar foreground color     | `--text-primary-color`
+`--paper-toolbar`            | Mixin applied to the toolbar | `{}`
+
+### Accessibility
+
+`<paper-toolbar>` has `role="toolbar"` by default. Any elements with the class `title` will
+be used as the label of the toolbar via `aria-labelledby`.
+
+@demo demo/index.html
+-->
+
+<!--
+`iron-a11y-announcer` is a singleton element that is intended to add a11y
+to features that require on-demand announcement from screen readers. In
+order to make use of the announcer, it is best to request its availability
+in the announcing element.
+
+Example:
+
+    Polymer({
+
+      is: 'x-chatty',
+
+      attached: function() {
+        // This will create the singlton element if it has not
+        // been created yet:
+        Polymer.IronA11yAnnouncer.requestAvailability();
+      }
+    });
+
+After the `iron-a11y-announcer` has been made available, elements can
+make announces by firing bubbling `iron-announce` events.
+
+Example:
+
+    this.fire('iron-announce', {
+      text: 'This is an announcement!'
+    }, { bubbles: true });
+
+Note: announcements are only audible if you have a screen reader enabled.
+
+@group Iron Elements
+@demo demo/index.html
+-->
+
+<!--
+`paper-toast` provides a subtle notification toast.
+
+@group Paper Elements
+@element paper-toast
+@demo demo/index.html
+@hero hero.svg
+-->
 <script>
   Polymer({
     is : 'cwn-region-label',
@@ -8518,7 +9230,11 @@ this.fire('dom-change');
         var r = feature.properties.regions[i];
         //if( r.toLowerCase() == 'california' ) continue;
 
-        html.push('<span class="label label-default">'+this.getLabel(r)+'</span>');
+        var info = this.getLabel(r);
+
+        html.push('<span class="label label-default">'+info.label+
+          (r.toLowerCase() !== 'california' ? ' <a href="#info/'+info.id+'"><i class="fa fa-info-circle"></i></a>' : '')+
+          '</span>');
       }
 
 
@@ -8527,14 +9243,21 @@ this.fire('dom-change');
     },
 
     getLabel : function(name) {
-      if( CWN.ds.regionLookupMap[name] && CWN.ds.regionLookupMap[name].geo.properties.name ) {
-        return CWN.ds.regionLookupMap[name].geo.properties.name;
+      var region = CWN.ds.regionLookupMap[name];
+      if( region && region.geo.properties.name ) {
+        return {
+          label : region.geo.properties.name,
+          id : region.geo.properties.id
+        }
       }
-      return name;
+      return {
+        name : name,
+        id : name
+      }
     }
   });
 </script>
-</head><body><div hidden="" by-vulcanize=""><dom-module id="paper-drawer-panel" assetpath="/public/bower_components/paper-drawer-panel/">
+</head><body><div hidden="" by-vulcanize=""><dom-module id="paper-drawer-panel" assetpath="bower_components/paper-drawer-panel/">
   <style>
 /**
 @license
@@ -9167,130 +9890,139 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
   }());
 
 </script>
-<dom-module id="paper-header-panel" assetpath="/public/bower_components/paper-header-panel/">
+<dom-module id="paper-header-panel" assetpath="bower_components/paper-header-panel/">
 
   <style>
-    :host {
-      @apply(--layout);
-      @apply(--layout-vertical);
+/**
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE
+The complete set of authors may be found at http://polymer.github.io/AUTHORS
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS
+*/
 
-      display: block;
-      position: relative;
-      height: 100%;
+:host {
+  --paper-header-panel-shadow: {
+    height: 6px;
+    bottom: -6px;
+    box-shadow: inset 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
+  };
 
-      /* Create a stack context, we will need it for the shadow*/
-      z-index: 0;
-    }
+  @apply(--layout-vertical);
 
-    :root {
-      /**
-       * Default paper header panel shadow
-       */
-      --paper-header-panel-shadow: {
-        height: 6px;
-        bottom: -6px;
-        box-shadow: inset 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
-      };
-    }
+  position: relative;
+  height: 100%;
+}
 
-    #mainContainer {
-      @apply(--layout-flex);
+#mainContainer {
+  @apply(--layout-flex);
 
-      position: relative;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      flex-basis: 0.0001px;
-    }
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
 
-    /*
-     * mode: scroll
-     */
-    :host([mode=scroll]) #mainContainer {
-      @apply(--paper-header-panel-scroll-container);
-      overflow: visible;
-    }
+#mainPanel {
+  @apply(--layout-vertical);
+  @apply(--layout-flex);
 
-    :host([mode=scroll]) {
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-    }
+  position: relative;
+}
 
-    /*
-     * mode: cover
-     */
-    :host([mode=cover]) #mainContainer {
-      @apply(--paper-header-panel-cover-container);
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-    }
+/*
+ * mode: scroll
+ */
+:host([mode=scroll]) #mainContainer {
+  @apply(--paper-header-panel-scroll-container);
 
-    /*
-     * mode: standard
-     */
-    :host([mode=standard]) #mainContainer {
-      @apply(--paper-header-panel-standard-container);
-    }
+  overflow: visible;
+}
 
-    /*
-     * mode: waterfall
-     */
-    :host([mode=waterfall]) #mainContainer {
-      @apply(--paper-header-panel-waterfall-container);
-    }
+:host([mode=scroll]) {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
 
-    /*
-     * mode: waterfall-tall
-     */
-    :host([mode=waterfall-tall]) #mainContainer {
-      @apply(--paper-header-panel-waterfall-tall-container);
-    }
+/*
+ * mode: cover
+ */
+:host([mode=cover]) #mainContainer {
+  @apply(--paper-header-panel-cover-container);
 
-    :host ::content paper-toolbar,
-    :host ::content .paper-header {
-      position: relative;
-      overflow: visible !important;
-    }
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
 
-    :host ::content paper-toolbar:after,
-    :host ::content .paper-header:after {
-      @apply(--paper-header-panel-shadow);
+:host([mode=cover]) #mainPanel {
+  position: static;
+}
 
-      -webkit-transition: opacity 0.5s, -webkit-transform 0.5s;
-      transition: opacity 0.5s, transform 0.5s;
+/*
+ * mode: standard
+ */
+:host([mode=standard]) #mainContainer {
+  @apply(--paper-header-panel-standard-container);
+}
 
-      opacity: 0;
-      content: "";
+/*
+ * mode: seamed
+ */
+:host([mode=seamed]) #mainContainer {
+  @apply(--paper-header-panel-seamed-container);
+}
 
-      width: 100%;
-      position: absolute;
-      left: 0px;
-      right: 0px;
-      z-index: 1;
 
-      -webkit-transform: scale3d(1, 0, 1);
-      -webkit-transform-origin: 0% 0%;
+/*
+ * mode: waterfall
+ */
+:host([mode=waterfall]) #mainContainer {
+  @apply(--paper-header-panel-waterfall-container);
+}
 
-      transform: scale3d(1, 0, 1);
-      transform-origin: 0% 0%;
-    }
+/*
+ * mode: waterfall-tall
+ */
+:host([mode=waterfall-tall]) #mainContainer {
+  @apply(--paper-header-panel-waterfall-tall-container);
+}
 
-    :host ::content paper-toolbar.has-shadow:after,
-    :host ::content .paper-header.has-shadow:after {
-      opacity: 1;
-      -webkit-transform: scale3d(1, 1, 1);
-      transform: scale3d(1, 1, 1);
-    }
-  </style>
+#dropShadow {
+  @apply(--paper-header-panel-shadow);
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  pointer-events: none;
+
+  -webkit-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+
+  opacity: 0;
+}
+
+#dropShadow.has-shadow {
+  opacity: 1;
+}
+
+</style>
 
   <template>
     <content id="headerContent" select="paper-toolbar, .paper-header"></content>
-    <div id="mainContainer" class$="[[_computeMainContainerClass(mode)]]">
-      <content id="mainContent" select="*"></content>
+
+    <div id="mainPanel">
+      <div id="mainContainer" class$="[[_computeMainContainerClass(mode)]]">
+        <content id="mainContent" select="*"></content>
+      </div>
+      <div id="dropShadow"></div>
     </div>
   </template>
 
@@ -9309,12 +10041,12 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     var MODE_CONFIGS = {
 
       outerScroll: {
-        scroll: true
+        'scroll': true
       },
 
       shadowMode: {
-        standard: SHADOW_ALWAYS,
-        waterfall: SHADOW_WHEN_SCROLLING,
+        'standard': SHADOW_ALWAYS,
+        'waterfall': SHADOW_WHEN_SCROLLING,
         'waterfall-tall': SHADOW_WHEN_SCROLLING
       },
 
@@ -9332,7 +10064,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
        * the scrollable element which you can use to access scroll info such as
        * `scrollTop`.
        *
-       *     <paper-header-panel on-content-scroll="{{scrollHandler}}">
+       *     <paper-header-panel on-content-scroll="scrollHandler">
        *       ...
        *     </paper-header-panel>
        *
@@ -9455,7 +10187,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
        * @type Boolean
        */
       get visibleShadow() {
-        return this.header.classList.contains('has-shadow');
+        return this.$.dropShadow.classList.contains('has-shadow');
       },
 
       _computeDropShadowHidden: function(atTop, mode, shadow) {
@@ -9463,16 +10195,16 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         var shadowMode = MODE_CONFIGS.shadowMode[mode];
 
         if (this.shadow) {
-          this.toggleClass('has-shadow', true, this.header);
+          this.toggleClass('has-shadow', true, this.$.dropShadow);
 
         } else if (shadowMode === SHADOW_ALWAYS) {
-          this.toggleClass('has-shadow', true, this.header);
+          this.toggleClass('has-shadow', true, this.$.dropShadow);
 
         } else if (shadowMode === SHADOW_WHEN_SCROLLING && !atTop) {
-          this.toggleClass('has-shadow', true, this.header);
+          this.toggleClass('has-shadow', true, this.$.dropShadow);
 
         } else {
-          this.toggleClass('has-shadow', false, this.header);
+          this.toggleClass('has-shadow', false, this.$.dropShadow);
 
         }
       },
@@ -9519,20 +10251,20 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         this._keepScrollingState();
       },
 
-      _keepScrollingState: function () {
+      _keepScrollingState: function() {
         var main = this.scroller;
         var header = this.header;
 
         this._setAtTop(main.scrollTop === 0);
 
-        if (header && MODE_CONFIGS.tallMode[this.mode]) {
+        if (header && this.tallClass && MODE_CONFIGS.tallMode[this.mode]) {
           this.toggleClass(this.tallClass, this.atTop ||
               header.classList.contains(this.tallClass) &&
               main.scrollHeight < this.offsetHeight, header);
         }
       },
 
-      _scroll: function(e) {
+      _scroll: function() {
         this._keepScrollingState();
         this.fire('content-scroll', {target: this.scroller}, {bubbles: false});
       },
@@ -9547,7 +10279,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
   })();
 
 </script>
-<dom-module id="paper-toolbar" assetpath="/public/bower_components/paper-toolbar/">
+<dom-module id="paper-toolbar" assetpath="bower_components/paper-toolbar/">
 
   <style>
     :host {
@@ -9854,7 +10586,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
   }());
 
 </script>
-<dom-module id="iron-a11y-announcer" assetpath="/public/bower_components/iron-a11y-announcer/">
+<dom-module id="iron-a11y-announcer" assetpath="bower_components/iron-a11y-announcer/">
   <style>
     :host {
       display: inline-block;
@@ -9864,7 +10596,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
   </style>
 
   <template>
-    <span aria-live$="[[mode]]">[[_text]]</span>
+    <div aria-live$="[[mode]]">[[_text]]</div>
   </template>
 
   <script>
@@ -9933,7 +10665,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
   </script>
 </dom-module>
-<dom-module id="paper-toast" assetpath="/public/bower_components/paper-toast/">
+<dom-module id="paper-toast" assetpath="bower_components/paper-toast/">
   <style>
     :host {
       display: inline-block;
@@ -10075,7 +10807,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
 })();
 </script>
-<dom-module id="cwn-info-link" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-info-link" assetpath="elements/widgets/">
     <style>
         span.invalid {
             color: #888;
@@ -10111,7 +10843,6 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
         properties : {
             prmname : {
-              notify : true,
               type : String,
               observer : 'update'
             }
@@ -10132,7 +10863,12 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         },
 
         attached : function() {
-          CWN.ds.on('load', this.update.bind(this));
+          if( !this.prmname && this.getAttribute('prmname') ) {
+            this.prmname = this.getAttribute('prmname');
+          }
+
+          if( CWN.ds.loading ) CWN.ds.on('load', this.update.bind(this));
+          else this.update();
         },
 
         update : function() {
@@ -10159,7 +10895,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
     });
 </script>
-<dom-module id="cwn-dateslider" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-dateslider" assetpath="elements/widgets/">
     <style>
         :host {
             display: block;
@@ -10474,7 +11210,9 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
           var respCount = 0;
           var requestCount = 1;
           var hasTimeBounds = false;
-          var hasRegionData = false;
+          var hasRegionLinkData = false;
+          var hasRegionFlowData = false;
+          var hasRegionInflowData = false;
 
           function onResponse() {
             respCount++;
@@ -10482,7 +11220,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
             var show = false;
             var extras = this.feature.properties.extras;
-            if( (extras && (extras.evaporation || extras.inflows || extras.flow)) || hasTimeBounds || hasRegionData ) {
+            if( (extras && (extras.evaporation || extras.inflows || extras.flow)) || hasTimeBounds || hasRegionLinkData || hasRegionFlowData || hasRegionInflowData ) {
               show = true;
             }
 
@@ -10492,14 +11230,28 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
           // how many requests are we making?
           if( this.feature.properties.type == 'Region Link' ) requestCount++;
+          if( this.feature.properties.type == 'Region' ) requestCount += 2;
           if( this.feature.properties.extras && this.feature.properties.extras.bounds ) requestCount++;
 
           // grab the aggregate region link data
           if( this.feature.properties.type == 'Region Link' ) {
-            CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp){
-              if( Object.keys(resp.origin.flows).length > 0 ) hasRegionData = true;
-              else if( Object.keys(resp.terminus.links).length > 0 ) hasRegionData = true;
+            CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
+              if( Object.keys(resp.origin.flow).length > 0 ) hasRegionLinkData = true;
+              else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionLinkData = true;
 
+              onResponse.call(this);
+            }.bind(this));
+          }
+
+          // grab the aggregate flow data
+          if( this.feature.properties.type == 'Region' ) {
+            CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
+              if( Object.keys(resp.flow).length > 0 ) hasRegionFlowData = true;
+              onResponse.call(this);
+            }.bind(this));
+
+            CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
+              if( Object.keys(resp.inflows).length > 0 ) hasRegionInflowData = true;
               onResponse.call(this);
             }.bind(this));
           }
@@ -10526,7 +11278,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     });
 </script>
-<dom-module id="cwn-app-icon" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-app-icon" assetpath="elements/widgets/">
     <style>
         :host {
             display: inline-block;
@@ -10536,7 +11288,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     <template>
         <canvas id="canvas"></canvas>
         <i id="icon" class="fa fa-long-arrow-right" style="vertical-align:super"></i>
-        <i id="regionLinkIcon" class="fa fa-exchange" style="vertical-align:super"></i>
+        <i id="regionLinkIcon" class="fa fa-exchange"></i>
+        <span id="regionIcon">Σ<i id="regionIconSub" style="vertical-align:bottom">i</i></span>
     </template>
 </dom-module>
 
@@ -10595,24 +11348,26 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
             this.$.icon.style.fontSize = this.fontSize+'px';
             this.$.regionLinkIcon.style.fontSize = this.fontSize+'px';
+            this.$.regionIcon.style.fontSize = this.fontSize+'px';
+            this.$.regionIconSub.style.fontSize = Math.ceil(this.fontSize*.6)+'px';
         },
 
         onTypeChange : function() {
-            if( this.type == 'Diversion' || this.type == 'Return Flow' ) {
-                $(this.$.canvas).hide();
-                $(this.$.regionLinkIcon).hide();
-                $(this.$.icon).show();
-            } else if( this.type == 'Region Link' ) {
-              $(this.$.canvas).hide();
-              $(this.$.regionLinkIcon).show();
-              $(this.$.icon).hide();
-            } else {
-                $(this.$.icon).hide();
-                $(this.$.regionLinkIcon).hide();
-                $(this.$.canvas).show();
-                this.redraw();
-            }
+          $(this.$.canvas).hide();
+          $(this.$.regionLinkIcon).hide();
+          $(this.$.regionIcon).hide();
+          $(this.$.icon).hide();
 
+          if( this.type == 'Diversion' || this.type == 'Return Flow' ) {
+            $(this.$.icon).show();
+          } else if( this.type == 'Region Link' ) {
+            $(this.$.regionLinkIcon).show();
+          } else if( this.type == 'Region' ) {
+            $(this.$.regionIcon).show();
+          } else {
+            $(this.$.canvas).show();
+            this.redraw();
+          }
         },
 
         redraw : function() {
@@ -10639,7 +11394,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     });
 </script>
-<dom-module id="cwn-date-linechart" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-date-linechart" assetpath="elements/widgets/">
     <style>
         :host {
             display: block;
@@ -10856,7 +11611,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     });
 </script>
-<dom-module id="cwn-linechart" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-linechart" assetpath="elements/widgets/">
     <style>
         cwn-linechart {
             display: block;
@@ -10994,7 +11749,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     });
 </script>
-<dom-module id="cwn-popup" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-popup" assetpath="elements/widgets/">
     <style>
       cwn-popup {
         overflow: auto !important;
@@ -11018,8 +11773,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
             <div class="modal-footer" id="footer" hidden$="{{noFooter}}">
               <content select=".popup-footer"></content>
             </div>
-          </div>
-        </div>
+          </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
 
     </template>
 </dom-module>
@@ -11079,7 +11834,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
       }
   });
 </script>
-<dom-module id="cwn-region-selector" assetpath="/public/elements/widgets/">
+<dom-module id="cwn-region-selector" assetpath="elements/widgets/">
   <template>
     <cwn-popup id="popup" style="z-index: 10000">
       <div class="popup-body" id="body"></div>
@@ -11136,21 +11891,23 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     },
 
     renderFeature : function(feature, i) {
-      var link, icon = '';
+      var link, icon = '', regionLinks = '';
 
       if( feature.properties.type == 'Region Link' ) {
-        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/--/g,' to ')+'</a> ';
+        link = '<cwn-app-icon type="Region Link" height="26" width="26"></cwn-app-icon> <a style="font-size:18px;text-transform:capitalize" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/--/g,' to ')+'</a> ';
       } else if ( feature.properties.type == 'Region' ) {
-        link = '<a class="region" index="'+i+'" style="cusor:pointer;font-size:18px">'+feature.properties.name+'</a>';
+        link = '<cwn-app-icon type="Region" height="26" width="26"></cwn-app-icon> '+feature.properties.name;
+        regionLinks = '<div style="padding-left:15px"><a class="region btn btn-link" index="'+i+'" style="cusor:pointer"><i class="fa fa-expand"></i> Open</a> '+
+                      ' <a href="#info/'+feature.properties.id+'" class="btn btn-link"><i class="fa fa-info"></i> Info</a></div>'
       } else {
         link = '<a href="#info/'+feature.properties.prmname+'" style="font-size:18px">'+feature.properties.prmname+'</a>';
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
       }
 
-      return '<div class="layout horizontal" '+(feature.properties.description || feature.properties.regions ? 'style="margin-bottom: 15px"' : '')+'>'+
+      return '<div class="layout horizontal" style="margin-bottom: 15px">'+
         '<div style="padding:15px 5px; width: 50px">'+icon+'</div>'+
         '<div class="flex">'+
-          '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+
+          '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+regionLinks+
           (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
           (feature.properties.regions ? '<div><cwn-region-label prmname="'+feature.properties.prmname+'"></cwn-region-label></div>' : '')+
         '</div>'+
@@ -11158,7 +11915,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     }
   })
 </script>
-<dom-module id="cwn-app-layout" assetpath="/public/elements/">
+<dom-module id="cwn-app-layout" assetpath="elements/">
     <style>
         .navbar-inverse {
             box-shadow: 0 0 5px black;
@@ -11295,7 +12052,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     });
 </script>
-<dom-module id="cwn-filters" assetpath="/public/elements/">
+<dom-module id="cwn-filters" assetpath="elements/">
     <style>
         .cb-border {
             display:inline-block;
@@ -11450,7 +12207,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     });
 </script>
-<dom-module id="cwn-search" assetpath="/public/elements/">
+<dom-module id="cwn-search" assetpath="elements/">
   <template>
     <cwn-popup id="popup" style="z-index: 10000">
       <div class="popup-body" id="body">
@@ -11559,7 +12316,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
   })
 </script>
-<dom-module id="cwn-about" assetpath="/public/elements/">
+<dom-module id="cwn-about" assetpath="elements/">
   <template>
     <cwn-popup id="popup" style="z-index: 10000">
       <div class="popup-body" id="body">
@@ -11600,7 +12357,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
   });
 </script>
-<dom-module id="cwn-node-info" assetpath="/public/elements/cwn-info-page/node/">
+<dom-module id="cwn-node-info" assetpath="elements/cwn-info-page/node/">
     <style>
         #middleCol {
             transition: margin-top linear 200ms;
@@ -11625,12 +12382,16 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         [hidden] {
           display:none;
         }
+        .overflow {
+          max-height: 300px;
+          overflow: auto;
+        }
     </style>
 
     <template>
         <div class="row">
 
-          
+          <!-- Start Origins -->
           <div class="col-md-4 no-float">
             <h4 class="page-header node-info-header" style="text-align:right">Origins</h4>
             <div>
@@ -11648,30 +12409,32 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
               <div id="originExtra" style="text-align:right"></div>
 
-              <template is="dom-repeat" items="{{origins}}">
-                <div style="text-align:right;margin-bottom:20px">
-                  <div>
-                    <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
+              <div class="node-info-list">
+                <template is="dom-repeat" items="{{origins}}">
+                  <div style="text-align:right;margin-bottom:20px">
+                    <div>
+                      <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
 
-                    <span hidden$="{{item.hideArrow}}">
-                      <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                        <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                      </a>
+                      <span hidden$="{{item.hideArrow}}">
+                        <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                          <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                        </a>
 
-                      <span hidden$="{{item.hasLink}}">
-                          <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                        <span hidden$="{{item.hasLink}}">
+                            <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                        </span>
                       </span>
-                    </span>
 
+                    </div>
+                    <div class="description" hidden$="{{!item.description}}" style="margin-right: 55px">{{item.description}}</div>
                   </div>
-                  <div class="description" hidden$="{{!item.description}}" style="margin-right: 55px">{{item.description}}</div>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
           </div>
-          
+          <!-- End Origins -->
 
-          
+          <!-- Start Feature -->
           <div class="col-md-4" style="text-align:center" id="middleCol">
               <div class="border">
                 <table style="margin: 0 auto">
@@ -11693,12 +12456,12 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                   <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
                 </div>
                 <div id="githubLink"></div>
-                
+
               </div>
           </div>
-          
+          <!-- End Feature -->
 
-          
+          <!-- Start Terminals -->
           <div class="col-md-4">
             <h4 class="page-header node-info-header">Terminals</h4>
 
@@ -11713,32 +12476,36 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
             <div id="terminusExtra"></div>
 
-            <template is="dom-repeat" items="{{terminals}}">
-              <div style="margin-bottom:20px">
-                <div>
+            <div class="node-info-list">
+              <template is="dom-repeat" items="{{terminals}}">
+                <div style="margin-bottom:20px">
+                  <div>
 
-                  <span hidden$="{{item.hideArrow}}">
-                    <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
-                      <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
-                    </a>
+                    <span hidden$="{{item.hideArrow}}">
+                      <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
+                        <i class="fa fa-long-arrow-right" style="font-size:32px;display:inline-block;"></i>
+                      </a>
 
-                    <span hidden$="{{item.hasLink}}">
-                        <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      <span hidden$="{{item.hasLink}}">
+                          <i class="fa fa-long-arrow-right" style="color:#888;font-size:32px;display:inline-block;"></i>
+                      </span>
                     </span>
-                  </span>
 
-                  &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
+                    &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
 
+                  </div>
+                  <div hidden$="{{!item.description}}">
+                    <div class="description" style="margin-left: 55px">{{item.description}}</div>
+                  </div>
                 </div>
-                <div hidden$="{{!item.description}}">
-                  <div class="description" style="margin-left: 55px">{{item.description}}</div>
-                </div>
-              </div>
-            </template>
+              </template>
+            </div>
           </div>
-          
+          <!-- End Terminals -->
 
         </div>
+
+        <div id="regionNodes"></div>
     </template>
 </dom-module>
 <script>Polymer({
@@ -11787,11 +12554,13 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
           this.$.label.innerHTML = this.feature.properties.origin.replace(/_/g, ' ')+' <small>to</small> '+this.feature.properties.terminus.replace(/_/g, ' ');
         } else if( this.feature.properties.type == 'Region Link') {
           this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to/from</small> ').replace(/_/g, ' ');
+        } else if( this.feature.properties.type == 'Region') {
+          this.$.label.innerHTML = this.feature.properties.label;
         } else {
           this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' ');
         }
 
-        if( this.feature.properties.type == 'Region Link') {
+        if( this.feature.properties.type == 'Region Link' ) {
           $(this).find('.node-info-header').css('display','none');
           this.$.origin.style.marginTop = '30px';
           this.$.terminal.style.marginTop = '30px';
@@ -11800,6 +12569,15 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
           this.$.origin.style.marginTop = '0';
           this.$.terminal.style.marginTop = '0';
         }
+
+        if( this.feature.properties.type == 'Region' ) {
+          $(this).find('.node-info-list').addClass('overflow');
+          this.renderRegionNodes();
+        } else {
+          $(this).find('.node-info-list').removeClass('overflow');
+          this.$.regionNodes.innerHTML = '';
+        }
+
 
         this.$.regions.update(this.feature);
 
@@ -11823,8 +12601,8 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
                   description: node ? node.properties.description : ''
                 });
               } else {
-                this.origins.push({
-                    name: this.feature.properties.origins[i].prmname,
+                this[type].push({
+                    name: this.feature.properties[type][i].prmname,
                     hasLink : false,
                     link: '',
                     description: ''
@@ -11888,6 +12666,37 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
         }
     },
 
+    renderRegionNodes : function() {
+      var cols = ['','',''], col, node, c = 0;
+      for( var i = 0; i < this.feature.properties.nodes.length; i++ ) {
+        col = c % 3;
+
+        node = CWN.ds.lookupMap[this.feature.properties.nodes[i]];
+        if( !node ) continue;
+
+        cols[col] +=
+          '<cwn-info-link prmname="'+node.properties.prmname+'"></cwn-info-link>'+
+          '<div class="info-block" style="margin-bottom: 15px">'+(node.properties.description || '')+'</div>';
+        c++;
+      }
+
+      this.$.regionNodes.innerHTML =
+        '<div><a class="btn btn-link btn-toggle">Node List</a></div>'+
+        '<div class="well" style="display:none">'+
+          '<div class="row">'+
+            '<div class="col-sm-4">'+
+              cols.join('</div><div class="col-sm-4">')+
+            '</div>'+
+          '</div>'+
+        '</div>';
+
+      $(this.$.regionNodes)
+        .find('.btn-toggle')
+        .on('click', function(){
+          $(this.$.regionNodes).find('.well').toggle('slow');
+        }.bind(this));
+    },
+
     onTerminalUpdate : function() {
         if( !CWN.ds ) return;
 
@@ -11910,7 +12719,7 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
         if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
           this.showNavLinks = false;
-        } else if( this.feature.properties.type == 'Region Link' ) {
+        } else if( this.feature.properties.type == 'Region Link' || this.feature.properties.type == 'Region' ) {
           this.showNavLinks = false;
         }
     },
@@ -11979,7 +12788,255 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
     }
 });
 </script>
-<dom-module id="cwn-cost-info" assetpath="/public/elements/cwn-info-page/cost/">
+<dom-module id="cwn-bound-chart" assetpath="elements/cwn-info-page/cost/">
+  <style>
+    :host {
+      display : block
+    }
+  </style>
+  <template>
+
+    <h5>
+      Type: <small>{{type}}</small>
+    </h5>
+
+    <div>{{description}}</div>
+
+    <div hidden$="{{!showConstantBounds}}">
+      $<span>{{constraintChart.constant}}</span>
+    </div>
+
+    <div id="constraintChartAnchor"></div>
+
+    <template is="dom-template" id="constraintChartTimeSeries">
+      <cwn-date-linechart animate=""></cwn-date-linechart>
+    </template>
+
+    <template is="dom-template" id="constraintChart">
+      <cwn-linechart cols="{{cols}}" options="{{options}}" animate="">
+      </cwn-linechart>
+    </template>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is : 'cwn-bound-chart',
+
+    ready : function() {
+      this.showConstantCost = false;
+      this.showConstantBounds = false;
+
+      this.constraintChart = {
+          constant: -1,
+          label : '',
+          isTimeSeries : false,
+          data : [],
+          options : {
+              series: [{'color': '#F1CA3A'}],
+              intervals: { 'style':'area' },
+              vAxis : {
+                viewWindow:{ min: 0 }
+              }
+          }
+      };
+
+      this.charts = {};
+    },
+
+    /*
+      --LBC (Lower Bound Constant),
+      --LBM (Lower Bound Monthly Varying)
+      --LBT (Lower Bound Time Varying)
+      --UBC (Upper Bound Constant)
+      --UBM (Upper Bound Monthly Varying)
+      --UBT (Upper Bound Time Varying)
+      --EQC (Equality Constraint: constant, this requires a time-series data)
+         -- is upper and lower bound, single line
+      --EQT (Equality Constraint: time, this requires a time-series data)
+        -- is upper and lower bound, single line
+      --NOB (No Bounds)
+    */
+    render : function(bound) {
+      var data = {
+        upper: null,
+        lower : null,
+        NOB : false,
+        EQC : false,
+        use : 'constant'
+      }
+      this.type = bound.type;
+      this.description = bound.description || '';
+
+      if( bound.type == 'LBC' || bound.type == 'LBM' || bound.type == 'LBT') {
+        data.lower = bound;
+        if( bound.type != 'LBC' ) data.use = 'lower';
+
+      } else if ( bound.type == 'UBC' || bound.type == 'UBM' || bound.type == 'UBT' ) {
+        data.upper = bound;
+        if( bound.type == 'UBM' || bound.type == 'UBT' ) {
+          // if lower is date, we want to use the date
+          if( !(bound.type != 'UBM' && data.use == 'lower') ) data.use = 'upper';
+        }
+
+      } else if ( bound.type == 'NOB' ) {
+        data.NOB = true;
+
+      // TODO: this should proly render a special case
+      } else if ( bound.type == 'EQC' || bound.type == 'EQT' ) {
+        data.EQC = true;
+        data.lower = bound;
+        data.upper = bound;
+        data.use = 'upper';
+      }
+
+      if( bound.type == 'UBT' || bound.type == 'LBT' ||
+          bound.type == 'EQC' || bound.type == 'EQT') {
+        this.constraintChart.isTimeSeries = true;
+      }
+
+
+      //  TODO: if NOB, just quit?
+      if( data.NOB ) return;
+
+      var chartData = [];
+
+      var length = 1;
+      if( data.upper && data.upper.type != 'UBC') {
+        length = data.upper.bound.length;
+      }
+      if( data.lower && data.lower.type != 'LBC' && data.lower.bound.length > length ) {
+        length = data.lower.bound.length;
+      }
+
+      var header = ['Date'];
+      if( data.upper ) header.push('Upper Bound');
+      if( data.lower ) header.push('Lower Bound');
+
+      if( length == 1 ) length = 12;  // TODO: if len == 1, should we just show text?
+      for( var i = 0; i < length; i++ ) {
+        this.appendBoundsRow(data, chartData, i);
+      }
+
+      this.constraintChart.data = chartData;
+      this.updateChart();
+    },
+
+    appendBoundsRow : function(data, chartData, index) {
+      var row = [], ud, ld;
+
+      if( data.upper ) {
+        ud = this.getBoundsRow(data.upper, index);
+        row.push(ud[1]);
+      }
+      if( data.lower ) {
+        ld = this.getBoundsRow(data.lower, index);
+        row.push(ld[1]);
+      }
+
+      if( data.use == 'constant' ) row.splice(0, 0, index+'');
+      else if( data.use == 'upper' ) row.splice(0, 0, ud[0]);
+      else row.splice(0, 0, ld[0]);
+
+      chartData.push(row);
+    },
+
+    getBoundsRow : function(data, index) {
+      if( data.type == 'LBC' || data.type == 'UBC' ) {
+        if( index == 0 ) return ['Constant Lower', 'Constant Lower']
+        return ['', data.bound];
+      }
+
+      if( index > data.bound.length -1) {
+        index = index % 12;
+      }
+      if( index > data.bound.length -1) {
+        return ['Invalid', 0];
+      }
+
+      return data.bound[index];
+    },
+
+    getContraintsLength : function(bounds) {
+      var l = 0;
+      if( bounds.lower ) {
+        if( bounds.lower.bound_type == 'Constant' ) {
+          l = 1;
+        } else if ( bounds.lower.bound_type == 'TimeSeries' ) {
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+
+          l = bounds.lower.bound.length;
+        } else if ( bounds.lower.bound_type == 'Monthly' ) {
+          l = bounds.lower.bound.length;
+        }
+      }
+      if (bounds.upper ) {
+        if( bounds.upper.bound_type == 'Constant' && l == 0 ) {
+          l = 1;
+        } else if(bounds.upper.bound_type == 'TimeSeries' && l < bounds.upper.bound.length ) {
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+
+          l = bounds.upper.bound.length;
+        } else if ( bounds.upper.bound_type == 'Monthly' && l < bounds.upper.bound.length ) {
+          l = bounds.upper.bound.length;
+        }
+      }
+      return l;
+    },
+
+    updateChart : function() {
+        if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
+            this.showBounds = true;
+        }
+
+        if( this.constraintChart.constant != -1 ) {
+            this.showConstantBounds = true;
+        }
+
+        this.$.constraintChartAnchor.innerHTML = '';
+        this.charts.constraintChart = null;
+
+        if( this.constraintChart.data.length != 0 ) {
+            var isline = false;
+
+            // stamp out cwn-date-linechart instead of just linechart
+            if( this.constraintChart.isTimeSeries ) {
+                this.hasTimeSeries = true;
+                this.charts.constraintChart = this._stamp(this.$.constraintChartTimeSeries, 'cwn-date-linechart', this.constraintChart);
+            } else {
+                isline = true;
+                this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
+            }
+
+
+            this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
+
+            if( isline ) {
+              this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
+            }
+        }
+    },
+
+    // dom-template: http://polymer.github.io/polymer/
+    // doesn't seem to take variables when you stamp now :(
+    // setting manually.
+    _stamp : function(ele, query, data) {
+      var template = ele.stamp();
+
+      if( query && data ) {
+        var newEle = template.root.querySelector(query);
+        if( newEle ) {
+          for( var key in data ) newEle[key] = data[key];
+        }
+      }
+
+      return template;
+    }
+  })
+</script>
+<dom-module id="cwn-cost-info" assetpath="elements/cwn-info-page/cost/">
     <template>
         <h2 class="page-header">Costs</h2>
 
@@ -12002,23 +13059,9 @@ iron-selector:not(.narrow-layout) #main ::content [paper-drawer-toggle] {
 
         </div>
 
-        <h4 hidden$="{{!showBounds}}">Bounds</h4>
+        <h4 hidden$="{{!showBounds}}" class="page-header">Bounds</h4>
 
-        <h5 hidden$="{{!showConstantBounds}}">
-          Constant: $<span>{{constraintChart.constant}}</span>
-        </h5>
-
-
-        <div id="constraintChartAnchor"></div>
-
-        <template is="dom-template" id="constraintChartTimeSeries">
-          <cwn-date-linechart animate=""></cwn-date-linechart>
-        </template>
-
-        <template is="dom-template" id="constraintChart">
-          <cwn-linechart cols="{{cols}}" options="{{options}}" animate="">
-          </cwn-linechart>
-        </template>
+        <div id="boundChartRoot"></div>
     </template>
 </dom-module>
 
@@ -12043,26 +13086,7 @@ Polymer({
         selected : 0
       };
 
-      this.constraintChart = {
-          constant: -1,
-          label : '',
-          isTimeSeries : false,
-          /*cols : [
-              {id:'date', type:'string'},
-              {id:'upper_value', type:'number'},
-              {id:'upper_interval', type:'number', role:'interval'},
-              {id:'lower_interval', type:'number', role:'interval'},
-              {id: 'tooltip', type: 'string', role:'tooltip'}
-          ],*/
-          data : [],
-          options : {
-              series: [{'color': '#F1CA3A'}],
-              intervals: { 'style':'area' },
-              vAxis : {
-                viewWindow:{ min: 0 }
-              }
-          }
-      };
+
 
       this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
 
@@ -12082,20 +13106,12 @@ Polymer({
     update : function() {
         if( !this.feature ) return;
 
-
-        this.constraintChart.data = [];
-        this.constraintChart.isTimeSeries = false;
         this.hasTimeSeries = false;
-        this.constraintChart.constant = -1;
-        this.constraintChart.label = '';
 
         this.showCostData = false;
         this.showMonthlyVariableCost = false;
-        this.showConstantCost = false;
-        this.showConstantBounds = false;
-        this.$.constraintChartAnchor.innerHTML = '';
+
         this.showBounds = false;
-        this.showConstantBounds = false;
 
         var hasBounds = false;
         if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
@@ -12174,147 +13190,20 @@ Polymer({
       }.bind(this));
     },
 
-    /*
-      --LBC (Lower Bound Constant),
-      --LBM (Lower Bound Monthly Varying)
-      --LBT (Lower Bound Time Varying)
-      --UBC (Upper Bound Constant)
-      --UBM (Upper Bound Monthly Varying)
-      --UBT (Upper Bound Time Varying)
-      --EQC (Equality Constraint: constant, this requires a time-series data)
-         -- is upper and lower bound, single line
-      --EQT (Equality Constraint: time, this requires a time-series data)
-        -- is upper and lower bound, single line
-      --NOB (No Bounds)
-    */
     renderBounds : function(bounds) {
-      var data = {
-        upper: null,
-        lower : null,
-        NOB : false,
-        EQC : false,
-        use : 'constant'
+      this.$.boundChartRoot.innerHTML = '';
+
+      if( bounds.length === 0 ) {
+        this.showBounds = false;
+        return;
       }
+      this.showBounds = true;
 
       for( var i = 0; i < bounds.length; i++ ) {
-        if( bounds[i].type == 'LBC' || bounds[i].type == 'LBM' || bounds[i].type == 'LBT') {
-          data.lower = bounds[i];
-          if( bounds[i].type != 'LBC' ) data.use = 'lower';
-
-        } else if ( bounds[i].type == 'UBC' || bounds[i].type == 'UBM' || bounds[i].type == 'UBT' ) {
-          data.upper = bounds[i];
-          if( bounds[i].type == 'UBM' || bounds[i].type == 'UBT' ) {
-            // if lower is date, we want to use the date
-            if( !(bounds[i].type != 'UBM' && data.use == 'lower') ) data.use = 'upper';
-          }
-
-        } else if ( bounds[i].type == 'NOB' ) {
-          data.NOB = true;
-
-        // TODO: this should proly render a special case
-        } else if ( bounds[i].type == 'EQC' || bounds[i].type == 'EQT' ) {
-          data.EQC = true;
-          data.lower = bounds[i];
-          data.upper = bounds[i];
-          data.use = 'upper';
-        }
-
-        if( bounds[i].type == 'UBT' || bounds[i].type == 'LBT' ||
-            bounds[i].type == 'EQC' || bounds[i].type == 'EQT') {
-          this.constraintChart.isTimeSeries = true;
-
-        }
+        var ele = document.createElement('cwn-bound-chart');
+        this.$.boundChartRoot.appendChild(ele);
+        ele.render(bounds[i]);
       }
-
-      //  TODO: if NOB, just quit?
-      if( data.NOB ) return;
-
-      var chartData = [];
-
-      var length = 1;
-      if( data.upper && data.upper.type != 'UBC') {
-        length = data.upper.bound.length;
-      }
-      if( data.lower && data.lower.type != 'LBC' && data.lower.bounds > length ) {
-        length = data.lower.bound.length;
-      }
-
-      var header = ['Date'];
-      if( data.upper ) header.push('Upper Bound');
-      if( data.lower ) header.push('Lower Bound');
-
-      if( length == 1 ) length = 12;  // TODO: if len == 1, should we just show text?
-      for( var i = 0; i < length; i++ ) {
-        this.appendBoundsRow(data, chartData, i);
-      }
-
-      this.constraintChart.data = chartData;
-      this.updateConstraintUi();
-    },
-
-    appendBoundsRow : function(data, chartData, index) {
-      var row = [], ud, ld;
-
-      if( data.upper ) {
-        ud = this.getBoundsRow(data.upper, index);
-        row.push(ud[1]);
-      }
-      if( data.lower ) {
-        ld = this.getBoundsRow(data.lower, index);
-        row.push(ld[1]);
-      }
-
-      if( data.use == 'constant' ) row.splice(0, 0, index+'');
-      else if( data.use == 'upper' ) row.splice(0, 0, ud[0]);
-      else row.splice(0, 0, ld[0]);
-
-      chartData.push(row);
-    },
-
-    getBoundsRow : function(data, index) {
-      if( data.type == 'LBC' || data.type == 'UBC' ) {
-        if( index == 0 ) return ['Constant Lower', 'Constant Lower']
-        return ['', data.bound];
-      }
-
-      if( index > data.bound.length -1) {
-        index = index % 12;
-      }
-      if( index > data.bound.length -1) {
-        return ['Invalid', 0];
-      }
-
-      return data.bound[index];
-    },
-
-
-    getContraintsLength : function(bounds) {
-      var l = 0;
-      if( bounds.lower ) {
-        if( bounds.lower.bound_type == 'Constant' ) {
-          l = 1;
-        } else if ( bounds.lower.bound_type == 'TimeSeries' ) {
-          this.constraintChart.isTimeSeries = true;
-          this.hasTimeSeries = true;
-
-          l = bounds.lower.bound.length;
-        } else if ( bounds.lower.bound_type == 'Monthly' ) {
-          l = bounds.lower.bound.length;
-        }
-      }
-      if (bounds.upper ) {
-        if( bounds.upper.bound_type == 'Constant' && l == 0 ) {
-          l = 1;
-        } else if(bounds.upper.bound_type == 'TimeSeries' && l < bounds.upper.bound.length ) {
-          this.constraintChart.isTimeSeries = true;
-          this.hasTimeSeries = true;
-
-          l = bounds.upper.bound.length;
-        } else if ( bounds.upper.bound_type == 'Monthly' && l < bounds.upper.bound.length ) {
-          l = bounds.upper.bound.length;
-        }
-      }
-      return l;
     },
 
     // used by the month selector to update Monthly Variable chart's current month
@@ -12329,61 +13218,11 @@ Polymer({
 
       // redraw chart
       this.$.lineChart.update(this.costChartData);
-    },
-
-
-    updateConstraintUi : function() {
-        if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
-            this.showBounds = true;
-        }
-
-        if( this.constraintChart.constant != -1 ) {
-            this.showConstantBounds = true;
-        }
-
-        this.$.constraintChartAnchor.innerHTML = '';
-        this.charts.constraintChart = null;
-
-        if( this.constraintChart.data.length != 0 ) {
-            var isline = false;
-
-            // stamp out cwn-date-linechart instead of just linechart
-            if( this.constraintChart.isTimeSeries ) {
-                this.hasTimeSeries = true;
-                this.charts.constraintChart = this._stamp(this.$.constraintChartTimeSeries, 'cwn-date-linechart', this.constraintChart);
-            } else {
-                isline = true;
-                this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
-            }
-
-
-            this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
-
-            if( isline ) {
-              this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
-            }
-        }
-    },
-
-    // dom-template: http://polymer.github.io/polymer/
-    // doesn't seem to take variables when you stamp now :(
-    // setting manually.
-    _stamp : function(ele, query, data) {
-      var template = ele.stamp();
-
-      if( query && data ) {
-        var newEle = template.root.querySelector(query);
-        if( newEle ) {
-          for( var key in data ) newEle[key] = data[key];
-        }
-      }
-
-      return template;
     }
 
 });
 </script>
-<dom-module id="cwn-output-info" assetpath="/public/elements/cwn-info-page/">
+<dom-module id="cwn-output-info" assetpath="elements/cwn-info-page/">
   <template>
     <h2 class="page-header">Outputs</h2>
 
@@ -12419,6 +13258,10 @@ Polymer({
         } else if( this.feature.properties.type == 'Region Link' ) {
           $(this).parent().show();
           this.$.loading.style.display = 'block';
+          this.loadLinkAggregate();
+       } else if( this.feature.properties.type == 'Region' ) {
+          $(this).parent().show();
+          this.$.loading.style.display = 'block';
           this.loadAggregate();
         } else {
           $(this).parent().hide();
@@ -12427,18 +13270,38 @@ Polymer({
       },
 
       loadAggregate : function() {
-        CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
+        CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp) {
+          this.$.loading.style.display = 'none';
+
+          var data = [['date','kaf']];
+
+          if( resp.flow ) {
+            for( var key in resp.flow ) {
+              data.push([key, resp.flow[key] || 0]);
+            }
+          }
+
+          this.data = {
+            flow : data
+          }
+          this.renderFlow();
+        }.bind(this));
+      },
+
+      loadLinkAggregate : function() {
+        // TODO: include units in aggregate response
+        CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
           this.$.loading.style.display = 'none';
 
           var data = [[
             'date',
-            this.feature.properties.origin+' to '+this.feature.properties.terminus,
-            this.feature.properties.terminus+' to '+this.feature.properties.origin
+            this.feature.properties.origin+' to '+this.feature.properties.terminus+' (kaf)',
+            this.feature.properties.terminus+' to '+this.feature.properties.origin+' (kaf)'
           ]];
 
-          if( resp.origin.flows ) {
-            for( var key in resp.origin.flows ) {
-              data.push([key, resp.origin.flows[key] || 0, resp.terminus.flows[key] || 0]);
+          if( resp.origin.flow ) {
+            for( var key in resp.origin.flow ) {
+              data.push([key, resp.origin.flow[key] || 0, resp.terminus.flow[key] || 0]);
             }
           }
 
@@ -12450,11 +13313,11 @@ Polymer({
           this.fire('region-link-update', {
             origin : {
               prmname : this.feature.properties.origin,
-              links : resp.origin.links
+              links : resp.origin.included
             },
             terminus : {
               prmname : this.feature.properties.terminus,
-              links : resp.terminus.links
+              links : resp.terminus.included
             }
           });
         }.bind(this));
@@ -12485,126 +13348,60 @@ Polymer({
       }
   });
 </script>
-<dom-module id="cwn-info-page" assetpath="/public/elements/cwn-info-page/">
-    <style>
-      :host {
-        display: block;
-        overflow-x: hidden;
-        margin-bottom: 100px;
-      }
-      .card {
-        margin: 10px 10px 10px 10px;
-        box-shadow: 0 0 5px #888;
-        padding: 15px;
-      }
-    </style>
+<dom-module id="cwn-climate-info" assetpath="elements/cwn-info-page/">
+  <style>
+    :host {
+      display : block;
+    }
+  </style>
+  <template>
 
-    <template>
+    <h2 class="page-header">Climate</h2>
 
-      <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
-        <cwn-node-info id="nodeInfo" feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}"></cwn-node-info>
+    <div hidden$="{{!climateLoading}}" style="color:#888">
+      Loading climate data...
+    </div>
+
+    <div>
+
+      <div hidden$="{{!inflows.length}}">
+        <h4>Inflows</h4>
       </div>
 
-      
-
-
-      <div class="row" hidden$="{{loading}}">
-        <div class="col-md-6">
-
-          
-          <div class="card" hidden$="{{!showClimateData}}">
-            <h2 class="page-header">Climate</h2>
-
-            <div class="alert alert-error" hidden$="{{!climateLoadError}}">
-              Error loading climate data.
-            </div>
-            <div hidden$="{{!climateLoading}}" style="color:#888">
-              Loading climate data...
-            </div>
-
-            <div hidden$="{{!showClimateData}}">
-
-              <div hidden$="{{!inflows.length}}">
-                <h4>Inflows</h4>
-              </div>
-
-              <div id="inflows">
-                <h4>Inflows</h4>
-                <div id="inflowCharts"></div>
-              </div>
-
-              <div id="eacChartRoot"></div>
-              <template id="eacChart" is="dom-template">
-                <h4>Elevation / Area / Capacity</h4>
-                <cwn-linechart data="{{data}}" cols="{{cols}}" options="{{options}}" type="{{type}}">
-                </cwn-linechart>
-              </template>
-
-              <div id="evaporation" style="display:none">
-                <h4>Evaporation</h4>
-                <cwn-date-linechart animate="" id="evaporationChart"></cwn-date-linechart>
-              </div>
-
-            </div>
-          </div>
-          
-
-        </div>
-        <div class="col-md-6">
-
-          
-          <div class="card">
-            <cwn-cost-info feature="{{feature}}">
-            </cwn-cost-info>
-          </div>
-          
-
-        </div>
+      <div id="inflows">
+        <h4>Inflows</h4>
+        <div id="inflowCharts"></div>
       </div>
 
-      <div class="card">
-        <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
+      <div id="eacChartRoot"></div>
+      <template id="eacChart" is="dom-template">
+        <h4>Elevation / Area / Capacity</h4>
+        <cwn-linechart data="{{data}}" cols="{{cols}}" options="{{options}}" type="{{type}}">
+        </cwn-linechart>
+      </template>
+
+      <div id="evaporation" style="display:none">
+        <h4>Evaporation</h4>
+        <cwn-date-linechart animate="" id="evaporationChart"></cwn-date-linechart>
       </div>
 
-      <div class="card" id="readme" style="display:none">
-        <h4 class="page-header">README</h4>
-        <div id="readmeMarkdown"></div>
-      </div>
+    </div>
 
-      <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="updateDateFilters">
-      </cwn-dateslider>
-
-
-    </template>
+  </template>
 </dom-module>
+
 <script>
-Polymer({
-    is : 'cwn-info-page',
+  Polymer({
+    is : 'cwn-climate-info',
+
+    properties : {
+      feature : {
+        type : Object,
+        observer : 'featureObserver'
+      }
+    },
 
     ready : function() {
-      this.feature = null;
-
-      this.hack = '';
-      this.islocal = false;
-
-      this.tableProperties = ['prmname'];
-
-      // loading flags
-      this.climateLoadError = false;
-      this.costLoadError = false;
-      this.climateLoading = false;
-      this.costLoading = false;
-      this.loading = false;
-
-        // have to do long lookup right now, is there are better way?
-      this.origins = [];
-      this.terminals = [];
-
-      // render data.  Data in a format ready to draw above
-      this.inflows = [],
-
-      this.map = {};
-
       // Elevation / Area / Capacity charts
       this.eacChart = {
         type : 'ComboChart',
@@ -12636,6 +13433,274 @@ Polymer({
           }
         }
       };
+    },
+
+    featureObserver : function() {
+
+      this.climateLoading = false;
+      this.inflows = [];
+      this.charts = {};
+
+      this.render();
+    },
+
+    render : function() {
+      if( !this.feature ) {
+        $(this).parent().hide();
+        return;
+      }
+
+      var props = this.feature.properties;
+      if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
+        $(this).parent().css('display','block');
+      } else if ( this.feature.properties.type == 'Region' ) {
+        this.$.inflowCharts.innerHTML = '';
+        this.$.evaporation.style.display = 'none';
+        this.$.eacChartRoot.innerHTML = '';
+        this.renderRegion();
+        return;
+      } else {
+        $(this).parent().hide();
+        return;
+      }
+
+      this.renderInflows();
+      this.renderEvaporation();
+
+      this.eacChart.data = [];
+      this.renderElArCap();
+    },
+
+    renderElArCap : function() {
+      if( !this.feature.properties.el_ar_cap ) return;
+      var el_ar_cap = this.feature.properties.el_ar_cap;
+
+      var max = 0;
+      var elevationCol = 0, capacityCol = 0, areaCol = 0;
+
+      for( var i = 0; i < el_ar_cap.length; i++ ) {
+        // make sure col labels are set correctly
+        if( i == 0 ) {
+          for( var j = 0; j < el_ar_cap[i].length; j ++ ) {
+            if( el_ar_cap[i][j].toLowerCase() == 'elevation' ) elevationCol = j;
+            else if( el_ar_cap[i][j].toLowerCase() == 'capacity' ) capacityCol = j;
+            else if( el_ar_cap[i][j].toLowerCase() == 'area' ) areaCol = j;
+          }
+        } else {
+          this.eacChart.data.push([
+            el_ar_cap[i][capacityCol],
+            el_ar_cap[i][elevationCol],
+            el_ar_cap[i][areaCol],
+            null,
+            null
+          ]);
+        }
+
+        if( el_ar_cap[i][elevationCol] > max ) max = el_ar_cap[i][elevationCol];
+      }
+
+      if( this.feature.properties.initialstorage ) {
+        this.eacChart.data.push([
+          this.feature.properties.initialstorage,
+          null,
+          null,
+          max,
+          'Initial: '+this.feature.properties.initialstorage
+        ]);
+      }
+
+      this.eacChart.data.sort(function(a,b){
+        if( a[capacityCol] > b[capacityCol] ) return 1;
+        if( a[capacityCol] < b[capacityCol] ) return -1;
+        return 0;
+      });
+
+      this.stampEacChart();
+    },
+
+    renderInflows : function() {
+      this.$.inflows.style.display = 'none';
+
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        if( resp.inflows ) {
+          this.hasInflows = true;
+          this.$.inflowCharts.innerHTML = '';
+
+          for( var name in resp.inflows  ) {
+            var chart = document.createElement('cwn-date-linechart');
+            chart.label = (resp.inflows[name].description || name || ''),
+            chart.data = resp.inflows[name].inflow;
+
+            this.$.inflowCharts.appendChild(chart);
+          }
+
+          this.$.inflows.style.display = 'block';
+        } else {
+          this.$.inflows.style.display = 'none';
+        }
+      }.bind(this));
+    },
+
+    renderRegion : function() {
+      CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
+        if( resp.error || !resp.inflows ) {
+          $(this).parent().css('display','none');
+          console.log(resp);
+          return;
+        }
+
+        if( Object.keys(resp.inflows).length == 0 ) {
+          $(this).parent().css('display','none');
+          return;
+        }
+
+        var chart = document.createElement('cwn-date-linechart');
+        chart.label = 'Aggregate Inflow',
+        chart.data = [['date', 'kaf']];
+        for( var key in resp.inflows ) {
+          chart.data.push([key, resp.inflows[key] || 0 ]);
+        }
+
+        this.$.inflowCharts.appendChild(chart);
+
+        this.$.inflows.style.display = 'block';
+        $(this).parent().css('display','block');
+
+      }.bind(this));
+    },
+
+    renderEvaporation : function() {
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        var evaporation = resp.evaporation;
+        if( evaporation ) {
+          this.hasEvaporation = true;
+          this.$.evaporationChart.update(evaporation);
+          this.evaporationData = evaporation;
+          this.$.evaporation.style.display = 'block';
+        } else {
+          this.$.evaporation.style.display = 'none';
+        }
+      }.bind(this));
+    },
+
+    stampEacChart : function() {
+      if( !this.eacChart ) return;
+
+        if( this.eacChart.data.length == 0 ) {
+
+            this.charts.eacChart = null;
+            this.$.eacChartRoot.innerHTML = '';
+
+        } else if( !this.charts.eacChart ) {
+
+            this.charts.eacChart = this._stamp(this.$.eacChart, 'cwn-linechart', this.eacChart);
+            this.$.eacChartRoot.appendChild(this.charts.eacChart.root);
+
+            this.async(function(){
+                this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
+            });
+        }
+    },
+
+    // dom-template: http://polymer.github.io/polymer/
+    // doesn't seem to take variables when you stamp now :(
+    // setting manually.
+    _stamp : function(ele, query, data) {
+      var template = ele.stamp();
+
+      if( query && data ) {
+        var newEle = template.root.querySelector(query);
+        if( newEle ) {
+          for( var key in data ) newEle[key] = data[key];
+        }
+      }
+
+      return template;
+    }
+
+  });
+</script>
+<dom-module id="cwn-info-page" assetpath="elements/cwn-info-page/">
+    <style>
+      :host {
+        display: block;
+        overflow-x: hidden;
+        margin-bottom: 100px;
+      }
+      .card {
+        margin: 10px 10px 10px 10px;
+        box-shadow: 0 0 5px #888;
+        padding: 15px;
+      }
+    </style>
+
+    <template>
+
+      <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
+        <cwn-node-info id="nodeInfo" feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}">
+        </cwn-node-info>
+      </div>
+
+      <!-- End Header Card -->
+      <div class="row" hidden$="{{loading}}">
+        <div class="col-md-6">
+
+          <!-- Start Climate -->
+          <div class="card" hidden$="{{!showClimateData}}">
+            <cwn-climate-info feature="{{feature}}"></cwn-climate-info>
+          </div>
+          <!-- End Climate -->
+
+        </div>
+        <div class="col-md-6">
+
+          <!-- Start Costs -->
+          <div class="card">
+            <cwn-cost-info feature="{{feature}}">
+            </cwn-cost-info>
+          </div>
+          <!-- End Costs -->
+
+        </div>
+      </div>
+
+      <div class="card">
+        <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
+      </div>
+
+      <div class="card" id="readme" style="display:none">
+        <h4 class="page-header">README</h4>
+        <div id="readmeMarkdown"></div>
+      </div>
+
+      <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="updateDateFilters">
+      </cwn-dateslider>
+
+
+    </template>
+</dom-module>
+<script>
+Polymer({
+    is : 'cwn-info-page',
+
+    ready : function() {
+      this.feature = null;
+
+      //this.hack = '';
+      //this.islocal = false;
+      //this.tableProperties = ['prmname'];
+
+      // loading flags
+      this.costLoadError = false;
+      this.costLoading = false;
+      this.loading = false;
+
+        // have to do long lookup right now, is there are better way?
+      this.origins = [];
+      this.terminals = [];
+
+      // render data.  Data in a format ready to draw above
+      this.map = {};
 
       // date filtering
       this.filters = {
@@ -12645,9 +13710,6 @@ Polymer({
 
       // dom controller stuff
       this.hasTimeSeries = false;
-      this.showClimateData = false;
-      this.charts = {};
-
     },
 
     init : function(map) {
@@ -12671,14 +13733,89 @@ Polymer({
     },
 
     setFeature : function(prmname) {
+      if( this.prmname == prmname ) return;
+      if( prmname ) this.prmname = prmname;
+
       if( CWN.ds.lookupMap[prmname] ) {
         this.feature = CWN.ds.lookupMap[prmname];
+      } else if( CWN.ds.regionLookupMap[prmname] ) {
+        this.setRegion(prmname);
       } else {
         // see if this is a region to feature
         this.setRegionToRegion(prmname);
       }
 
       this.update();
+    },
+
+    setRegion : function(prmname) {
+      var region = CWN.ds.regionLookupMap[prmname];
+
+      var nodes = {};
+      var origins = {};
+      var terminals = {};
+      var node;
+
+      for( var key in CWN.ds.lookupMap ) {
+        node = CWN.ds.lookupMap[key].properties;
+        if( !node ) continue;
+
+        if( node.type !== 'Diversion' && node.type !== 'Return Flow' ) {
+          if( node.regions && node.regions.indexOf(prmname) > -1 ) {
+            nodes[node.prmname] = 1;
+          }
+        }
+      }
+
+      for( var key in CWN.ds.lookupMap ) {
+        node = CWN.ds.lookupMap[key].properties;
+        if( !node ) continue;
+        if( node.type === 'Diversion' || node.type === 'Return Flow' ) {
+
+          if( nodes[node.origin] && nodes[node.terminus] ) continue; // ignore internal
+
+          if( nodes[node.origin] ) {
+            terminals[node.terminus] = {
+              link_prmname : node.prmname,
+              prmname : node.terminus
+            }
+          } else if( nodes[node.terminus] ) {
+
+            origins[node.origin] = {
+              link_prmname : node.prmname,
+              prmname : node.origin
+            };
+          }
+        }
+      }
+
+      arr = [];
+      for( var key in origins ) {
+        arr.push(origins[key]);
+      }
+      origins = arr;
+
+      arr = [];
+      for( var key in terminals ) {
+        arr.push(terminals[key]);
+      }
+      terminals = arr;
+
+
+      this.feature = {
+        properties : {
+          prmname : prmname,
+          type : 'Region',
+          nodes : Object.keys(nodes),
+          origins : origins,
+          terminals : terminals,
+          parents : region.parents,
+          subregions : region.subregions,
+          repo : region.geo.properties.repo,
+          label : region.geo.properties.name,
+          description : region.geo.properties.region
+        }
+      };
     },
 
     setRegionToRegion : function(prmname) {
@@ -12723,25 +13860,8 @@ Polymer({
 
       if( this.feature == null ) return alert('Feature not found');
 
-      this.climateLoadError = false;
-      this.climateLoading = false;
 
       this.hasOutputs = false;
-      this.eacChart.data = [];
-      this.evaporationData = null;
-      this.hasInflows = false;
-      this.hasEvaporation = false;
-
-      var props = this.feature.properties;
-      if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation)) {
-        this.showClimateData = true;
-      } else {
-        this.showClimateData = false;
-      }
-
-      this.renderClimateData(props.el_ar_cap);
-
-
       this.$.outputs.update(this.feature);
       if( this.feature.properties.hasOutputs ) {
         this.hasOutputs = true;
@@ -12769,97 +13889,6 @@ Polymer({
         return;
     },
 
-    renderClimateData : function(el_ar_cap) {
-      this.renderInflows();
-      this.renderEvaporation();
-
-      this.eacChart.data = [];
-      if( el_ar_cap ) {
-
-        var max = 0;
-        var elevationCol = 0, capacityCol = 0, areaCol = 0;
-
-        for( var i = 0; i < el_ar_cap.length; i++ ) {
-          // make sure col labels are set correctly
-          if( i == 0 ) {
-            for( var j = 0; j < el_ar_cap[i].length; j ++ ) {
-              if( el_ar_cap[i][j].toLowerCase() == 'elevation' ) elevationCol = j;
-              else if( el_ar_cap[i][j].toLowerCase() == 'capacity' ) capacityCol = j;
-              else if( el_ar_cap[i][j].toLowerCase() == 'area' ) areaCol = j;
-            }
-          } else {
-            this.eacChart.data.push([
-              el_ar_cap[i][capacityCol],
-              el_ar_cap[i][elevationCol],
-              el_ar_cap[i][areaCol],
-              null,
-              null
-            ]);
-          }
-
-          if( el_ar_cap[i][elevationCol] > max ) max = el_ar_cap[i][elevationCol];
-        }
-
-        if( this.feature.properties.initialstorage ) {
-          this.eacChart.data.push([
-            this.feature.properties.initialstorage,
-            null,
-            null,
-            max,
-            'Initial: '+this.feature.properties.initialstorage
-          ]);
-        }
-
-        this.eacChart.data.sort(function(a,b){
-          if( a[capacityCol] > b[capacityCol] ) return 1;
-          if( a[capacityCol] < b[capacityCol] ) return -1;
-          return 0;
-        });
-
-        this.stampEacChart();
-      }
-
-
-      this.updateDateSliderVisibility();
-    },
-
-    renderInflows : function() {
-      this.$.inflows.style.display = 'none';
-
-      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
-        if( resp.inflows ) {
-          this.hasInflows = true;
-          this.$.inflowCharts.innerHTML = '';
-
-          for( var name in resp.inflows  ) {
-            var chart = document.createElement('cwn-date-linechart');
-            chart.label = (resp.inflows[name].description || name || ''),
-            chart.data = resp.inflows[name].inflow;
-
-            this.$.inflowCharts.appendChild(chart);
-          }
-
-          this.$.inflows.style.display = 'block';
-        } else {
-          this.$.inflows.style.display = 'none';
-        }
-      }.bind(this));
-    },
-
-    renderEvaporation : function() {
-      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
-        var evaporation = resp.evaporation;
-        if( evaporation ) {
-          this.hasEvaporation = true;
-          this.$.evaporationChart.update(evaporation);
-          this.evaporationData = evaporation;
-          this.$.evaporation.style.display = 'block';
-        } else {
-          this.$.evaporation.style.display = 'none';
-        }
-      }.bind(this));
-    },
-
     updateDateFilters : function(e) {
       var eles = this.querySelectorAll('cwn-date-linechart');
 
@@ -12874,47 +13903,8 @@ Polymer({
       this.notifyPath('filters.stop', e.detail.end);
     },
 
-    _setCostMonth : function(e) {
-      this.$.costInfo.setMonth(parseInt(e.currentTarget.getAttribute('index')));
-    },
-
-    // dom-template: http://polymer.github.io/polymer/
-    // doesn't seem to take variables when you stamp now :(
-    // setting manually.
-    _stamp : function(ele, query, data) {
-      var template = ele.stamp();
-
-      if( query && data ) {
-        var newEle = template.root.querySelector(query);
-        if( newEle ) {
-          for( var key in data ) newEle[key] = data[key];
-        }
-      }
-
-      return template;
-    },
-
     updateDateSliderVisibility : function() {
       this.$.dateslider.setFeature(this.feature);
-    },
-
-    stampEacChart : function() {
-      if( !this.eacChart ) return;
-
-        if( this.eacChart.data.length == 0 ) {
-
-            this.charts.eacChart = null;
-            this.$.eacChartRoot.innerHTML = '';
-
-        } else if( !this.charts.eacChart ) {
-
-            this.charts.eacChart = this._stamp(this.$.eacChart, 'cwn-linechart', this.eacChart);
-            this.$.eacChartRoot.appendChild(this.charts.eacChart.root);
-
-            this.async(function(){
-                this.$.eacChartRoot.querySelector('cwn-linechart').update(this.eacChart.data);
-            });
-        }
     },
 
     onRegionLinkUpdate : function(e) {
@@ -12922,7 +13912,7 @@ Polymer({
     }
 });
 </script>
-<dom-module id="cwn-graph" assetpath="/public/elements/">
+<dom-module id="cwn-graph" assetpath="elements/">
   <style>
     #sigma {
         width: 100%;
@@ -13013,7 +14003,27 @@ Polymer({
             </div>
 
 
-              
+              <!--<div class="layout horizontal">
+                  <div>
+                      <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
+                  </div>
+                  <div flex>
+                      <div style="padding-left:25px">
+                          <div>{{popupNode.properties.description}}</div>
+                          <h4 style="margin-top: 30px">Actions</h4>
+                          <ul>
+                              <li><a
+                                      class="btn btn-link"
+                                      href="{{graphLink}}"
+                                      on-click="hide">
+                                      Set as Graph Root</a>
+                              </li>
+                              <li><a class="btn btn-link" href="{{infoLink}}" on-click="hide">View Info</a></li>
+                              <li><a class="btn btn-link" on-click="goTo">View on Map</a></li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>-->
           </div>
       </cwn-popup>
   </template>
@@ -13440,7 +14450,7 @@ Polymer({
 
     });
 </script>
-<dom-module id="cwn-map-menu" assetpath="/public/elements/">
+<dom-module id="cwn-map-menu" assetpath="elements/">
     <style>
         :host {
             display:block;
@@ -13609,7 +14619,7 @@ Polymer({
         }
     })
 </script>
-<dom-module id="cwn-map" assetpath="/public/elements/">
+<dom-module id="cwn-map" assetpath="elements/">
     <style>
         :host {
             display: block;
@@ -13677,6 +14687,16 @@ Polymer({
         ready : function() {
           this.firstLoad = true;
           this.customLines = {};
+          this.shiftPessed = false;
+
+          $(window).on('keydown',function(e){
+            if( e.which == 16 && e.shiftKey == true ) {
+              this.shiftPessed = true;
+            }
+          }.bind(this));
+          $(window).on('keyup',function(e){
+            this.shiftPessed = false;
+          }.bind(this));
         },
 
         init : function(legend, filters) {
@@ -13710,6 +14730,11 @@ Polymer({
               var type = features[0].geometry.type;
 
               if( features.length == 1 && type == 'Polygon' || type == 'MultiPolygon' ) {
+                if( this.shiftPessed ) {
+                  window.location.href = '#info/' + features[0].properties.id;
+                  return;
+                }
+
                 if( !features[0].properties._render ) features[0].properties._render = {};
                 features[0].properties._render.hover = true;
                 this.markerLayer.render();
@@ -14181,7 +15206,7 @@ Polymer({
 
     });
 </script>
-<dom-module id="cwn-dev" assetpath="/public/elements/">
+<dom-module id="cwn-dev" assetpath="elements/">
   <template>
     <div class="modal fade" id="popup">
       <div class="modal-dialog">
@@ -14223,9 +15248,9 @@ Polymer({
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           </div>
-        </div>
-      </div>
-    </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
   </template>
 </dom-module>
 
@@ -14352,7 +15377,7 @@ Polymer({
     }
   });
 </script>
-<dom-module id="cwn-app" assetpath="/public/elements/">
+<dom-module id="cwn-app" assetpath="elements/">
     <style>
         leaflet-map, core-animated-pages {
             height: 100%
