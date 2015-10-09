@@ -142,9 +142,9 @@ Polymer({
     setRegion : function(prmname) {
       var region = CWN.ds.regionLookupMap[prmname];
 
-      var nodes = [];
-      var origins = [];
-      var terminals = [];
+      var nodes = {};
+      var origins = {};
+      var terminals = {};
       var node;
 
       for( var key in CWN.ds.lookupMap ) {
@@ -153,7 +153,7 @@ Polymer({
 
         if( node.type !== 'Diversion' && node.type !== 'Return Flow' ) {
           if( node.regions && node.regions.indexOf(prmname) > -1 ) {
-            nodes.push(node.prmname);
+            nodes[node.prmname] = 1;
           }
         }
       }
@@ -162,31 +162,42 @@ Polymer({
         node = CWN.ds.lookupMap[key].properties;
         if( !node ) continue;
         if( node.type === 'Diversion' || node.type === 'Return Flow' ) {
-          var index = nodes.indexOf(node.origin);
-          if( index > -1 ) {
-            origins.push({
-              link_prmname : node.prmname,
-              prmname : nodes[index]
-            });
-            continue;
-          }
 
-          var index = nodes.indexOf(node.terminus);
-          if( index > -1 ) {
-            terminals.push({
+          if( nodes[node.origin] && nodes[node.terminus] ) continue; // ignore internal
+
+          if( nodes[node.origin] ) {
+            terminals[node.terminus] = {
               link_prmname : node.prmname,
-              prmname : nodes[index]
-            });
+              prmname : node.terminus
+            }
+          } else if( nodes[node.terminus] ) {
+
+            origins[node.origin] = {
+              link_prmname : node.prmname,
+              prmname : node.origin
+            };
           }
         }
       }
+
+      arr = [];
+      for( var key in origins ) {
+        arr.push(origins[key]);
+      }
+      origins = arr;
+
+      arr = [];
+      for( var key in terminals ) {
+        arr.push(terminals[key]);
+      }
+      terminals = arr;
 
 
       this.feature = {
         properties : {
           prmname : prmname,
           type : 'Region',
-          nodes : nodes,
+          nodes : Object.keys(nodes),
           origins : origins,
           terminals : terminals,
           parents : region.parents,
@@ -196,8 +207,6 @@ Polymer({
           description : region.geo.properties.region
         }
       };
-
-      console.log(this.feature);
     },
 
     setRegionToRegion : function(prmname) {

@@ -175,7 +175,7 @@ Polymer({
         '<div class="well" style="display:none">'+
           '<div class="row">'+
             '<div class="col-sm-4">'+
-              cols.join('</div><div class="col-sm-4"')+
+              cols.join('</div><div class="col-sm-4">')+
             '</div>'+
           '</div>'+
         '</div>';
