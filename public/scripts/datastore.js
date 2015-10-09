@@ -54,37 +54,64 @@ function Datastore() {
         }.bind(this));
     }
 
-    this.loadAggregate = function(origin, terminus, callback) {
-      var prmname = origin+'--'+terminus;
-      if( this.aggregate[prmname] ) {
-        if( this.aggregate[prmname].__loading__ ) {
-          this.aggregate[prmname].handlers.push(callback);
+    this.loadAggregate = function(type, origin, terminus, callback) {
+
+      var prmname = origin;
+      if( typeof terminus === 'string' ) {
+        prmname = prmname+'--'+terminus;
+      } else {
+        callback = terminus;
+      }
+
+
+      if( !this.aggregate[type] ) {
+        this.aggregate[type] = {};
+      }
+
+      if( this.aggregate[type][prmname] ) {
+        if( this.aggregate[type][prmname].__loading__ ) {
+          this.aggregate[type][prmname].handlers.push(callback);
         } else {
-          callback(this.aggregate[prmname]);
+          callback(this.aggregate[type][prmname]);
         }
         return;
       }
 
-      this.aggregate[prmname] = {
+      this.aggregate[type][prmname] = {
         __loading__ : true,
         handlers : [callback]
       };
 
-      $.get('/regions/aggregate?origin='+origin+'&terminus='+terminus,
-        function(resp1) {
-          $.get('/regions/aggregate?origin='+terminus+'&terminus='+origin,
-            function(resp2) {
-              var data = {
-                origin : resp1,
-                terminus : resp2
-              };
+      if( typeof terminus !== 'string' ) {
 
-              for( var i = 0; i < this.aggregate[prmname].handlers.length; i++ ) {
-                this.aggregate[prmname].handlers[i](data);
-              }
-              this.aggregate[prmname] = data;
-          }.bind(this));
-      }.bind(this));
+        $.get('/regions/aggregate?type='+type+'&region='+origin,
+          function(resp) {
+
+            for( var i = 0; i < this.aggregate[type][prmname].handlers.length; i++ ) {
+              this.aggregate[type][prmname].handlers[i](resp);
+            }
+            this.aggregate[type][prmname] = resp;
+        }.bind(this));
+
+      } else {
+
+        $.get('/regions/aggregate?type=flow&origin='+origin+'&terminus='+terminus,
+          function(resp1) {
+            $.get('/regions/aggregate?type=flow&origin='+terminus+'&terminus='+origin,
+              function(resp2) {
+                var data = {
+                  origin : resp1,
+                  terminus : resp2
+                };
+
+                for( var i = 0; i < this.aggregate[type][prmname].handlers.length; i++ ) {
+                  this.aggregate[type][prmname].handlers[i](data);
+                }
+                this.aggregate[type][prmname] = data;
+            }.bind(this));
+        }.bind(this));
+
+      }
     }
 
     this.loadExtras = function(prmname, callback) {

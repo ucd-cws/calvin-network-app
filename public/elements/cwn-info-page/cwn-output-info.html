@@ -42,7 +42,7 @@
       },
 
       loadAggregate : function() {
-        CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
+        CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
           this.$.loading.style.display = 'none';
 
           var data = [[
@@ -51,9 +51,9 @@
             this.feature.properties.terminus+' to '+this.feature.properties.origin
           ]];
 
-          if( resp.origin.flows ) {
-            for( var key in resp.origin.flows ) {
-              data.push([key, resp.origin.flows[key] || 0, resp.terminus.flows[key] || 0]);
+          if( resp.origin.flow ) {
+            for( var key in resp.origin.flow ) {
+              data.push([key, resp.origin.flow[key] || 0, resp.terminus.flow[key] || 0]);
             }
           }
 
@@ -65,11 +65,11 @@
           this.fire('region-link-update', {
             origin : {
               prmname : this.feature.properties.origin,
-              links : resp.origin.links
+              links : resp.origin.included
             },
             terminus : {
               prmname : this.feature.properties.terminus,
-              links : resp.terminus.links
+              links : resp.terminus.included
             }
           });
         }.bind(this));

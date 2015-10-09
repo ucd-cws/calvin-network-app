@@ -21,13 +21,23 @@ module.exports = function (router) {
     });
 
     router.get('/aggregate', function (req, res) {
-      var origin = req.query.origin;
+      var type = req.query.type;
+
+      var region = req.query.region;
+      if( !region ) {
+        region = req.query.origin;
+      }
       var terminus = req.query.terminus;
-      if( !origin || !terminus ) {
-        return res.send({error:true, message:'origin and terminus required'});
+
+      if( !type ) {
+        return res.send({error:true, message:'aggregate type required'});
       }
 
-      model.aggregate(origin, terminus, function(err, data){
+      if( !region ) {
+        return res.send({error:true, message:'region or origin required'});
+      }
+
+      model.aggregate(type, region, terminus, function(err, data){
         if( err ) {
           res.send({error: true, message: err});
         } else {

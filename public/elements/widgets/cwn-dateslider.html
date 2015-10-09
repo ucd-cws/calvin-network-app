@@ -335,9 +335,9 @@
 
           // grab the aggregate region link data
           if( this.feature.properties.type == 'Region Link' ) {
-            CWN.ds.loadAggregate(this.feature.properties.origin, this.feature.properties.terminus, function(resp){
-              if( Object.keys(resp.origin.flows).length > 0 ) hasRegionData = true;
-              else if( Object.keys(resp.terminus.links).length > 0 ) hasRegionData = true;
+            CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
+              if( Object.keys(resp.origin.flow).length > 0 ) hasRegionData = true;
+              else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionData = true;
 
               onResponse.call(this);
             }.bind(this));
