@@ -1,0 +1,251 @@
+<dom-module id="cwn-bound-chart">
+  <style>
+    :host {
+      display : block
+    }
+  </style>
+  <template>
+
+    <h5>
+      Type: <small>{{type}}</small>
+    </h5>
+
+    <div>{{description}}</div>
+
+    <div hidden$="{{!showConstantBounds}}">
+      $<span>{{constraintChart.constant}}</span>
+    </div>
+
+    <div id="constraintChartAnchor"></div>
+
+    <template is="dom-template" id="constraintChartTimeSeries">
+      <cwn-date-linechart animate></cwn-date-linechart>
+    </template>
+
+    <template is="dom-template" id="constraintChart">
+      <cwn-linechart
+        cols="{{cols}}"
+        options="{{options}}"
+        animate>
+      </cwn-linechart>
+    </template>
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is : 'cwn-bound-chart',
+
+    ready : function() {
+      this.showConstantCost = false;
+      this.showConstantBounds = false;
+
+      this.constraintChart = {
+          constant: -1,
+          label : '',
+          isTimeSeries : false,
+          data : [],
+          options : {
+              series: [{'color': '#F1CA3A'}],
+              intervals: { 'style':'area' },
+              vAxis : {
+                viewWindow:{ min: 0 }
+              }
+          }
+      };
+
+      this.charts = {};
+    },
+
+    /*
+      --LBC (Lower Bound Constant),
+      --LBM (Lower Bound Monthly Varying)
+      --LBT (Lower Bound Time Varying)
+      --UBC (Upper Bound Constant)
+      --UBM (Upper Bound Monthly Varying)
+      --UBT (Upper Bound Time Varying)
+      --EQC (Equality Constraint: constant, this requires a time-series data)
+         -- is upper and lower bound, single line
+      --EQT (Equality Constraint: time, this requires a time-series data)
+        -- is upper and lower bound, single line
+      --NOB (No Bounds)
+    */
+    render : function(bound) {
+      var data = {
+        upper: null,
+        lower : null,
+        NOB : false,
+        EQC : false,
+        use : 'constant'
+      }
+      this.type = bound.type;
+      this.description = bound.description || '';
+
+      if( bound.type == 'LBC' || bound.type == 'LBM' || bound.type == 'LBT') {
+        data.lower = bound;
+        if( bound.type != 'LBC' ) data.use = 'lower';
+
+      } else if ( bound.type == 'UBC' || bound.type == 'UBM' || bound.type == 'UBT' ) {
+        data.upper = bound;
+        if( bound.type == 'UBM' || bound.type == 'UBT' ) {
+          // if lower is date, we want to use the date
+          if( !(bound.type != 'UBM' && data.use == 'lower') ) data.use = 'upper';
+        }
+
+      } else if ( bound.type == 'NOB' ) {
+        data.NOB = true;
+
+      // TODO: this should proly render a special case
+      } else if ( bound.type == 'EQC' || bound.type == 'EQT' ) {
+        data.EQC = true;
+        data.lower = bound;
+        data.upper = bound;
+        data.use = 'upper';
+      }
+
+      if( bound.type == 'UBT' || bound.type == 'LBT' ||
+          bound.type == 'EQC' || bound.type == 'EQT') {
+        this.constraintChart.isTimeSeries = true;
+      }
+
+
+      //  TODO: if NOB, just quit?
+      if( data.NOB ) return;
+
+      var chartData = [];
+
+      var length = 1;
+      if( data.upper && data.upper.type != 'UBC') {
+        length = data.upper.bound.length;
+      }
+      if( data.lower && data.lower.type != 'LBC' && data.lower.bound.length > length ) {
+        length = data.lower.bound.length;
+      }
+
+      var header = ['Date'];
+      if( data.upper ) header.push('Upper Bound');
+      if( data.lower ) header.push('Lower Bound');
+
+      if( length == 1 ) length = 12;  // TODO: if len == 1, should we just show text?
+      for( var i = 0; i < length; i++ ) {
+        this.appendBoundsRow(data, chartData, i);
+      }
+
+      this.constraintChart.data = chartData;
+      this.updateChart();
+    },
+
+    appendBoundsRow : function(data, chartData, index) {
+      var row = [], ud, ld;
+
+      if( data.upper ) {
+        ud = this.getBoundsRow(data.upper, index);
+        row.push(ud[1]);
+      }
+      if( data.lower ) {
+        ld = this.getBoundsRow(data.lower, index);
+        row.push(ld[1]);
+      }
+
+      if( data.use == 'constant' ) row.splice(0, 0, index+'');
+      else if( data.use == 'upper' ) row.splice(0, 0, ud[0]);
+      else row.splice(0, 0, ld[0]);
+
+      chartData.push(row);
+    },
+
+    getBoundsRow : function(data, index) {
+      if( data.type == 'LBC' || data.type == 'UBC' ) {
+        if( index == 0 ) return ['Constant Lower', 'Constant Lower']
+        return ['', data.bound];
+      }
+
+      if( index > data.bound.length -1) {
+        index = index % 12;
+      }
+      if( index > data.bound.length -1) {
+        return ['Invalid', 0];
+      }
+
+      return data.bound[index];
+    },
+
+    getContraintsLength : function(bounds) {
+      var l = 0;
+      if( bounds.lower ) {
+        if( bounds.lower.bound_type == 'Constant' ) {
+          l = 1;
+        } else if ( bounds.lower.bound_type == 'TimeSeries' ) {
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+
+          l = bounds.lower.bound.length;
+        } else if ( bounds.lower.bound_type == 'Monthly' ) {
+          l = bounds.lower.bound.length;
+        }
+      }
+      if (bounds.upper ) {
+        if( bounds.upper.bound_type == 'Constant' && l == 0 ) {
+          l = 1;
+        } else if(bounds.upper.bound_type == 'TimeSeries' && l < bounds.upper.bound.length ) {
+          this.constraintChart.isTimeSeries = true;
+          this.hasTimeSeries = true;
+
+          l = bounds.upper.bound.length;
+        } else if ( bounds.upper.bound_type == 'Monthly' && l < bounds.upper.bound.length ) {
+          l = bounds.upper.bound.length;
+        }
+      }
+      return l;
+    },
+
+    updateChart : function() {
+        if( this.constraintChart.data.length != 0 || this.constraintChart.constant != -1 ) {
+            this.showBounds = true;
+        }
+
+        if( this.constraintChart.constant != -1 ) {
+            this.showConstantBounds = true;
+        }
+
+        this.$.constraintChartAnchor.innerHTML = '';
+        this.charts.constraintChart = null;
+
+        if( this.constraintChart.data.length != 0 ) {
+            var isline = false;
+
+            // stamp out cwn-date-linechart instead of just linechart
+            if( this.constraintChart.isTimeSeries ) {
+                this.hasTimeSeries = true;
+                this.charts.constraintChart = this._stamp(this.$.constraintChartTimeSeries, 'cwn-date-linechart', this.constraintChart);
+            } else {
+                isline = true;
+                this.charts.constraintChart = this.$.constraintChart.stamp(this.constraintChart);
+            }
+
+
+            this.$.constraintChartAnchor.appendChild(this.charts.constraintChart.root);
+
+            if( isline ) {
+              this.$.constraintChartAnchor.querySelector('cwn-linechart').update(this.constraintChart.data);
+            }
+        }
+    },
+
+    // dom-template: http://polymer.github.io/polymer/
+    // doesn't seem to take variables when you stamp now :(
+    // setting manually.
+    _stamp : function(ele, query, data) {
+      var template = ele.stamp();
+
+      if( query && data ) {
+        var newEle = template.root.querySelector(query);
+        if( newEle ) {
+          for( var key in data ) newEle[key] = data[key];
+        }
+      }
+
+      return template;
+    }
+  })
+</script>

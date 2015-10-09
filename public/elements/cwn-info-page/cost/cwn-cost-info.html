@@ -1,3 +1,5 @@
+<link rel="import" href="cwn-bound-chart.html" />
+
 <dom-module id="cwn-cost-info">
     <template>
         <h2 class="page-header">Costs</h2>
@@ -27,26 +29,9 @@
 
         </div>
 
-        <h4 hidden$="{{!showBounds}}">Bounds</h4>
+        <h4 hidden$="{{!showBounds}}" class="page-header">Bounds</h4>
 
-        <h5 hidden$="{{!showConstantBounds}}">
-          Constant: $<span>{{constraintChart.constant}}</span>
-        </h5>
-
-
-        <div id="constraintChartAnchor"></div>
-
-        <template is="dom-template" id="constraintChartTimeSeries">
-          <cwn-date-linechart animate></cwn-date-linechart>
-        </template>
-
-        <template is="dom-template" id="constraintChart">
-          <cwn-linechart
-            cols="{{cols}}"
-            options="{{options}}"
-            animate>
-          </cwn-linechart>
-        </template>
+        <div id="boundChartRoot"></div>
     </template>
 </dom-module>
 
