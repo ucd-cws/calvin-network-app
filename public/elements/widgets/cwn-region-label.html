@@ -30,7 +30,11 @@
         var r = feature.properties.regions[i];
         //if( r.toLowerCase() == 'california' ) continue;
 
-        html.push('<span class="label label-default">'+this.getLabel(r)+'</span>');
+        var info = this.getLabel(r);
+
+        html.push('<span class="label label-default">'+info.label+
+          (r.toLowerCase() !== 'california' ? ' <a href="#info/'+info.id+'"><i class="fa fa-info-circle"></i></a>' : '')+
+          '</span>');
       }
 
 
@@ -39,10 +43,17 @@
     },
 
     getLabel : function(name) {
-      if( CWN.ds.regionLookupMap[name] && CWN.ds.regionLookupMap[name].geo.properties.name ) {
-        return CWN.ds.regionLookupMap[name].geo.properties.name;
+      var region = CWN.ds.regionLookupMap[name];
+      if( region && region.geo.properties.name ) {
+        return {
+          label : region.geo.properties.name,
+          id : region.geo.properties.id
+        }
       }
-      return name;
+      return {
+        name : name,
+        id : name
+      }
     }
   });
 </script>

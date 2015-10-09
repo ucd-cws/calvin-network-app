@@ -66,6 +66,16 @@
         ready : function() {
           this.firstLoad = true;
           this.customLines = {};
+          this.shiftPessed = false;
+
+          $(window).on('keydown',function(e){
+            if( e.which == 16 && e.shiftKey == true ) {
+              this.shiftPessed = true;
+            }
+          }.bind(this));
+          $(window).on('keyup',function(e){
+            this.shiftPessed = false;
+          }.bind(this));
         },
 
         init : function(legend, filters) {
@@ -99,6 +109,11 @@
               var type = features[0].geometry.type;
 
               if( features.length == 1 && type == 'Polygon' || type == 'MultiPolygon' ) {
+                if( this.shiftPessed ) {
+                  window.location.href = '#info/' + features[0].properties.id;
+                  return;
+                }
+
                 if( !features[0].properties._render ) features[0].properties._render = {};
                 features[0].properties._render.hover = true;
                 this.markerLayer.render();

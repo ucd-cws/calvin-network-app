@@ -55,21 +55,23 @@
     },
 
     renderFeature : function(feature, i) {
-      var link, icon = '';
+      var link, icon = '', regionLinks = '';
 
       if( feature.properties.type == 'Region Link' ) {
-        link = '<a style="font-size:18px" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/--/g,' to ')+'</a> ';
+        link = '<cwn-app-icon type="Region Link" height="26" width="26"></cwn-app-icon> <a style="font-size:18px;text-transform:capitalize" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/--/g,' to ')+'</a> ';
       } else if ( feature.properties.type == 'Region' ) {
-        link = '<a class="region" index="'+i+'" style="cusor:pointer;font-size:18px">'+feature.properties.name+'</a>';
+        link = '<cwn-app-icon type="Region" height="26" width="26"></cwn-app-icon> '+feature.properties.name;
+        regionLinks = '<div style="padding-left:15px"><a class="region btn btn-link" index="'+i+'" style="cusor:pointer"><i class="fa fa-expand"></i> Open</a> '+
+                      ' <a href="#info/'+feature.properties.id+'" class="btn btn-link"><i class="fa fa-info"></i> Info</a></div>'
       } else {
         link = '<a href="#info/'+feature.properties.prmname+'" style="font-size:18px">'+feature.properties.prmname+'</a>';
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
       }
 
-      return '<div class="layout horizontal" '+(feature.properties.description || feature.properties.regions ? 'style="margin-bottom: 15px"' : '')+'>'+
+      return '<div class="layout horizontal" style="margin-bottom: 15px">'+
         '<div style="padding:15px 5px; width: 50px">'+icon+'</div>'+
         '<div class="flex">'+
-          '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+
+          '<h4>'+link+' <small>'+feature.properties.type+'</small></h4>'+regionLinks+
           (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
           (feature.properties.regions ? '<div><cwn-region-label prmname="'+feature.properties.prmname+'"></cwn-region-label></div>' : '')+
         '</div>'+

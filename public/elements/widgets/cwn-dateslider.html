@@ -313,7 +313,9 @@
           var respCount = 0;
           var requestCount = 1;
           var hasTimeBounds = false;
-          var hasRegionData = false;
+          var hasRegionLinkData = false;
+          var hasRegionFlowData = false;
+          var hasRegionInflowData = false;
 
           function onResponse() {
             respCount++;
@@ -321,7 +323,7 @@
 
             var show = false;
             var extras = this.feature.properties.extras;
-            if( (extras && (extras.evaporation || extras.inflows || extras.flow)) || hasTimeBounds || hasRegionData ) {
+            if( (extras && (extras.evaporation || extras.inflows || extras.flow)) || hasTimeBounds || hasRegionLinkData || hasRegionFlowData || hasRegionInflowData ) {
               show = true;
             }
 
@@ -331,14 +333,28 @@
 
           // how many requests are we making?
           if( this.feature.properties.type == 'Region Link' ) requestCount++;
+          if( this.feature.properties.type == 'Region' ) requestCount += 2;
           if( this.feature.properties.extras && this.feature.properties.extras.bounds ) requestCount++;
 
           // grab the aggregate region link data
           if( this.feature.properties.type == 'Region Link' ) {
             CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
-              if( Object.keys(resp.origin.flow).length > 0 ) hasRegionData = true;
-              else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionData = true;
+              if( Object.keys(resp.origin.flow).length > 0 ) hasRegionLinkData = true;
+              else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionLinkData = true;
 
+              onResponse.call(this);
+            }.bind(this));
+          }
+
+          // grab the aggregate flow data
+          if( this.feature.properties.type == 'Region' ) {
+            CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
+              if( Object.keys(resp.flow).length > 0 ) hasRegionFlowData = true;
+              onResponse.call(this);
+            }.bind(this));
+
+            CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
+              if( Object.keys(resp.inflows).length > 0 ) hasRegionInflowData = true;
               onResponse.call(this);
             }.bind(this));
           }

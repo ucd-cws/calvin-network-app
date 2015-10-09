@@ -58,8 +58,16 @@ node lib/cmd -m network -f dumpLocation
 ```
 
 #### Aggregate
-Aggregate flow data between a node and a region or two regions
+Aggregate data for Regions or Region Links.
+
+Type Options:
+ - flow
+ - inflows
+ - sink
 
 ```
-node lib/cmd -m regions -f aggregate [origin prmname] [terminal prmname]
+node lib/cmd -m regions -f aggregate [type] [region/origin prmname] [terminal prmname]
 ```
+
+The terminal parameter is for Region Links only.  The region parameter is origin.
+One or both of the origin/terminal must be a Region.
