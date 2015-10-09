@@ -104,13 +104,14 @@
         return;
       }
 
+      this.$.eacChartRoot.innerHTML = '';
+
       var props = this.feature.properties;
       if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
         $(this).parent().css('display','block');
       } else if ( this.feature.properties.type == 'Region' ) {
         this.$.inflowCharts.innerHTML = '';
         this.$.evaporation.style.display = 'none';
-        this.$.eacChartRoot.innerHTML = '';
         this.renderRegion();
         return;
       } else {
