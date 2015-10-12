@@ -58,7 +58,10 @@
         },
 
         attached : function() {
-            $(window).on('resize', this.redraw.bind(this));
+            $(window).on('resize', function(){
+              if( this.isPaper ) return;
+              this.redraw();
+            }.bind(this));
 
             setTimeout(function(){
                 // see if we have initial state
@@ -99,10 +102,14 @@
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
             if( !this.$ ) return;
 
+            this.isPaper = false;
             if( !this.chart ) {
                 if( this.type ) {
                     this.chart = new google.visualization[this.type](this.$.root);
                 } else {
+                    // not working
+                    //this.isPaper = true;
+                    //this.chart = new google.charts.Line(this.$.root);
                     this.chart = new google.visualization.LineChart(this.$.root);
                 }
             }
@@ -208,13 +215,16 @@
             }
 
 
-            if( this.animate ) {
+            if( this.animate && !this.isPaper ) {
                 options.animation = {
                     duration : 750,
                     easing : 'out'
                 }
             }
 
+            if( this.isPaper ) {
+              options = google.charts.Line.convertOptions(options);
+            }
 
             this.chart.draw(this.dt, options);
         }

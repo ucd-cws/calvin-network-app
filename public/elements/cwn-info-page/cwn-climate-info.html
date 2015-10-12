@@ -105,6 +105,7 @@
       }
 
       this.$.eacChartRoot.innerHTML = '';
+      this.nodata = false;
 
       var props = this.feature.properties;
       if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
@@ -113,9 +114,12 @@
         this.$.inflowCharts.innerHTML = '';
         this.$.evaporation.style.display = 'none';
         this.renderRegion();
+        this.fire('climate-ready');
         return;
       } else {
+        this.nodata = true;
         $(this).parent().hide();
+        this.fire('climate-ready');
         return;
       }
 
@@ -124,6 +128,7 @@
 
       this.eacChart.data = [];
       this.renderElArCap();
+      this.fire('climate-ready');
     },
 
     renderElArCap : function() {

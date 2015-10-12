@@ -29,23 +29,21 @@
       </div>
 
       <!-- End Header Card -->
-      <div class="row" hidden$="{{loading}}">
-        <div class="col-md-6">
+      <div class="row">
+        <div class="col-md-6" id="climateCard">
 
           <!-- Start Climate -->
-          <div class="card" hidden$="{{!showClimateData}}">
-            <cwn-climate-info feature="{{feature}}"></cwn-climate-info>
+          <div class="card">
+            <cwn-climate-info id="climate" feature="{{feature}}" on-climate-ready="onClimateReady"></cwn-climate-info>
           </div>
           <!-- End Climate -->
 
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6" id="costCard">
 
           <!-- Start Costs -->
           <div class="card">
-            <cwn-cost-info
-              feature="{{feature}}">
-            </cwn-cost-info>
+            <cwn-cost-info id="costs" feature="{{feature}}" on-cost-ready="onCostsReady"></cwn-cost-info>
           </div>
           <!-- End Costs -->
 
@@ -127,6 +125,9 @@ Polymer({
       if( this.prmname == prmname ) return;
       if( prmname ) this.prmname = prmname;
 
+      this.costsReady = false;
+      this.climateReady = false;
+
       if( CWN.ds.lookupMap[prmname] ) {
         this.feature = CWN.ds.lookupMap[prmname];
       } else if( CWN.ds.regionLookupMap[prmname] ) {
@@ -137,6 +138,39 @@ Polymer({
       }
 
       this.update();
+    },
+
+    onClimateReady : function() {
+      this.climateReady = true;
+      this.checkLayout();
+    },
+
+    onCostsReady : function() {
+      this.costsReady = true;
+      this.checkLayout();
+    },
+
+    checkLayout : function() {
+      if( !this.costsReady || !this.climateReady ) return;
+
+      if( this.$.costs.nodata && !this.$.climate.nodata ) {
+        this.$.costCard.style.display = 'none';
+        this.$.climateCard.className = 'col-md-12';
+      } else if( !this.$.costs.nodata && this.$.climate.nodata ) {
+        this.$.climateCard.style.display = 'none';
+        this.$.costCard.className = 'col-md-12';
+      } else {
+        this.$.climateCard.style.display = 'block';
+        this.$.costCard.style.display = 'block';
+
+        this.$.climateCard.className = 'col-md-6';
+        this.$.costCard.className = 'col-md-6';
+      }
+
+      // HACKy
+      setTimeout(function(){
+        $(window).trigger('resize');
+      }, 500);
     },
 
     setRegion : function(prmname) {
@@ -251,9 +285,10 @@ Polymer({
 
       if( this.feature == null ) return alert('Feature not found');
 
-
       this.hasOutputs = false;
+
       this.$.outputs.update(this.feature);
+
       if( this.feature.properties.hasOutputs ) {
         this.hasOutputs = true;
       }
@@ -261,10 +296,10 @@ Polymer({
       this.updateReadme();
 
       this.updateDateSliderVisibility();
+
       this.async(function(){
         this.$.dateslider.resize();
       });
-
     },
 
     updateReadme : function() {

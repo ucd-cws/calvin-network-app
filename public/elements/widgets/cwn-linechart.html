@@ -41,7 +41,8 @@
           this.data = null;
 
           $(window).on('resize', function(){
-              this.redraw();
+            if( this.isPaper ) return;
+            this.redraw();
           }.bind(this));
 
           this.async(function(){
@@ -71,10 +72,13 @@
             if( !window.google.visualization ) return this.setOnloadHandler();
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
+            this.isPaper = false;
             if( !this.chart ) {
                 if( this.type ) {
                     this.chart = new google.visualization[this.type](this.$.root);
                 } else {
+                    //this.isPaper = true;
+                    //this.chart = new google.charts.Line(this.$.root);
                     this.chart = new google.visualization.LineChart(this.$.root);
                 }
             }
@@ -133,6 +137,10 @@
                     duration : 750,
                     easing : 'out'
                 }
+            }
+
+            if( this.isPaper ) {
+              options = google.charts.Line.convertOptions(options);
             }
 
             this.chart.draw(this.dt, options);

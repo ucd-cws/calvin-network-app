@@ -45,6 +45,7 @@ Polymer({
         this.showMonthlyVariableCost = false;
 
         this.showBounds = false;
+        this.nodata = false;
 
         var hasBounds = false;
         if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
@@ -52,7 +53,9 @@ Polymer({
         }
 
         if( !this.feature.properties.costs || !hasBounds ) {
+          this.nodata = true;
           $(this).parent().hide();
+          this.fire('cost-ready');
           return;
         }
 
@@ -61,8 +64,8 @@ Polymer({
 
         if( hasBounds ) this.loadBounds();
 
-
         this.renderCostData(this.feature.properties.costs);
+        this.fire('cost-ready');
     },
 
 

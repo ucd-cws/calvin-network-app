@@ -62,7 +62,7 @@ CWN.colors.rgb = {
 CWN.chartLoadHandlers = [];
 
 google.load("visualization", '1', {
-    packages:['corechart', 'table'],
+    packages:['corechart', 'line'],
     callback : function() {
         for( var i = 0; i < CWN.chartLoadHandlers.length; i++ ) {
             CWN.chartLoadHandlers[i]();

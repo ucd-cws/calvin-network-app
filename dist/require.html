@@ -11450,7 +11450,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         },
 
         attached : function() {
-            $(window).on('resize', this.redraw.bind(this));
+            $(window).on('resize', function(){
+              if( this.isPaper ) return;
+              this.redraw();
+            }.bind(this));
 
             setTimeout(function(){
                 // see if we have initial state
@@ -11491,10 +11494,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
             if( !this.$ ) return;
 
+            this.isPaper = false;
             if( !this.chart ) {
                 if( this.type ) {
                     this.chart = new google.visualization[this.type](this.$.root);
                 } else {
+                    // not working
+                    //this.isPaper = true;
+                    //this.chart = new google.charts.Line(this.$.root);
                     this.chart = new google.visualization.LineChart(this.$.root);
                 }
             }
@@ -11600,13 +11607,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             }
 
 
-            if( this.animate ) {
+            if( this.animate && !this.isPaper ) {
                 options.animation = {
                     duration : 750,
                     easing : 'out'
                 }
             }
 
+            if( this.isPaper ) {
+              options = google.charts.Line.convertOptions(options);
+            }
 
             this.chart.draw(this.dt, options);
         }
@@ -11652,7 +11662,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.data = null;
 
           $(window).on('resize', function(){
-              this.redraw();
+            if( this.isPaper ) return;
+            this.redraw();
           }.bind(this));
 
           this.async(function(){
@@ -11682,10 +11693,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             if( !window.google.visualization ) return this.setOnloadHandler();
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
 
+            this.isPaper = false;
             if( !this.chart ) {
                 if( this.type ) {
                     this.chart = new google.visualization[this.type](this.$.root);
                 } else {
+                    //this.isPaper = true;
+                    //this.chart = new google.charts.Line(this.$.root);
                     this.chart = new google.visualization.LineChart(this.$.root);
                 }
             }
@@ -11744,6 +11758,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     duration : 750,
                     easing : 'out'
                 }
+            }
+
+            if( this.isPaper ) {
+              options = google.charts.Line.convertOptions(options);
             }
 
             this.chart.draw(this.dt, options);
@@ -13113,6 +13131,7 @@ Polymer({
         this.showMonthlyVariableCost = false;
 
         this.showBounds = false;
+        this.nodata = false;
 
         var hasBounds = false;
         if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
@@ -13120,7 +13139,9 @@ Polymer({
         }
 
         if( !this.feature.properties.costs || !hasBounds ) {
+          this.nodata = true;
           $(this).parent().hide();
+          this.fire('cost-ready');
           return;
         }
 
@@ -13129,8 +13150,8 @@ Polymer({
 
         if( hasBounds ) this.loadBounds();
 
-
         this.renderCostData(this.feature.properties.costs);
+        this.fire('cost-ready');
     },
 
 
@@ -13463,6 +13484,7 @@ Polymer({
       }
 
       this.$.eacChartRoot.innerHTML = '';
+      this.nodata = false;
 
       var props = this.feature.properties;
       if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
@@ -13471,9 +13493,12 @@ Polymer({
         this.$.inflowCharts.innerHTML = '';
         this.$.evaporation.style.display = 'none';
         this.renderRegion();
+        this.fire('climate-ready');
         return;
       } else {
+        this.nodata = true;
         $(this).parent().hide();
+        this.fire('climate-ready');
         return;
       }
 
@@ -13482,6 +13507,7 @@ Polymer({
 
       this.eacChart.data = [];
       this.renderElArCap();
+      this.fire('climate-ready');
     },
 
     renderElArCap : function() {
@@ -13655,22 +13681,21 @@ Polymer({
       </div>
 
       <!-- End Header Card -->
-      <div class="row" hidden$="{{loading}}">
-        <div class="col-md-6">
+      <div class="row">
+        <div class="col-md-6" id="climateCard">
 
           <!-- Start Climate -->
-          <div class="card" hidden$="{{!showClimateData}}">
-            <cwn-climate-info feature="{{feature}}"></cwn-climate-info>
+          <div class="card">
+            <cwn-climate-info id="climate" feature="{{feature}}" on-climate-ready="onClimateReady"></cwn-climate-info>
           </div>
           <!-- End Climate -->
 
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6" id="costCard">
 
           <!-- Start Costs -->
           <div class="card">
-            <cwn-cost-info feature="{{feature}}">
-            </cwn-cost-info>
+            <cwn-cost-info id="costs" feature="{{feature}}" on-cost-ready="onCostsReady"></cwn-cost-info>
           </div>
           <!-- End Costs -->
 
@@ -13749,6 +13774,9 @@ Polymer({
       if( this.prmname == prmname ) return;
       if( prmname ) this.prmname = prmname;
 
+      this.costsReady = false;
+      this.climateReady = false;
+
       if( CWN.ds.lookupMap[prmname] ) {
         this.feature = CWN.ds.lookupMap[prmname];
       } else if( CWN.ds.regionLookupMap[prmname] ) {
@@ -13759,6 +13787,39 @@ Polymer({
       }
 
       this.update();
+    },
+
+    onClimateReady : function() {
+      this.climateReady = true;
+      this.checkLayout();
+    },
+
+    onCostsReady : function() {
+      this.costsReady = true;
+      this.checkLayout();
+    },
+
+    checkLayout : function() {
+      if( !this.costsReady || !this.climateReady ) return;
+
+      if( this.$.costs.nodata && !this.$.climate.nodata ) {
+        this.$.costCard.style.display = 'none';
+        this.$.climateCard.className = 'col-md-12';
+      } else if( !this.$.costs.nodata && this.$.climate.nodata ) {
+        this.$.climateCard.style.display = 'none';
+        this.$.costCard.className = 'col-md-12';
+      } else {
+        this.$.climateCard.style.display = 'block';
+        this.$.costCard.style.display = 'block';
+
+        this.$.climateCard.className = 'col-md-6';
+        this.$.costCard.className = 'col-md-6';
+      }
+
+      // HACKy
+      setTimeout(function(){
+        $(window).trigger('resize');
+      }, 500);
     },
 
     setRegion : function(prmname) {
@@ -13873,9 +13934,10 @@ Polymer({
 
       if( this.feature == null ) return alert('Feature not found');
 
-
       this.hasOutputs = false;
+
       this.$.outputs.update(this.feature);
+
       if( this.feature.properties.hasOutputs ) {
         this.hasOutputs = true;
       }
@@ -13883,10 +13945,10 @@ Polymer({
       this.updateReadme();
 
       this.updateDateSliderVisibility();
+
       this.async(function(){
         this.$.dateslider.resize();
       });
-
     },
 
     updateReadme : function() {
