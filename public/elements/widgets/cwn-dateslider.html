@@ -349,7 +349,8 @@
           // grab the aggregate flow data
           if( this.feature.properties.type == 'Region' ) {
             CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
-              if( Object.keys(resp.flow).length > 0 ) hasRegionFlowData = true;
+              if( Object.keys(resp.origins.flow).length > 0 ) hasRegionFlowData = true;
+              else if( Object.keys(resp.terminals.flow).length > 0 ) hasRegionFlowData = true;
               onResponse.call(this);
             }.bind(this));
 

@@ -23,8 +23,34 @@ function getRegionFlow(region, callback) {
       return callback('Invalid region name given');
     }
 
+    // get all nodes in a region
     utils.getNodesInRegion(region, function(err, nodelist){
-      utils.sum(nodelist, 'flow', sumFlow, callback);
+
+      // get all links to these nodes
+      utils.getNodeLinks(nodelist, function(err, links){
+        if( err ) {
+          return callback(err);
+        }
+        var result = {};
+
+        // sum origins
+        utils.sum(links.origins, 'flow', sumFlow, function(err, total){
+          if( err ) {
+            return callback(err);
+          }
+          result.origins = total;
+
+          // sum terminals
+          utils.sum(links.terminals, 'flow', sumFlow, function(err, total){
+            if( err ) {
+              return callback(err);
+            }
+            result.terminals = total;
+
+            callback(null, result);
+          });
+        });
+      });
     });
   });
 }

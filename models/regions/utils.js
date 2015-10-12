@@ -6,6 +6,41 @@ var networkCollection = global.setup.database.collection('network');
 var extrasCollection = global.setup.database.collection('node-extras');
 
 
+function getNodeLinks(list, callback) {
+  var resp = {
+      origins :  [],
+      terminals : []
+  };
+
+  networkCollection.find(
+    {'$and': [{'properties.origin': {'$in' : list}}, {'properties.terminus': {'$nin' : list}}]},
+    {'properties.prmname': 1, '_id' : 0})
+    .toArray(function(err, result){
+      if( err ) {
+        return callback(err);
+      }
+
+      for( var i = 0; i < result.length; i++ ) {
+        resp.terminals.push(result[i].properties.prmname);
+      }
+
+      networkCollection.find(
+        {'$and': [{'properties.terminus': {'$in' : list}}, {'properties.origin': {'$nin' : list}}]},
+        {'properties.prmname': 1, '_id' : 0})
+        .toArray(function(err, result){
+          if( err ) {
+            return callback(err);
+          }
+
+          for( var i = 0; i < result.length; i++ ) {
+            resp.origins.push(result[i].properties.prmname);
+          }
+
+          callback(null, resp);
+        });
+    });
+}
+
 function getNodesInRegion(name, callback) {
   _getNodesInRegion(name, {}, function(err, objectlist){
     if( err ) {
@@ -105,5 +140,6 @@ function sum(nodelist, attribute, sumFn, callback) {
 module.exports = {
   getNodesInRegion : getNodesInRegion,
   getNodeType : getNodeType,
+  getNodeLinks : getNodeLinks,
   sum : sum
 };

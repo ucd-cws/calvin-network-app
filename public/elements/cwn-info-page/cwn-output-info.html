@@ -49,11 +49,22 @@
         CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp) {
           this.$.loading.style.display = 'none';
 
-          var data = [['date','kaf']];
+          var data = [['date','In','Out','Difference']];
 
-          if( resp.flow ) {
-            for( var key in resp.flow ) {
-              data.push([key, resp.flow[key] || 0]);
+          var oLen = Object.keys(resp.origins.flow).length;
+          var tLen = Object.keys(resp.terminals.flow).length;
+
+          if( oLen > 0 || tLen > 0 ) {
+            var it = resp.origins.flow, key, o, t;
+            if( tLen > oLen ) it = resp.terminals.flow;
+
+
+            for( var key in it) {
+              o = resp.origins.flow[key] || 0;
+              t = resp.terminals.flow[key] || 0;
+              t *= -1;
+
+              data.push([key, o, t, o+t]);
             }
           }
 
