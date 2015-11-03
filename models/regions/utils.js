@@ -41,6 +41,18 @@ function getNodeLinks(list, callback) {
     });
 }
 
+function getLinksInRegion(nodelist, callback) {
+  networkCollection.find(
+    {'$and': [{'properties.origin': {'$in' : nodelist}}, {'properties.terminus': {'$in' : nodelist}}]},
+    {'properties.prmname': 1, '_id' : 0, 'properties.amplitude': 1})
+    .toArray(function(err, result){
+      if( err ) {
+        return callback(err);
+      }
+      callback(null, result);
+    });
+}
+
 function getNodesInRegion(name, callback) {
   _getNodesInRegion(name, {}, function(err, objectlist){
     if( err ) {
@@ -109,6 +121,51 @@ function getNodeType(prmname, callback) {
   });
 }
 
+function sumAll(nodelist, sumFn, callback) {
+  var total = {};
+
+  extrasCollection
+    .find({prmname : {'$in' : nodelist}})
+    .toArray(function(err, extras){
+      if( err ) {
+        return callback(err);
+      }
+
+      for( var i = 0; i < extras.length; i++ ) {
+        sumFn(total, extras[i]);
+      }
+
+      var result = {
+        nodes : nodelist,
+        aggregate : total
+      };
+
+      callback(null, result);
+    });
+}
+
+function sumInto(nodelist, attribute, label, data, sumFn, callback) {
+  var projection = {prmname: 1};
+  projection[attribute] = 1;
+
+  extrasCollection
+    .find({prmname : {'$in' : nodelist}}, projection)
+    .toArray(function(err, results){
+      if( err ) {
+        return callback(err);
+      }
+
+      for( var i = 0; i < results.length; i++ ) {
+        if( !results[i][attribute] ) {
+          continue;
+        }
+        sumFn(data, label, results[i][attribute]);
+      }
+
+      callback(null);
+    });
+}
+
 function sum(nodelist, attribute, sumFn, callback) {
   var total = {}, projection = {};
   projection[attribute] = 1;
@@ -141,5 +198,8 @@ module.exports = {
   getNodesInRegion : getNodesInRegion,
   getNodeType : getNodeType,
   getNodeLinks : getNodeLinks,
-  sum : sum
+  sum : sum,
+  sumAll : sumAll,
+  sumInto : sumInto,
+  getLinksInRegion : getLinksInRegion
 };

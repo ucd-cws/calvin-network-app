@@ -46,4 +46,20 @@ module.exports = function (router) {
       });
     });
 
+    router.get('/aggregateRegion', function (req, res) {
+      var region = req.query.region;
+
+      if( !region ) {
+        return res.send({error:true, message:'region required'});
+      }
+
+      model.aggregateRegion(region, function(err, data){
+        if( err ) {
+          res.send({error: true, message: err});
+        } else {
+          res.send(data);
+        }
+      });
+    });
+
 };

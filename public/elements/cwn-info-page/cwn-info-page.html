@@ -2,6 +2,7 @@
 <link rel="import" href="cost/cwn-cost-info.html" />
 <link rel="import" href="cwn-output-info.html" />
 <link rel="import" href="cwn-climate-info.html" />
+<link rel="import" href="cwn-flow-info.html" />
 
 <dom-module id="cwn-info-page">
     <style>
@@ -52,6 +53,10 @@
 
       <div class="card">
         <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
+      </div>
+
+      <div class="card">
+        <cwn-flow-info id="flow" ></cwn-flow-info>
       </div>
 
       <div class="card" id="readme" style="display:none">
@@ -288,6 +293,7 @@ Polymer({
       this.hasOutputs = false;
 
       this.$.outputs.update(this.feature);
+      this.$.flow.update(this.feature);
 
       if( this.feature.properties.hasOutputs ) {
         this.hasOutputs = true;

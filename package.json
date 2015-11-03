@@ -10,6 +10,7 @@
     "init-prod": "npm install --production",
     "import": "node utils/import/regions/cmd.js",
     "run-dev": "node server --dev",
+    "dev": "node server --dev",
     "test": "grunt test",
     "build": "grunt build",
     "all": "npm run build && npm run test"

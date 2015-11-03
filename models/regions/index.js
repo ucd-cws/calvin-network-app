@@ -3,6 +3,7 @@
 var aggregateFlow = require('./aggregateFlow');
 var aggregateInflows = require('./aggregateInflows');
 var aggregateSinks = require('./aggregateSinks');
+var aggregateRegion = require('./aggregateRegion');
 
 var collection = global.setup.database.collection('regions');
 var networkCollection = global.setup.database.collection('network');
@@ -17,12 +18,17 @@ module.exports = function() {
     return {
         name: 'regions',
         get : getRegions,
-        aggregate : aggregate
+        aggregate : aggregate,
+        aggregateRegion : aggregateRegion
     };
 };
 
 function getRegions(callback) {
   collection.find({}).toArray(callback);
+}
+
+function aggregateRegion(region, callback) {
+  aggregateRegion(region, callback);
 }
 
 function aggregate(type, region, terminus, callback) {
