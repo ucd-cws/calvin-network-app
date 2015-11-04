@@ -1,6 +1,7 @@
 'use strict';
 
 var utils = require('./utils');
+var calcAmpLoss = require('./calcAmpLoss');
 
 var collection = global.setup.database.collection('regions');
 var networkCollection = global.setup.database.collection('network');
@@ -176,10 +177,6 @@ function sumAmpLoss(sum, label, item, amplitude) {
 
   if( amplitude === undefined || amplitude === null ) {
     amplitude = 0;
-  } else {
-    // this is crazyness
-    //amplitude = 1 / (1 - amplitude);
-    amplitude = 1 - amplitude;
   }
 
   for( var i = 0; i < item.length; i++ ) {
@@ -194,9 +191,9 @@ function sumAmpLoss(sum, label, item, amplitude) {
     flow = item[i][1] || 0;
 
     if( data[item[i][0]][label] === undefined ) {
-      data[item[i][0]][label] = amplitude*flow;
+      data[item[i][0]][label] = calcAmpLoss(amplitude, flow);
     } else {
-      data[item[i][0]][label] += amplitude*flow;
+      data[item[i][0]][label] += calcAmpLoss(amplitude, flow);
     }
   }
 }
