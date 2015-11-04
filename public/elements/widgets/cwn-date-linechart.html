@@ -112,8 +112,9 @@
                     this.chart = new google.visualization.LineChart(this.$.root);
                 }
                 if( this.onClick ) {
-                  google.visualization.events.addListener(this.chart, 'select', function(){
-                    this.onClick(this.chart.getSelection());
+                  google.visualization.events.addListener(this.chart, 'select', function(e){
+                    var row = this.chart.getSelection()[0].row+1;
+                    this.onClick(this.filteredData[row]);
                   }.bind(this));
                 }
                 this.ctype = this.type;
@@ -139,6 +140,7 @@
         },
 
         _setDataTable : function(data) {
+          this.filteredData = data;
           try {
             if( this.cols ) {
                 this.dt = new google.visualization.DataTable();

@@ -233,31 +233,39 @@ Polymer({
     },
 
     setRegionLinkInfo : function(info) {
-      for( var i = 0; i < info.origin.links.length; i++ ) {
+      var order = 0;
+      if( info[0].origin !== this.feature.properties.origin ) {
+        order = 1;
+      }
+
+      for( var i = 0; i < info[order].included.length; i++ ) {
         this.origins.push({
-            name: info.origin.links[i],
+            name: info[order].included[i],
             hasLink : false,
             hideArrow : true,
-            link: '#info/'+info.origin.links[i],
+            link: '#info/'+info[order].included[i],
             description: ''
         });
       }
 
-      if( info.origin.links.length > 0 ) {
+      if( info[order].included.length > 0 ) {
         this.$.originExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.terminus.replace(/_/g,' ')+'</h5>';
       }
 
-      for( var i = 0; i < info.terminus.links.length; i++ ) {
+      if( order === 0 ) order++;
+      else order--;
+
+      for( var i = 0; i < info[order].included.length; i++ ) {
         this.terminals.push({
-            name: info.terminus.links[i],
+            name: info[order].included[i],
             hasLink : false,
             hideArrow : true,
-            link: '#info/'+info.terminus.links[i],
+            link: '#info/'+info[order].included[i],
             description: ''
         });
       }
 
-      if( info.terminus.links.length > 0 ) {
+      if( info[order].included.length > 0 ) {
         this.$.terminusExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.origin.replace(/_/g,' ')+'</h5>';
       }
 

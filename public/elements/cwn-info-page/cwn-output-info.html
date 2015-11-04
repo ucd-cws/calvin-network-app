@@ -1,13 +1,11 @@
 <dom-module id="cwn-output-info">
   <template>
-    <h2 class="page-header">Outputs</h2>
-
     <div id="loading" style="display:none">
       <h4><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</h4>
     </div>
 
     <div id="flow" style="display:none">
-      <div>Flow</div>
+      <h4>Flow</h4>
       <cwn-date-linechart id="chart" animate></cwn-date-linechart>
     </div>
   </template>
@@ -31,14 +29,6 @@
           $(this).parent().show();
           this.$.loading.style.display = 'block';
           this.load();
-        } else if( this.feature.properties.type == 'Region Link' ) {
-          $(this).parent().show();
-          this.$.loading.style.display = 'block';
-          this.loadLinkAggregate();
-       } else if( this.feature.properties.type == 'Region' ) {
-          $(this).parent().show();
-          this.$.loading.style.display = 'block';
-          this.loadAggregate();
         } else {
           $(this).parent().hide();
           this.$.loading.style.display = 'none';

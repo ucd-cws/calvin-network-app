@@ -5,20 +5,21 @@
 <link rel="import" href="cwn-flow-info.html" />
 
 <dom-module id="cwn-info-page">
-    <style>
-      :host {
-        display: block;
-        overflow-x: hidden;
-        margin-bottom: 100px;
-      }
-      .card {
-        margin: 10px 10px 10px 10px;
-        box-shadow: 0 0 5px #888;
-        padding: 15px;
-      }
-    </style>
+
 
     <template>
+      <style>
+        :host {
+          display: block;
+          overflow-x: hidden;
+          margin-bottom: 100px;
+        }
+        .card {
+          margin: 10px 10px 10px 10px;
+          box-shadow: 0 0 5px #888;
+          padding: 15px;
+        }
+      </style>
 
       <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
         <cwn-node-info
@@ -50,18 +51,14 @@
 
         </div>
       </div>
-<!--
+
       <div class="card">
-        <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
-      </div>
--->
-      <div class="card">
-        <cwn-flow-info id="flow" ></cwn-flow-info>
+        <cwn-flow-info id="flow" on-region-link-update="onRegionLinkUpdate"></cwn-flow-info>
       </div>
 
       <div class="card" id="readme" style="display:none">
         <h4 class="page-header">README</h4>
-        <div id="readmeMarkdown"></div>
+        <div id="readmeMarkdown"><h2>Loading</h2></div>
       </div>
 
       <cwn-dateslider
@@ -313,6 +310,7 @@ Polymer({
           this.$.readme.style.display = 'block';
           CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
             this.$.readmeMarkdown.innerHTML = marked(resp.readme);
+            $(this.$.readmeMarkdown).find('h2').css('fontSize','28px');
           }.bind(this));
           return;
         }

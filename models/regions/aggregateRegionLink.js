@@ -72,8 +72,13 @@ function runAggregate(originlist, terminallist, callback) {
         if( err ) {
           return callback(err);
         }
+        
+        var resp = {
+          included : list,
+          data : data
+        };
 
-      callback(null, data);
+        callback(null, resp);
     });
   });
 }
@@ -86,8 +91,10 @@ function sumFlow(sum, item, amplitude) {
   } else {
     // this is crazyness
     //amplitude = 1 / (1 - amplitude);
-    amplitude = 1 - amplitude;
+    //amplitude = 1 - amplitude;
+    amplitude = 0.25 * amplitude;
   }
+
 
   for( var i = 0; i < item.length; i++ ) {
     if( i === 0 && typeof item[0][1] === 'string' ) {

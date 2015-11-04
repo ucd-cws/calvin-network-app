@@ -132,7 +132,7 @@
                 }
             }
 
-            if( !this.options.height && this.height ) {
+            if( (this.options && !this.options.height) && this.height ) {
               this.options.height = this.height;
             }
 

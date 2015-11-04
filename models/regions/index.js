@@ -36,18 +36,16 @@ function aggregateRegionLinks(n1, n2, callback) {
   };
 
   aggregateRegionLink(n1, n2, function(err, data){
-    resp.data.push({
-      data : data,
-      origin : n1,
-      terminus : n2
-    });
+    data.origin = n1;
+    data.terminus = n2;
+
+    resp.data.push(data);
 
     aggregateRegionLink(n2, n1, function(err, data){
-      resp.data.push({
-        data : data,
-        origin : n2,
-        terminus : n1
-      });
+      data.origin = n2;
+      data.terminus = n1;
+
+      resp.data.push(data);
 
       callback(null, resp);
     });

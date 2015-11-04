@@ -39,6 +39,11 @@
         <cwn-date-linechart animate id="evaporationChart"></cwn-date-linechart>
       </div>
 
+
+      <div>
+        <cwn-output-info id="outputs"></cwn-output-info>
+      </div>
+
     </div>
 
   </template>
@@ -104,18 +109,14 @@
         return;
       }
 
+      this.$.outputs.update(this.feature);
+
       this.$.eacChartRoot.innerHTML = '';
       this.nodata = false;
 
       var props = this.feature.properties;
-      if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
+      if( (props.extras && props.extras.flow) || (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
         $(this).parent().css('display','block');
-      } else if ( this.feature.properties.type == 'Region' ) {
-        this.$.inflowCharts.innerHTML = '';
-        this.$.evaporation.style.display = 'none';
-        this.renderRegion();
-        this.fire('climate-ready');
-        return;
       } else {
         this.nodata = true;
         $(this).parent().hide();
@@ -198,34 +199,6 @@
         } else {
           this.$.inflows.style.display = 'none';
         }
-      }.bind(this));
-    },
-
-    renderRegion : function() {
-      CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
-        if( resp.error || !resp.inflows ) {
-          $(this).parent().css('display','none');
-          console.log(resp);
-          return;
-        }
-
-        if( Object.keys(resp.inflows).length == 0 ) {
-          $(this).parent().css('display','none');
-          return;
-        }
-
-        var chart = document.createElement('cwn-date-linechart');
-        chart.label = 'Aggregate Inflow',
-        chart.data = [['date', 'kaf']];
-        for( var key in resp.inflows ) {
-          chart.data.push([key, resp.inflows[key] || 0 ]);
-        }
-
-        this.$.inflowCharts.appendChild(chart);
-
-        this.$.inflows.style.display = 'block';
-        $(this).parent().css('display','block');
-
       }.bind(this));
     },
 
