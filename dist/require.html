@@ -11235,17 +11235,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
           // grab the aggregate region link data
           if( this.feature.properties.type == 'Region Link' ) {
-            CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
-              if( Object.keys(resp.origin.flow).length > 0 ) hasRegionLinkData = true;
-              else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionLinkData = true;
-
-              onResponse.call(this);
-            }.bind(this));
+            //CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
+            //  if( Object.keys(resp.origin.flow).length > 0 ) hasRegionLinkData = true;
+            //  else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionLinkData = true;
+            hasRegionLinkData = true;
+            onResponse.call(this);
+            //}.bind(this));
           }
 
           // grab the aggregate flow data
           if( this.feature.properties.type == 'Region' ) {
-            CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
+            /*CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
               if( Object.keys(resp.origins.flow).length > 0 ) hasRegionFlowData = true;
               else if( Object.keys(resp.terminals.flow).length > 0 ) hasRegionFlowData = true;
               onResponse.call(this);
@@ -11254,7 +11254,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
               if( Object.keys(resp.inflows).length > 0 ) hasRegionInflowData = true;
               onResponse.call(this);
-            }.bind(this));
+            }.bind(this));*/
+
+            hasRegionInflowData = true;
+            onResponse.call(this);
           }
 
           // grab the bounds data
@@ -13300,7 +13303,7 @@ Polymer({
         }
       },
 
-      loadAggregate : function() {
+      /*loadAggregate : function() {
         CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp) {
           this.$.loading.style.display = 'none';
 
@@ -13328,9 +13331,9 @@ Polymer({
           }
           this.renderFlow();
         }.bind(this));
-      },
+      },*/
 
-      loadLinkAggregate : function() {
+      /*loadLinkAggregate : function() {
         // TODO: include units in aggregate response
         CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
           this.$.loading.style.display = 'none';
@@ -13363,7 +13366,7 @@ Polymer({
             }
           });
         }.bind(this));
-      },
+      },*/
 
       load : function() {
         CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
@@ -13752,7 +13755,7 @@ Polymer({
             chart = negative[i];
             for( var j = 1; j < chart.length; j++ ) {
               if( data[chart[j][0]] ) {
-                data[chart[j][0]] -= chart[j][1];
+                data[chart[j][0]] += -1 * chart[j][1];
               } else {
                 data[chart[j][0]] = -1 * chart[j][1];
               }
@@ -13901,7 +13904,7 @@ Polymer({
           diff -= dp;
         }
         if( this.data.flow ) {
-          dp = this.getDateDataPoint(this.data.evaporation, date);
+          dp = this.getDateDataPoint(this.data.flow, date);
 
           data.push(['Flow', -1*dp, '#e51c23']);
           diff -= dp;

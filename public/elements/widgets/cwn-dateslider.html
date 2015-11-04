@@ -338,17 +338,17 @@
 
           // grab the aggregate region link data
           if( this.feature.properties.type == 'Region Link' ) {
-            CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
-              if( Object.keys(resp.origin.flow).length > 0 ) hasRegionLinkData = true;
-              else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionLinkData = true;
-
-              onResponse.call(this);
-            }.bind(this));
+            //CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp){
+            //  if( Object.keys(resp.origin.flow).length > 0 ) hasRegionLinkData = true;
+            //  else if( Object.keys(resp.terminus.flow).length > 0 ) hasRegionLinkData = true;
+            hasRegionLinkData = true;
+            onResponse.call(this);
+            //}.bind(this));
           }
 
           // grab the aggregate flow data
           if( this.feature.properties.type == 'Region' ) {
-            CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
+            /*CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp){
               if( Object.keys(resp.origins.flow).length > 0 ) hasRegionFlowData = true;
               else if( Object.keys(resp.terminals.flow).length > 0 ) hasRegionFlowData = true;
               onResponse.call(this);
@@ -357,7 +357,10 @@
             CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
               if( Object.keys(resp.inflows).length > 0 ) hasRegionInflowData = true;
               onResponse.call(this);
-            }.bind(this));
+            }.bind(this));*/
+
+            hasRegionInflowData = true;
+            onResponse.call(this);
           }
 
           // grab the bounds data

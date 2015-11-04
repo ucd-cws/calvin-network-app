@@ -35,7 +35,7 @@
         }
       },
 
-      loadAggregate : function() {
+      /*loadAggregate : function() {
         CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp) {
           this.$.loading.style.display = 'none';
 
@@ -63,9 +63,9 @@
           }
           this.renderFlow();
         }.bind(this));
-      },
+      },*/
 
-      loadLinkAggregate : function() {
+      /*loadLinkAggregate : function() {
         // TODO: include units in aggregate response
         CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
           this.$.loading.style.display = 'none';
@@ -98,7 +98,7 @@
             }
           });
         }.bind(this));
-      },
+      },*/
 
       load : function() {
         CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){

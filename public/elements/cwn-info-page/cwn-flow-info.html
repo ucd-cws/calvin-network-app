@@ -109,7 +109,7 @@
             chart = negative[i];
             for( var j = 1; j < chart.length; j++ ) {
               if( data[chart[j][0]] ) {
-                data[chart[j][0]] -= chart[j][1];
+                data[chart[j][0]] += -1 * chart[j][1];
               } else {
                 data[chart[j][0]] = -1 * chart[j][1];
               }
@@ -258,7 +258,7 @@
           diff -= dp;
         }
         if( this.data.flow ) {
-          dp = this.getDateDataPoint(this.data.evaporation, date);
+          dp = this.getDateDataPoint(this.data.flow, date);
 
           data.push(['Flow', -1*dp, '#e51c23']);
           diff -= dp;
