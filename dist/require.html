@@ -11410,7 +11410,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <script>
     Polymer({
         is : 'cwn-date-linechart',
-
+/*
         properties : {
             label : String,
             xlabel : String,
@@ -11430,11 +11430,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               notify : true
             }
         },
-
+*/
         ready : function() {
 
             this.options = null;
             this.type = '';
+            this.ctype = '';
             this.cols = null;
             this.dt = null;
             this.chart = null;
@@ -11443,6 +11444,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             this.startDate = null;
             this.stopDate = null;
             this.animate = false;
+            this.onClick = null;
 
             this.updateTimer = -1;
 
@@ -11471,8 +11473,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             this.update();
         },
 
-        setHeight : function() {
-            if( !this.$ ) return;
+        setHeight : function(height) {
+            if( height ) this.height = height;
 
             this.$.root.style.height = this.height+'px';
             this.redraw();
@@ -11494,16 +11496,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             if( !window.google.visualization.LineChart ) return this.setOnloadHandler();
             if( !this.$ ) return;
 
-            this.isPaper = false;
-            if( !this.chart ) {
+            if( !this.chart || this.type != this.ctype ) {
+                this.$.root.innerHTML = '';
                 if( this.type ) {
                     this.chart = new google.visualization[this.type](this.$.root);
                 } else {
-                    // not working
-                    //this.isPaper = true;
-                    //this.chart = new google.charts.Line(this.$.root);
                     this.chart = new google.visualization.LineChart(this.$.root);
                 }
+                if( this.onClick ) {
+                  google.visualization.events.addListener(this.chart, 'select', function(e){
+                    var row = this.chart.getSelection()[0].row+1;
+                    this.onClick(this.filteredData[row]);
+                  }.bind(this));
+                }
+                this.ctype = this.type;
             }
 
             if( !this.cols ) {
@@ -11526,6 +11532,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         },
 
         _setDataTable : function(data) {
+          this.filteredData = data;
           try {
             if( this.cols ) {
                 this.dt = new google.visualization.DataTable();
@@ -11607,7 +11614,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             }
 
 
-            if( this.animate && !this.isPaper ) {
+            if( this.animate  ) {
                 options.animation = {
                     duration : 750,
                     easing : 'out'
@@ -11671,8 +11678,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           });
         },
 
-        setHeight : function() {
-            if( !this.$ ) return;
+        setHeight : function(height) {
+            if( height ) this.height = height;
 
             this.$.root.style.height = this.height+'px';
             this.redraw();
@@ -11751,6 +11758,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 for( var key in this.options ) {
                     options[key] = this.options[key];
                 }
+            }
+
+            if( (this.options && !this.options.height) && this.height ) {
+              this.options.height = this.height;
             }
 
             if( this.animate ) {
@@ -12762,31 +12773,39 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     setRegionLinkInfo : function(info) {
-      for( var i = 0; i < info.origin.links.length; i++ ) {
+      var order = 0;
+      if( info[0].origin !== this.feature.properties.origin ) {
+        order = 1;
+      }
+
+      for( var i = 0; i < info[order].included.length; i++ ) {
         this.origins.push({
-            name: info.origin.links[i],
+            name: info[order].included[i],
             hasLink : false,
             hideArrow : true,
-            link: '#info/'+info.origin.links[i],
+            link: '#info/'+info[order].included[i],
             description: ''
         });
       }
 
-      if( info.origin.links.length > 0 ) {
+      if( info[order].included.length > 0 ) {
         this.$.originExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.terminus.replace(/_/g,' ')+'</h5>';
       }
 
-      for( var i = 0; i < info.terminus.links.length; i++ ) {
+      if( order === 0 ) order++;
+      else order--;
+
+      for( var i = 0; i < info[order].included.length; i++ ) {
         this.terminals.push({
-            name: info.terminus.links[i],
+            name: info[order].included[i],
             hasLink : false,
             hideArrow : true,
-            link: '#info/'+info.terminus.links[i],
+            link: '#info/'+info[order].included[i],
             description: ''
         });
       }
 
-      if( info.terminus.links.length > 0 ) {
+      if( info[order].included.length > 0 ) {
         this.$.terminusExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.origin.replace(/_/g,' ')+'</h5>';
       }
 
@@ -13246,14 +13265,12 @@ Polymer({
 </script>
 <dom-module id="cwn-output-info" assetpath="elements/cwn-info-page/">
   <template>
-    <h2 class="page-header">Outputs</h2>
-
     <div id="loading" style="display:none">
       <h4><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</h4>
     </div>
 
     <div id="flow" style="display:none">
-      <div>Flow</div>
+      <h4>Flow</h4>
       <cwn-date-linechart id="chart" animate=""></cwn-date-linechart>
     </div>
   </template>
@@ -13277,14 +13294,6 @@ Polymer({
           $(this).parent().show();
           this.$.loading.style.display = 'block';
           this.load();
-        } else if( this.feature.properties.type == 'Region Link' ) {
-          $(this).parent().show();
-          this.$.loading.style.display = 'block';
-          this.loadLinkAggregate();
-       } else if( this.feature.properties.type == 'Region' ) {
-          $(this).parent().show();
-          this.$.loading.style.display = 'block';
-          this.loadAggregate();
         } else {
           $(this).parent().hide();
           this.$.loading.style.display = 'none';
@@ -13418,6 +13427,11 @@ Polymer({
         <cwn-date-linechart animate="" id="evaporationChart"></cwn-date-linechart>
       </div>
 
+
+      <div>
+        <cwn-output-info id="outputs"></cwn-output-info>
+      </div>
+
     </div>
 
   </template>
@@ -13483,18 +13497,14 @@ Polymer({
         return;
       }
 
+      this.$.outputs.update(this.feature);
+
       this.$.eacChartRoot.innerHTML = '';
       this.nodata = false;
 
       var props = this.feature.properties;
-      if( (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
+      if( (props.extras && props.extras.flow) || (props.extras && props.extras.inflows) || props.el_ar_cap || (props.extras && props.extras.evaporation) ) {
         $(this).parent().css('display','block');
-      } else if ( this.feature.properties.type == 'Region' ) {
-        this.$.inflowCharts.innerHTML = '';
-        this.$.evaporation.style.display = 'none';
-        this.renderRegion();
-        this.fire('climate-ready');
-        return;
       } else {
         this.nodata = true;
         $(this).parent().hide();
@@ -13580,34 +13590,6 @@ Polymer({
       }.bind(this));
     },
 
-    renderRegion : function() {
-      CWN.ds.loadAggregate('inflows', this.feature.properties.prmname, function(resp){
-        if( resp.error || !resp.inflows ) {
-          $(this).parent().css('display','none');
-          console.log(resp);
-          return;
-        }
-
-        if( Object.keys(resp.inflows).length == 0 ) {
-          $(this).parent().css('display','none');
-          return;
-        }
-
-        var chart = document.createElement('cwn-date-linechart');
-        chart.label = 'Aggregate Inflow',
-        chart.data = [['date', 'kaf']];
-        for( var key in resp.inflows ) {
-          chart.data.push([key, resp.inflows[key] || 0 ]);
-        }
-
-        this.$.inflowCharts.appendChild(chart);
-
-        this.$.inflows.style.display = 'block';
-        $(this).parent().css('display','block');
-
-      }.bind(this));
-    },
-
     renderEvaporation : function() {
       CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
         var evaporation = resp.evaporation;
@@ -13659,21 +13641,384 @@ Polymer({
 
   });
 </script>
-<dom-module id="cwn-info-page" assetpath="elements/cwn-info-page/">
+<dom-module id="cwn-flow-info" assetpath="elements/cwn-info-page/">
+  <template>
     <style>
       :host {
         display: block;
-        overflow-x: hidden;
-        margin-bottom: 100px;
-      }
-      .card {
-        margin: 10px 10px 10px 10px;
-        box-shadow: 0 0 5px #888;
-        padding: 15px;
       }
     </style>
 
+    <h4>Aggregate Flow</h4>
+
+    <div id="loading"><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</div>
+
+    <cwn-date-linechart id="flowChart"></cwn-date-linechart>
+    <div class="help-block" style="text-align:right">Click chart point to inspect</div>
+
+    <div class="modal fade" id="popup">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-label="Close" data-dismiss="modal"><span aria-hidden="true">×</span></button>
+            <h4 class="modal-title" id="title">Details</h4>
+          </div>
+          <div class="modal-body">
+            <div id="colChartRoot" style="height: 500px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-flow-info',
+
+      ready : function() {
+        this.popup = $(this.$.popup).remove();
+        $('body').append(this.popup);
+        this.popup.modal({show: false});
+      },
+
+      update : function(feature) {
+        if( this.feature && feature.properties.prmname == this.feature.properties.prmname ) {
+          return;
+        }
+
+        this.feature = feature;
+
+        //this.$.flow.style.display = 'none';
+        this.net = false;
+        var props = this.feature.properties;
+
+        if( props.type == 'Region Link' ) {
+          $(this).parent().show();
+          this.$.loading.style.display = 'block';
+          this.loadLinkAggregate();
+       } else if( props.type == 'Region' ) {
+          $(this).parent().show();
+          this.$.loading.style.display = 'block';
+          this.loadAggregate();
+       } else if( props.extras &&
+          (props.extras.inflow || props.extras.flow || props.extras.sinks || props.extras.evaporation) ) {
+            $(this).parent().show();
+            this.$.loading.style.display = 'block';
+            this.load();
+        } else {
+          $(this).parent().hide();
+          this.$.loading.style.display = 'none';
+        }
+      },
+
+      load : function() {
+        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+          this.$.loading.style.display = 'none';
+          this.data = resp;
+          var positive = [];
+          var negative = [];
+
+          if( resp.inflows ) {
+            for( var name in resp.inflows  ) {
+              positive.push(resp.inflows[name].inflow);
+            }
+          }
+          if( resp.evaporation ) {
+            negative.push(resp.evaporation);
+          }
+          if( resp.flow ) {
+            negative.push(resp.flow);
+          }
+
+          if( positive.length + negative.length <= 1 ) {
+            $(this).parent().hide();
+            return;
+          }
+
+          var data = {}, chart;
+          for( var i = 0; i < positive.length; i++ ) {
+            chart = positive[i];
+            for( var j = 1; j < chart.length; j++ ) {
+              if( data[chart[j][0]] ) {
+                data[chart[j][0]] += chart[j][1];
+              } else {
+                data[chart[j][0]] = chart[j][1];
+              }
+            }
+          }
+
+          for( var i = 0; i < negative.length; i++ ) {
+            chart = negative[i];
+            for( var j = 1; j < chart.length; j++ ) {
+              if( data[chart[j][0]] ) {
+                data[chart[j][0]] -= chart[j][1];
+              } else {
+                data[chart[j][0]] = -1 * chart[j][1];
+              }
+            }
+          }
+
+          var chartData = [['Date', 'Value']];
+          for( var date in data ) {
+            chartData.push([date, data[date]]);
+          }
+
+          this.$.flowChart.options = {
+            isStacked : true,
+            height: 500
+          }
+
+          this.$.flowChart.setHeight(500);
+          this.$.flowChart.type = 'AreaChart';
+          this.$.flowChart.onClick = this.onNodeChartClick.bind(this);
+          this.$.flowChart.update(chartData);
+
+        }.bind(this));
+      },
+
+      loadAggregate : function() {
+        $.get('/regions/aggregateRegion?region='+this.feature.properties.prmname, function(resp) {
+          this.data = resp;
+          this.$.loading.style.display = 'none';
+
+          var data = [['Date','Amplitude Loss', 'Local Sinks', 'Evaporation', 'Link Outflows', '', 'Local Inflows', 'Link Inflows']];
+
+          for( var date in resp.aggregate ) {
+
+            var localInflow = this.data.aggregate[date].inflows || 0;
+            var linkInflow = this.data.aggregate[date].regionLinkInflow || 0;
+
+            var sink = 0;
+            var evaporation = this.data.aggregate[date].evaporation ? this.data.aggregate[date].evaporation*-1 : 0;
+            var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
+            var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
+
+            data.push([
+              date,
+              ampLoss,
+              sink,
+              evaporation,
+              linkOutflow,
+              (sink + evaporation + linkOutflow + ampLoss)*-1,
+              localInflow,
+              linkInflow
+            ]);
+          }
+
+          this.$.flowChart.options = {
+            isStacked : true,
+            height: 500,
+            legend : {
+              position: 'right'
+            },
+            series: {
+              4: {
+                  visibleInLegend: false,
+                  areaOpacity : 0,
+                  color : 'transparent'
+              }
+            }
+          }
+
+          this.$.flowChart.setHeight(500);
+          this.$.flowChart.onClick = this.onRegionChartClick.bind(this);
+          this.$.flowChart.type = 'AreaChart';
+          this.$.flowChart.update(data);
+
+        }.bind(this));
+      },
+
+      loadLinkAggregate : function() {
+        $.get('/regions/aggregateLinks?n1='+this.feature.properties.origin+'&n2='+this.feature.properties.terminus, function(resp) {
+          this.$.loading.style.display = 'none';
+          this.data = resp.data;
+
+          this.fire('region-link-update', this.data);
+
+          var data = [['Date','Flow', 'Amplitude Loss']];
+
+          var total = {};
+          for( var date in this.data[0].data ) {
+            total[date] = {
+              flow : this.data[0].data[date].flow - (this.data[1].data[date] ? this.data[1].data[date].flow : 0),
+              amplitudeLoss : -1*(this.data[0].data[date].amplitudeLoss + (this.data[1].data[date] ? this.data[1].data[date].amplitudeLoss : 0))
+            }
+          }
+
+          for( var date in total ) {
+            data.push([
+              date,
+              total[date].flow,
+              total[date].amplitudeLoss
+            ]);
+          }
+
+          this.$.flowChart.options = {
+            title: 'Rendered as '+this.data[0].origin+' to '+this.data[0].terminus,
+            isStacked : true,
+            height: 500,
+            legend : {
+              position: 'right'
+            }
+          }
+
+          this.$.flowChart.setHeight(500);
+          this.$.flowChart.onClick = this.onLinkChartClick.bind(this);
+          this.$.flowChart.type = 'AreaChart';
+          this.$.flowChart.update(data);
+
+        }.bind(this));
+      },
+
+      getDateDataPoint : function(data, date) {
+        for( var i = 0; i < data.length; i++ ) {
+          if( data[i][0] == date ) return data[i][1];
+        }
+        return 0;
+      },
+
+      onNodeChartClick : function(e) {
+        var date = e[0];
+
+        this.popup.modal('show');
+        this.$.colChartRoot.innerHTML = '';
+
+        var data = [];
+        var diff = 0, dp;
+        if( this.data.inflows ) {
+          for( var name in this.data.inflows  ) {
+            dp = this.getDateDataPoint(this.data.inflows[name].inflow, date);
+
+            data.push(['Inflow: '+name, dp,'#4caf50' ]);
+            diff += dp;
+          }
+        }
+        if( this.data.evaporation ) {
+          dp = this.getDateDataPoint(this.data.evaporation, date);
+
+          data.push(['Evaporation', -1*dp, '#e51c23']);
+          diff -= dp;
+        }
+        if( this.data.flow ) {
+          dp = this.getDateDataPoint(this.data.evaporation, date);
+
+          data.push(['Flow', -1*dp, '#e51c23']);
+          diff -= dp;
+        }
+
+        data.sort(function(a, b){
+          if( a[1] < b[1] ) return -1;
+          if( b[1] < a[1] ) return 1;
+          return 0;
+        });
+
+        data.splice(0,0,['Type', 'Value',{ role: "style" }]);
+        data.push(['Difference', diff, '#ff9800']);
+
+        var dt = google.visualization.arrayToDataTable(data);
+        var options = {
+          title: date,
+          height: 500,
+          legend: { position: 'none' },
+        };
+
+        setTimeout(function(){
+            var chart = new google.visualization.ColumnChart(this.$.colChartRoot);
+            chart.draw(dt, options);
+        }.bind(this), 500);
+
+      },
+
+      onLinkChartClick : function(e) {
+        var date = e[0];
+
+        this.popup.modal('show');
+        this.$.colChartRoot.innerHTML = '';
+
+        var data = [
+          ['Type', 'Value'],
+          ['r1 to r2: Flow', this.data[0].data[date].flow],
+          ['r1 to r2: Amplitude Loss', this.data[0].data[date].amplitudeLoss],
+          ['r2 to r1: Flow', this.data[1].data[date].flow],
+          ['r2 to r1: Amplitude Loss', this.data[1].data[date].amplitudeLoss],
+          ['Flow Difference (r1 - r2)', this.data[0].data[date].flow - this.data[1].data[date].flow]
+        ];
+
+        var dt = google.visualization.arrayToDataTable(data);
+        var options = {
+          title: date+': r1='+this.data[0].origin+', r2='+this.data[0].terminus,
+          height: 500,
+          legend: { position: 'none' },
+        };
+
+        setTimeout(function(){
+            var chart = new google.visualization.ColumnChart(this.$.colChartRoot);
+            chart.draw(dt, options);
+        }.bind(this), 500);
+      },
+
+      onRegionChartClick : function(e) {
+        var date = e[0];
+
+        this.popup.modal('show');
+        this.$.colChartRoot.innerHTML = '';
+
+        var localInflow = this.data.aggregate[date].inflows || 0;
+        var linkInflow = this.data.aggregate[date].regionLinkInflow || 0;
+        var evaporation = this.data.aggregate[date].evaporation ? this.data.aggregate[date].evaporation*-1 : 0;
+        var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
+        var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
+
+        var data = [
+          ['Local Inflows', localInflow,'#4caf50'],
+          ['Link Inflows', linkInflow,'#4caf50'],
+          ['Local Sinks', 0, '#e51c23'],
+          ['Evaporation', evaporation, '#e51c23'],
+          ['Link Outflows', linkOutflow, '#e51c23'],
+          ['Amplitude Loss', ampLoss, '#e51c23']
+        ];
+
+        data.sort(function(a, b){
+          if( a[1] < b[1] ) return -1;
+          if( b[1] < a[1] ) return 1;
+          return 0;
+        });
+        data.splice(0,0,['Type', 'Value',{ role: "style" }]);
+        data.push(['Difference', localInflow + linkInflow+evaporation + linkOutflow + ampLoss, '#ff9800']);
+
+        var dt = google.visualization.arrayToDataTable(data);
+        var options = {
+          title: date,
+          height: 500,
+          legend: { position: 'none' },
+        };
+
+        setTimeout(function(){
+            var chart = new google.visualization.ColumnChart(this.$.colChartRoot);
+            chart.draw(dt, options);
+        }.bind(this), 500);
+      }
+
+    });
+  </script>
+</dom-module>
+<dom-module id="cwn-info-page" assetpath="elements/cwn-info-page/">
+
+
     <template>
+      <style>
+        :host {
+          display: block;
+          overflow-x: hidden;
+          margin-bottom: 100px;
+        }
+        .card {
+          margin: 10px 10px 10px 10px;
+          box-shadow: 0 0 5px #888;
+          padding: 15px;
+        }
+      </style>
 
       <div class="card" hidden$="{{loading}}" style="margin-top: 25px">
         <cwn-node-info id="nodeInfo" feature="{{feature}}" ds="{{ds}}" leaflet="{{map}}">
@@ -13703,12 +14048,12 @@ Polymer({
       </div>
 
       <div class="card">
-        <cwn-output-info id="outputs" on-region-link-update="onRegionLinkUpdate"></cwn-output-info>
+        <cwn-flow-info id="flow" on-region-link-update="onRegionLinkUpdate"></cwn-flow-info>
       </div>
 
       <div class="card" id="readme" style="display:none">
         <h4 class="page-header">README</h4>
-        <div id="readmeMarkdown"></div>
+        <div id="readmeMarkdown"><h2>Loading</h2></div>
       </div>
 
       <cwn-dateslider id="dateslider" start="1920-01-01" on-values-changed="updateDateFilters">
@@ -13936,7 +14281,8 @@ Polymer({
 
       this.hasOutputs = false;
 
-      this.$.outputs.update(this.feature);
+      //this.$.outputs.update(this.feature);
+      this.$.flow.update(this.feature);
 
       if( this.feature.properties.hasOutputs ) {
         this.hasOutputs = true;
@@ -13956,6 +14302,7 @@ Polymer({
           this.$.readme.style.display = 'block';
           CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
             this.$.readmeMarkdown.innerHTML = marked(resp.readme);
+            $(this.$.readmeMarkdown).find('h2').css('fontSize','28px');
           }.bind(this));
           return;
         }
