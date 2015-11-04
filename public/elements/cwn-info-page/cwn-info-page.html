@@ -3,6 +3,7 @@
 <link rel="import" href="cwn-output-info.html" />
 <link rel="import" href="cwn-climate-info.html" />
 <link rel="import" href="cwn-flow-info.html" />
+<link rel="import" href="cwn-sink-info.html" />
 
 <dom-module id="cwn-info-page">
 
@@ -50,6 +51,11 @@
           <!-- End Costs -->
 
         </div>
+      </div>
+
+      <div class="card" id="sinks">
+        <h2 class="page-header">Sinks</h2>
+        <div id="sinksRoot"></div>
       </div>
 
       <div class="card">
@@ -296,13 +302,35 @@ Polymer({
         this.hasOutputs = true;
       }
 
+      this.updateSinks();
       this.updateReadme();
-
       this.updateDateSliderVisibility();
 
       this.async(function(){
         this.$.dateslider.resize();
       });
+    },
+
+    updateSinks : function() {
+      if( this.feature.properties.extras && this.feature.properties.extras.sinks ) {
+        this.$.sinks.style.display = 'block';
+        this.$.sinksRoot.innerHTML = '';
+
+        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+          if( !resp.sinks ) return;
+          for( var i = 0; i < resp.sinks.length; i++ ) {
+            for( var name in resp.sinks[i] ) {
+              var sinkEle = document.createElement('cwn-sink-info');
+              this.$.sinksRoot.appendChild(sinkEle);
+              sinkEle.render(name, resp.sinks[i][name]);
+            }
+          }
+        }.bind(this));
+
+
+      } else {
+        this.$.sinks.style.display = 'none';
+      }
     },
 
     updateReadme : function() {

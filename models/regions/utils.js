@@ -146,7 +146,17 @@ function sumAll(nodelist, sumFn, callback) {
 
 function sumInto(nodelist, attribute, label, data, sumFn, callback) {
   var projection = {prmname: 1};
-  projection[attribute] = 1;
+  var isSingle = false;
+
+  if( typeof attribute === 'string' ) {
+    isSingle = true;
+    projection[attribute] = 1;
+  } else {
+    for( var i = 0; i < attribute.length; i++ ) {
+      projection[attribute[i]] = 1;
+    }
+  }
+
 
   extrasCollection
     .find({prmname : {'$in' : nodelist}}, projection)
@@ -156,10 +166,15 @@ function sumInto(nodelist, attribute, label, data, sumFn, callback) {
       }
 
       for( var i = 0; i < results.length; i++ ) {
-        if( !results[i][attribute] ) {
+        if( isSingle && !results[i][attribute] ) {
           continue;
         }
-        sumFn(data, label, results[i][attribute], results[i].prmname);
+        if( isSingle ) {
+          sumFn(data, label, results[i][attribute], results[i].prmname);
+        } else {
+          sumFn(data, label, results[i], results[i].prmname);
+        }
+
       }
 
       callback(null);

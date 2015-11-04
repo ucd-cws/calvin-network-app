@@ -1,0 +1,180 @@
+<dom-module id="cwn-sink-info">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+
+    <h4 id="title"></h4>
+
+    <div class="row">
+      <div class="col-sm-6">
+        <h5 class="page-header">Bounds</h5>
+        <div id="boundsRoot"></div>
+      </div>
+      <div class="col-sm-6">
+        <h5 class="page-header">Costs</h5>
+
+        <div>
+          <div hidden$="{{!showMonthlyVariableCost}}">
+
+            <div class="btn-group" id="monthSelector">
+              <template is="dom-repeat" items="{{months}}">
+                <a class="btn btn-xs btn-primary"
+                  on-click="setMonth">{{item}}</a>
+              </template>
+            </div>
+
+            <cwn-linechart
+              id="lineChart"
+              label="{{costChartLabel}}"
+              xlabel="Capacity (kAF)"
+              ylabel="Cost ($/kAF)"
+              animate="true">
+            </cwn-linechart>
+          </div>
+
+          <div hidden$="{{!showConstantCost}}">
+            <h5>Constant: $<span>{{costs.cost}}</span></h5>
+          </div>
+
+        </div>
+        <div id="noCosts"></div>
+      </div>
+    </div>
+
+    <h5 class="page-header">Flow</h5>
+    <cwn-date-linechart id="chart" animate></cwn-date-linechart>
+    <div id="noFlow"></div>
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-sink-info',
+
+      ready : function() {
+        this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      },
+
+      render : function(name, sink) {
+        this.$.title.innerHTML = name + (sink.description ? ' <small>'+sink.description+'</small>' : '');
+        this.sink = sink;
+
+        this.renderBounds();
+        this.renderCosts();
+
+        if( this.sink.flow ) {
+          this.$.chart.style.display = 'block';
+          this.$.noFlow.innerHTML = '';
+          this.$.chart.update(this.sink.flow);
+        } else {
+          this.$.chart.style.display = 'none';
+          this.$.noFlow.innerHTML = 'No Data';
+        }
+
+      },
+
+      renderCosts : function() {
+        this.noCostData = true;
+        this.costsMonths = [];
+        this.costs = {
+          label : '',
+          data : {},
+          cost : 0, // for constant costs
+          selected : 0
+        };
+
+        this.showMonthlyVariableCost = false;
+        this.showConstantCost = false;
+
+        if( this.sink.costs ) {
+          this.renderCostData(this.sink.costs);
+          this.$.noCosts.innerHTML = '';
+        } else {
+          this.$.noCosts.innerHTML = 'No Data';
+        }
+
+      },
+
+      renderCostData : function(d) {
+        this.costs.label = d.type;
+
+
+        if( d.type == 'Constant' ) {
+
+          this.showConstantCost = true;
+          this.costs.cost = d.cost;
+
+
+        } else if( d.type == 'Monthly Variable' ) {
+
+          this.showMonthlyVariableCost = true;
+
+          this.costsMonths = {};
+          var costArr;
+          if( !d.costs ) return;
+
+          if( d.costs.data ) {
+            this.costMonths = d.costs.data;
+          } else {
+            this.costMonths = d.costs;
+          }
+          this.showMonthlyVariableCost = true;
+          this.$.monthSelector.style.display = 'inline-block';
+
+          this.setMonth('JAN');
+
+        } else if( d.type == 'Annual Variable' ) {
+
+          if( !d.costs ) return;
+
+          var keys = Object.keys(d.costs);
+          if( keys.length == 0 ) return;
+          if( keys.length > 1 ) {
+            console.log('! cwn-cost-info found multiple keys for costs data');
+            console.log(keys);
+          }
+
+          this.costChartLabel = d.type+': '+keys[0];
+          this.costChartData = d.costs[keys[0]];
+          this.$.lineChart.update(this.costChartData);
+          this.showMonthlyVariableCost = true;
+          this.$.monthSelector.style.display = 'none';
+
+        } else {
+          alert('Unknown cost type: '+d.type);
+        }
+      },
+
+      setMonth : function(month) {
+        if( typeof month == 'object' ) month = month.currentTarget.innerHTML;
+        month = month.toUpperCase();
+
+        this.costChartLabel = this.costs.label+' - '+month;
+        this.costChartData = this.costMonths[month];
+
+        // redraw chart
+        this.$.lineChart.update(this.costChartData);
+      },
+
+      renderBounds : function() {
+        if( !this.sink.bounds ) {
+          this.$.boundsRoot.innerHTML = 'None';
+          return;
+        }
+        if( this.sink.bounds.length == 0 ) {
+          this.$.boundsRoot.innerHTML = 'None';
+          return;
+        }
+        this.$.boundsRoot.innerHTML = '';
+
+        for( var i = 0; i < this.sink.bounds.length; i++ ) {
+          var chart = document.createElement('cwn-bound-chart');
+          this.$.boundsRoot.appendChild(chart);
+          chart.render(this.sink.bounds[i]);
+        }
+
+      }
+    });
+  </script>
+</dom-module>

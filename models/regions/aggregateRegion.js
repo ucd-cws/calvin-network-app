@@ -118,6 +118,33 @@ function sum(sum, item) {
         }
       }
     }
+
+    if( item.sinks ) {
+      var sinks = item.sinks;
+      for( var i = 0; i < sinks.length; i++ ) {
+        for( var name in sinks[i] ) {
+          var flow = sinks[i][name].flow, f;
+
+          for( var j = 0; j < flow.length; j++ ) {
+            if( j === 0 && typeof flow[0][1] === 'string' ) {
+              continue;
+            }
+
+            f = flow[j][1] || 0;
+            if( sum[flow[j][0]] === undefined ) {
+              sum[flow[j][0]] = {
+                sinks : f
+              };
+            } else if( sum[flow[j][0]].sinks === undefined ) {
+              sum[flow[j][0]].sinks = f;
+            } else {
+              sum[flow[j][0]].sinks += f;
+            }
+          }
+        }
+      }
+    }
+
   }
 }
 

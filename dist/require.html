@@ -13659,6 +13659,8 @@ Polymer({
     <cwn-date-linechart id="flowChart"></cwn-date-linechart>
     <div class="help-block" style="text-align:right">Click chart point to inspect</div>
 
+    <cwn-date-linechart id="differenceChart" style="display:none"></cwn-date-linechart>
+
     <div class="modal fade" id="popup">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -13695,6 +13697,7 @@ Polymer({
         //this.$.flow.style.display = 'none';
         this.net = false;
         var props = this.feature.properties;
+        this.$.differenceChart.style.display = 'none';
 
         if( props.type == 'Region Link' ) {
           $(this).parent().show();
@@ -13725,6 +13728,13 @@ Polymer({
           if( resp.inflows ) {
             for( var name in resp.inflows  ) {
               positive.push(resp.inflows[name].inflow);
+            }
+          }
+          if( resp.sinks ) {
+            for( var i = 0; i < resp.sinks.length; i++ ) {
+              for( var name in resp.sinks[i] ) {
+                negative.push(resp.sinks[i][name].flow);
+              }
             }
           }
           if( resp.evaporation ) {
@@ -13784,15 +13794,17 @@ Polymer({
         $.get('/regions/aggregateRegion?region='+this.feature.properties.prmname, function(resp) {
           this.data = resp;
           this.$.loading.style.display = 'none';
+          this.$.differenceChart.style.display = 'block';
 
           var data = [['Date','Amplitude Loss', 'Local Sinks', 'Evaporation', 'Link Outflows', '', 'Local Inflows', 'Link Inflows']];
+          var diffData = [['Date', 'Difference']];
 
           for( var date in resp.aggregate ) {
 
             var localInflow = this.data.aggregate[date].inflows || 0;
             var linkInflow = this.data.aggregate[date].regionLinkInflow || 0;
 
-            var sink = 0;
+            var sink = this.data.aggregate[date].sinks ? this.data.aggregate[date].sinks*-1 : 0;
             var evaporation = this.data.aggregate[date].evaporation ? this.data.aggregate[date].evaporation*-1 : 0;
             var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
             var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
@@ -13806,6 +13818,10 @@ Polymer({
               (sink + evaporation + linkOutflow + ampLoss)*-1,
               localInflow,
               linkInflow
+            ]);
+            diffData.push([
+              date,
+              ampLoss + sink + evaporation + linkOutflow + localInflow + linkInflow
             ]);
           }
 
@@ -13829,6 +13845,19 @@ Polymer({
           this.$.flowChart.type = 'AreaChart';
           this.$.flowChart.update(data);
 
+          this.$.differenceChart.options = {
+            isStacked : true,
+            height: 400,
+            legend : {
+              position: 'right'
+            }
+          }
+
+          this.$.differenceChart.setHeight(500);
+          this.$.differenceChart.onClick = this.onRegionChartClick.bind(this);
+          this.$.differenceChart.type = 'AreaChart';
+          this.$.differenceChart.update(diffData);
+
         }.bind(this));
       },
 
@@ -13839,13 +13868,14 @@ Polymer({
 
           this.fire('region-link-update', this.data);
 
-          var data = [['Date','Flow', 'Amplitude Loss']];
+          var data = [['Date','Flow', 'Amplitude Loss', 'Sinks']];
 
           var total = {};
           for( var date in this.data[0].data ) {
             total[date] = {
-              flow : this.data[0].data[date].flow - (this.data[1].data[date] ? this.data[1].data[date].flow : 0),
-              amplitudeLoss : -1*(this.data[0].data[date].amplitudeLoss + (this.data[1].data[date] ? this.data[1].data[date].amplitudeLoss : 0))
+              flow : (this.data[0].data[date].flow || 0) - (this.data[1].data[date] ? this.data[1].data[date].flow || 0 : 0),
+              amplitudeLoss : -1*((this.data[0].data[date].amplitudeLoss || 0) + (this.data[1].data[date] ? this.data[1].data[date].amplitudeLoss || 0 : 0)),
+              sinks : -1*((this.data[0].data[date].sinks || 0) + (this.data[1].data[date] ? this.data[1].data[date].sinks || 0 : 0))
             }
           }
 
@@ -13853,7 +13883,8 @@ Polymer({
             data.push([
               date,
               total[date].flow,
-              total[date].amplitudeLoss
+              total[date].amplitudeLoss,
+              total[date].sinks
             ]);
           }
 
@@ -13895,6 +13926,16 @@ Polymer({
 
             data.push(['Inflow: '+name, dp,'#4caf50' ]);
             diff += dp;
+          }
+        }
+        if( this.data.sinks ) {
+          for( var i = 0; i < this.data.sinks.length; i++ ) {
+            for( var name in this.data.sinks[i] ) {
+              dp = this.getDateDataPoint(this.data.sinks[i][name].flow, date);
+
+              data.push(['Sink: '+this.data.sinks[i][name].description, -1*dp, '#e51c23' ]);
+              diff -= dp;
+            }
           }
         }
         if( this.data.evaporation ) {
@@ -13939,13 +13980,37 @@ Polymer({
         this.popup.modal('show');
         this.$.colChartRoot.innerHTML = '';
 
+        var r1 = {
+          flow : 0,
+          ampLoss : 0,
+          sinks : 0
+        }
+        var r2 = {
+          flow : 0,
+          ampLoss : 0,
+          sinks : 0
+        }
+
+        if( this.data[0].data[date] ) {
+          r1.flow = this.data[0].data[date].flow || 0;
+          r1.ampLoss = this.data[0].data[date].ampLoss || 0;
+          r1.sinks = this.data[0].data[date].sinks || 0;
+        }
+        if( this.data[1].data[date] ) {
+          r2.flow = this.data[1].data[date].flow || 0;
+          r2.ampLoss = this.data[1].data[date].ampLoss || 0;
+          r2.sinks = this.data[1].data[date].sinks || 0;
+        }
+
         var data = [
           ['Type', 'Value'],
-          ['r1 to r2: Flow', this.data[0].data[date].flow],
-          ['r1 to r2: Amplitude Loss', this.data[0].data[date].amplitudeLoss],
-          ['r2 to r1: Flow', this.data[1].data[date].flow],
-          ['r2 to r1: Amplitude Loss', this.data[1].data[date].amplitudeLoss],
-          ['Flow Difference (r1 - r2)', this.data[0].data[date].flow - this.data[1].data[date].flow]
+          ['r1 to r2: Flow', r1.flow],
+          ['r1 to r2: Amplitude Loss', r1.ampLoss],
+          ['r1 to r2: Sinks', r1.sinks],
+          ['r2 to r1: Flow', r2.flow],
+          ['r2 to r1: Amplitude Loss', r2.ampLoss],
+          ['r1 to r2: Sinks', r2.sinks],
+          ['Flow Difference (r1 - r2)', r1.flow - r2.flow]
         ];
 
         var dt = google.visualization.arrayToDataTable(data);
@@ -13970,13 +14035,14 @@ Polymer({
         var localInflow = this.data.aggregate[date].inflows || 0;
         var linkInflow = this.data.aggregate[date].regionLinkInflow || 0;
         var evaporation = this.data.aggregate[date].evaporation ? this.data.aggregate[date].evaporation*-1 : 0;
+        var sinks = this.data.aggregate[date].sinks ? this.data.aggregate[date].sinks*-1 : 0;
         var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
         var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
 
         var data = [
           ['Local Inflows', localInflow,'#4caf50'],
           ['Link Inflows', linkInflow,'#4caf50'],
-          ['Local Sinks', 0, '#e51c23'],
+          ['Local Sinks', sinks, '#e51c23'],
           ['Evaporation', evaporation, '#e51c23'],
           ['Link Outflows', linkOutflow, '#e51c23'],
           ['Amplitude Loss', ampLoss, '#e51c23']
@@ -13988,7 +14054,7 @@ Polymer({
           return 0;
         });
         data.splice(0,0,['Type', 'Value',{ role: "style" }]);
-        data.push(['Difference', localInflow + linkInflow+evaporation + linkOutflow + ampLoss, '#ff9800']);
+        data.push(['Difference', localInflow + linkInflow+evaporation + linkOutflow + ampLoss + sinks, '#ff9800']);
 
         var dt = google.visualization.arrayToDataTable(data);
         var options = {
@@ -14003,6 +14069,180 @@ Polymer({
         }.bind(this), 500);
       }
 
+    });
+  </script>
+</dom-module>
+<dom-module id="cwn-sink-info" assetpath="elements/cwn-info-page/">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+
+    <h4 id="title"></h4>
+
+    <div class="row">
+      <div class="col-sm-6">
+        <h5 class="page-header">Bounds</h5>
+        <div id="boundsRoot"></div>
+      </div>
+      <div class="col-sm-6">
+        <h5 class="page-header">Costs</h5>
+
+        <div>
+          <div hidden$="{{!showMonthlyVariableCost}}">
+
+            <div class="btn-group" id="monthSelector">
+              <template is="dom-repeat" items="{{months}}">
+                <a class="btn btn-xs btn-primary" on-click="setMonth">{{item}}</a>
+              </template>
+            </div>
+
+            <cwn-linechart id="lineChart" label="{{costChartLabel}}" xlabel="Capacity (kAF)" ylabel="Cost ($/kAF)" animate="true">
+            </cwn-linechart>
+          </div>
+
+          <div hidden$="{{!showConstantCost}}">
+            <h5>Constant: $<span>{{costs.cost}}</span></h5>
+          </div>
+
+        </div>
+        <div id="noCosts"></div>
+      </div>
+    </div>
+
+    <h5 class="page-header">Flow</h5>
+    <cwn-date-linechart id="chart" animate=""></cwn-date-linechart>
+    <div id="noFlow"></div>
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-sink-info',
+
+      ready : function() {
+        this.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      },
+
+      render : function(name, sink) {
+        this.$.title.innerHTML = name + (sink.description ? ' <small>'+sink.description+'</small>' : '');
+        this.sink = sink;
+
+        this.renderBounds();
+        this.renderCosts();
+
+        if( this.sink.flow ) {
+          this.$.chart.style.display = 'block';
+          this.$.noFlow.innerHTML = '';
+          this.$.chart.update(this.sink.flow);
+        } else {
+          this.$.chart.style.display = 'none';
+          this.$.noFlow.innerHTML = 'No Data';
+        }
+
+      },
+
+      renderCosts : function() {
+        this.noCostData = true;
+        this.costsMonths = [];
+        this.costs = {
+          label : '',
+          data : {},
+          cost : 0, // for constant costs
+          selected : 0
+        };
+
+        this.showMonthlyVariableCost = false;
+        this.showConstantCost = false;
+
+        if( this.sink.costs ) {
+          this.renderCostData(this.sink.costs);
+          this.$.noCosts.innerHTML = '';
+        } else {
+          this.$.noCosts.innerHTML = 'No Data';
+        }
+
+      },
+
+      renderCostData : function(d) {
+        this.costs.label = d.type;
+
+
+        if( d.type == 'Constant' ) {
+
+          this.showConstantCost = true;
+          this.costs.cost = d.cost;
+
+
+        } else if( d.type == 'Monthly Variable' ) {
+
+          this.showMonthlyVariableCost = true;
+
+          this.costsMonths = {};
+          var costArr;
+          if( !d.costs ) return;
+
+          if( d.costs.data ) {
+            this.costMonths = d.costs.data;
+          } else {
+            this.costMonths = d.costs;
+          }
+          this.showMonthlyVariableCost = true;
+          this.$.monthSelector.style.display = 'inline-block';
+
+          this.setMonth('JAN');
+
+        } else if( d.type == 'Annual Variable' ) {
+
+          if( !d.costs ) return;
+
+          var keys = Object.keys(d.costs);
+          if( keys.length == 0 ) return;
+          if( keys.length > 1 ) {
+            console.log('! cwn-cost-info found multiple keys for costs data');
+            console.log(keys);
+          }
+
+          this.costChartLabel = d.type+': '+keys[0];
+          this.costChartData = d.costs[keys[0]];
+          this.$.lineChart.update(this.costChartData);
+          this.showMonthlyVariableCost = true;
+          this.$.monthSelector.style.display = 'none';
+
+        } else {
+          alert('Unknown cost type: '+d.type);
+        }
+      },
+
+      setMonth : function(month) {
+        if( typeof month == 'object' ) month = month.currentTarget.innerHTML;
+        month = month.toUpperCase();
+
+        this.costChartLabel = this.costs.label+' - '+month;
+        this.costChartData = this.costMonths[month];
+
+        // redraw chart
+        this.$.lineChart.update(this.costChartData);
+      },
+
+      renderBounds : function() {
+        if( !this.sink.bounds ) {
+          this.$.boundsRoot.innerHTML = 'None';
+          return;
+        }
+        if( this.sink.bounds.length == 0 ) {
+          this.$.boundsRoot.innerHTML = 'None';
+          return;
+        }
+        this.$.boundsRoot.innerHTML = '';
+
+        for( var i = 0; i < this.sink.bounds.length; i++ ) {
+          var chart = document.createElement('cwn-bound-chart');
+          this.$.boundsRoot.appendChild(chart);
+          chart.render(this.sink.bounds[i]);
+        }
+
+      }
     });
   </script>
 </dom-module>
@@ -14048,6 +14288,11 @@ Polymer({
           <!-- End Costs -->
 
         </div>
+      </div>
+
+      <div class="card" id="sinks">
+        <h2 class="page-header">Sinks</h2>
+        <div id="sinksRoot"></div>
       </div>
 
       <div class="card">
@@ -14291,13 +14536,35 @@ Polymer({
         this.hasOutputs = true;
       }
 
+      this.updateSinks();
       this.updateReadme();
-
       this.updateDateSliderVisibility();
 
       this.async(function(){
         this.$.dateslider.resize();
       });
+    },
+
+    updateSinks : function() {
+      if( this.feature.properties.extras && this.feature.properties.extras.sinks ) {
+        this.$.sinks.style.display = 'block';
+        this.$.sinksRoot.innerHTML = '';
+
+        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+          if( !resp.sinks ) return;
+          for( var i = 0; i < resp.sinks.length; i++ ) {
+            for( var name in resp.sinks[i] ) {
+              var sinkEle = document.createElement('cwn-sink-info');
+              this.$.sinksRoot.appendChild(sinkEle);
+              sinkEle.render(name, resp.sinks[i][name]);
+            }
+          }
+        }.bind(this));
+
+
+      } else {
+        this.$.sinks.style.display = 'none';
+      }
     },
 
     updateReadme : function() {
