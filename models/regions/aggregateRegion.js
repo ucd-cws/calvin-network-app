@@ -33,8 +33,8 @@ module.exports = function(region, callback) {
           data.links = list;
 
           utils.sumInto(list, 'flow', 'amplitudeLoss', data,
-            function(sum, label, item) {
-              sumAmpLoss(sum, label, item, lookup[item.prmname]);
+            function(sum, label, item, prmname) {
+              sumAmpLoss(sum, label, item, lookup[prmname]);
             },
             function(err){
             getRegionFlow(nodelist, data, callback);
@@ -144,9 +144,13 @@ function sumFlow(sum, label, item) {
 
 function sumAmpLoss(sum, label, item, amplitude) {
   var data = sum.aggregate, flow;
-  
+
   if( amplitude === undefined || amplitude === null ) {
     amplitude = 0;
+  } else {
+    // this is crazyness
+    //amplitude = 1 / (1 - amplitude);
+    amplitude = 1 - amplitude;
   }
 
   for( var i = 0; i < item.length; i++ ) {
@@ -161,9 +165,9 @@ function sumAmpLoss(sum, label, item, amplitude) {
     flow = item[i][1] || 0;
 
     if( data[item[i][0]][label] === undefined ) {
-      data[item[i][0]][label] = (1-amplitude)*flow;
+      data[item[i][0]][label] = amplitude*flow;
     } else {
-      data[item[i][0]][label] += (1-amplitude)*flow;
+      data[item[i][0]][label] += amplitude*flow;
     }
   }
 }

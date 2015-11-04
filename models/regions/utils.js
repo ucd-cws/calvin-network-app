@@ -159,7 +159,7 @@ function sumInto(nodelist, attribute, label, data, sumFn, callback) {
         if( !results[i][attribute] ) {
           continue;
         }
-        sumFn(data, label, results[i][attribute]);
+        sumFn(data, label, results[i][attribute], results[i].prmname);
       }
 
       callback(null);
@@ -167,7 +167,7 @@ function sumInto(nodelist, attribute, label, data, sumFn, callback) {
 }
 
 function sum(nodelist, attribute, sumFn, callback) {
-  var total = {}, projection = {};
+  var total = {}, projection = {prmname: 1};
   projection[attribute] = 1;
 
   extrasCollection
@@ -181,7 +181,7 @@ function sum(nodelist, attribute, sumFn, callback) {
         if( !results[i][attribute] ) {
           continue;
         }
-        sumFn(total, results[i][attribute]);
+        sumFn(total, results[i][attribute], results[i].prmname);
       }
 
       var result = {

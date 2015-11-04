@@ -62,4 +62,21 @@ module.exports = function (router) {
       });
     });
 
+    router.get('/aggregateLinks', function (req, res) {
+      var n1 = req.query.n1;
+      var n2 = req.query.n2;
+
+      if( !n1 || !n2 ) {
+        return res.send({error:true, message:'n1 & n2 required'});
+      }
+
+      model.aggregateRegionLinks(n1, n2, function(err, data){
+        if( err ) {
+          res.send({error: true, message: err});
+        } else {
+          res.send(data);
+        }
+      });
+    });
+
 };

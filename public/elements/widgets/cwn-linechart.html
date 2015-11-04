@@ -50,8 +50,8 @@
           });
         },
 
-        setHeight : function() {
-            if( !this.$ ) return;
+        setHeight : function(height) {
+            if( height ) this.height = height;
 
             this.$.root.style.height = this.height+'px';
             this.redraw();
@@ -130,6 +130,10 @@
                 for( var key in this.options ) {
                     options[key] = this.options[key];
                 }
+            }
+
+            if( !this.options.height && this.height ) {
+              this.options.height = this.height;
             }
 
             if( this.animate ) {

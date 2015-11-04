@@ -8,7 +8,7 @@
 
     <h4>Aggregate Flow</h4>
 
-    <cwn-date-linechart id="inflowChart"></cwn-date-linechart>
+    <cwn-date-linechart id="flowChart"></cwn-date-linechart>
 
     <div class="modal fade" id="popup">
       <div class="modal-dialog">
@@ -50,7 +50,7 @@
         if( props.type == 'Region Link' ) {
           //$(this).parent().show();
           //this.$.loading.style.display = 'block';
-          //this.loadLinkAggregate();
+          this.loadLinkAggregate();
        } else if( props.type == 'Region' ) {
           //$(this).parent().show();
           //this.$.loading.style.display = 'block';
@@ -72,7 +72,7 @@
         $.get('/regions/aggregateRegion?region='+this.feature.properties.prmname, function(resp) {
           this.data = resp;
 
-          var inflowdata = [['Date','Amplitude Loss', 'Local Sinks', 'Evaporation', 'Link Outflows', '', 'Local Inflows', 'Link Inflows']];
+          var data = [['Date','Amplitude Loss', 'Local Sinks', 'Evaporation', 'Link Outflows', '', 'Local Inflows', 'Link Inflows']];
 
           for( var date in resp.aggregate ) {
 
@@ -84,7 +84,7 @@
             var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
             var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
 
-            inflowdata.push([
+            data.push([
               date,
               ampLoss,
               sink,
@@ -96,9 +96,9 @@
             ]);
           }
 
-          this.$.inflowChart.options = {
+          this.$.flowChart.options = {
             isStacked : true,
-            title : 'Flow',
+            height: 500,
             legend : {
               position: 'right'
             },
@@ -110,23 +110,50 @@
               }
             }
           }
-          this.$.inflowChart.onClick = this.onChartClick.bind(this);
-          this.$.inflowChart.type = 'AreaChart';
-          this.$.inflowChart.update(inflowdata);
 
-          /*this.$.outflowChart.options = {
+          this.$.flowChart.setHeight(500);
+          this.$.flowChart.onClick = this.onChartClick.bind(this);
+          this.$.flowChart.type = 'AreaChart';
+          this.$.flowChart.update(data);
+
+        }.bind(this));
+      },
+
+      loadLinkAggregate : function() {
+        $.get('/regions/aggregateLinks?n1='+this.feature.properties.origin+'&n2='+this.feature.properties.terminus, function(resp) {
+          this.data = resp.data;
+
+          var data = [['Date','Flow', 'Amplitude Loss']];
+
+          var total = {};
+          for( var date in this.data[0].data ) {
+            total[date] = {
+              flow : this.data[0].data[date].flow - (this.data[1].data[date] ? this.data[1].data[date].flow : 0),
+              amplitudeLoss : -1*(this.data[0].data[date].amplitudeLoss + (this.data[1].data[date] ? this.data[1].data[date].amplitudeLoss : 0))
+            }
+          }
+
+          for( var date in total ) {
+            data.push([
+              date,
+              total[date].flow,
+              total[date].amplitudeLoss
+            ]);
+          }
+
+          this.$.flowChart.options = {
+            title: 'Rendered as '+this.data[0].origin+' to '+this.data[0].terminus,
             isStacked : true,
-            title : 'Outflows',
-            vAxis : {
-              maxValue : 0
-            },
+            height: 500,
             legend : {
               position: 'right'
             }
           }
-          this.$.outflowChart.onClick = this.onChartClick.bind(this);
-          this.$.outflowChart.type = 'AreaChart';
-          this.$.outflowChart.update(outflowdata);*/
+
+          this.$.flowChart.setHeight(500);
+          this.$.flowChart.onClick = this.onChartClick.bind(this);
+          this.$.flowChart.type = 'AreaChart';
+          this.$.flowChart.update(data);
 
         }.bind(this));
       },

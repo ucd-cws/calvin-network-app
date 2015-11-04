@@ -81,8 +81,8 @@
             this.update();
         },
 
-        setHeight : function() {
-            if( !this.$ ) return;
+        setHeight : function(height) {
+            if( height ) this.height = height;
 
             this.$.root.style.height = this.height+'px';
             this.redraw();
@@ -220,7 +220,7 @@
             }
 
 
-            if( this.animate && !this.isPaper ) {
+            if( this.animate  ) {
                 options.animation = {
                     duration : 750,
                     easing : 'out'
