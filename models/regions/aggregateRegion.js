@@ -125,6 +125,8 @@ function sum(sum, item) {
         for( var name in sinks[i] ) {
           var flow = sinks[i][name].flow, f;
 
+          if( !flow ) continue;
+
           for( var j = 0; j < flow.length; j++ ) {
             if( j === 0 && typeof flow[0][1] === 'string' ) {
               continue;
