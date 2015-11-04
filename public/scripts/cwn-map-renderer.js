@@ -127,7 +127,8 @@ function getLineColor(feature) {
         smoothFactor: 1
     }
 
-    if( feature.properties.calibrationNode && this.mapFilters.calibrationMode ) {
+    //if( feature.properties.calibrationNode && this.mapFilters.calibrationMode ) {
+    if( feature.properties.calibrationNode ) {
         line.color = 'blue';
     }
 
