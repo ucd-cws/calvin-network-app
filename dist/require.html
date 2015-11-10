@@ -12101,14 +12101,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             -webkit-transform: translate3d(0, 0, 0);
             transform: translate3d(0, 0, 0);
         }
-        .linkLegend {
-          width: 100px;
-          height: 25px;
-          display: inline-block;
-          margin: 10px;
-          box-shadow: 0 0 5px black;
-          vertical-align: middle;
-        }
     </style>
 
     <template>
@@ -12119,11 +12111,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                   <div class="form-horizontal">
 
                     <div class="form-group">
-                      <label for="filter-input" class="col-sm-2 control-label">Filter</label>
-                      <div class="col-sm-10">
+                      <label for="filter-input" class="col-sm-3 control-label">Filter</label>
+                      <div class="col-sm-9">
                         <input type="text" id="filter-input" class="form-control" on-change="updateFilterText" on-keyup="onKeyUp">
                         <p class="help-block">By name or description.</p>
                       </div>
+
+                      <div class="form-group">
+                        <label for="in-out-input" class="col-sm-3 control-label">Inflow / Sink Mode</label>
+                        <div class="col-sm-9">
+                          <input type="checkbox" id="in-out-input" on-change="updateInOutMode">
+                          <p class="help-block">Only show network inflows and sinks.</p>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -12146,25 +12145,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="filter-types" class="col-sm-2 control-label">Link Legend</label>
-                        <div class="col-sm-10">
-                          <h4><div class="linkLegend" id="toSink"></div> Flow to Sink</h4>
-                          <h4><div class="linkLegend" id="fromDemand"></div> Flow from Demand</h4>
-                          <h4><div class="linkLegend" id="groundwaterToDemand"></div> Groundwater to Demand</h4>
-                          <h4><div class="linkLegend" id="recharge"></div> Recharge</h4>
-                          <h4><div class="linkLegend" id="region"></div> To/from a Region</h4>
-
-
-                        </div>
-                    </div>
-
                   </div>
                 </div>
             </div>
         </div>
-      </cwn-popup>
-    </template>
+      
+    </div></cwn-popup></template>
 </dom-module>
 
 <script>
@@ -12178,14 +12164,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.filters = {
               calibrationMode : true,
               oneStepMode : true,
+              inflowSinkMode : false,
               text : '',
           };
-
-          this.$.toSink.style.backgroundColor = CWN.colors.darkCyan;
-          this.$.fromDemand.style.backgroundColor = CWN.colors.red;
-          this.$.groundwaterToDemand.style.backgroundColor = CWN.colors.lightGrey;
-          this.$.recharge.style.backgroundColor = CWN.colors.green;
-          this.$.region.style.backgroundColor = CWN.colors.orange;
         },
 
         setLegend : function(legend) {
@@ -12201,6 +12182,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               });
           }
           this.legendArr = tmp;
+        },
+
+        updateInOutMode : function() {
+          this.filters.inflowSinkMode = $(this.$['in-out-input']).is(':checked');
+          this.fire('update', this.filters);
         },
 
         _updateCheckbox : function(e) {
@@ -15161,10 +15147,30 @@ Polymer({
           color: #2196f3;
           cursor: pointer;
         }
-
+        .linkLegend {
+          width: 20px;
+          height: 10px;
+          display: inline-block;
+          margin: 10px;
+          vertical-align: middle;
+        }
     </style>
     <template>
+        <div>
+          <a class="btn btn-link" on-click="showAll">Show All</a> <a class="btn btn-link" on-click="hideAll">Hide All</a>
+        </div>
+
         <div id="content"></div>
+
+        <h5>Link Legend</h5>
+        <div>
+          <div><div class="linkLegend" id="toSink"></div> Flow to Sink</div>
+          <div><div class="linkLegend" id="fromDemand"></div> Flow from Demand</div>
+          <div><div class="linkLegend" id="groundwaterToDemand"></div> Groundwater to Demand</div>
+          <div><div class="linkLegend" id="recharge"></div> Recharge</div>
+          <div><div class="linkLegend" id="region"></div> To/from a Region</div>
+        </div>
+
     </template>
 </dom-module>
 
@@ -15174,6 +15180,13 @@ Polymer({
 
         ready : function() {
           this.classList.add('closed');
+
+
+          this.$.toSink.style.backgroundColor = CWN.colors.darkCyan;
+          this.$.fromDemand.style.backgroundColor = CWN.colors.red;
+          this.$.groundwaterToDemand.style.backgroundColor = CWN.colors.lightGrey;
+          this.$.recharge.style.backgroundColor = CWN.colors.green;
+          this.$.region.style.backgroundColor = CWN.colors.orange;
         },
 
         init : function(state) {
@@ -15241,7 +15254,7 @@ Polymer({
                           '<input type="checkbox" name="'+id+'" '+(enabled ? 'checked' : '')+' /> '+label+'</div>');
 
 
-            var children = $('<div style="display:'+( enabled ? 'block' : 'none')+'" name="'+id+'-children"></div>');
+            var children = $('<div style="display:'+( enabled ? 'block' : 'none')+'" name="'+id+'-children" class="menu-children"></div>');
             panel.append(input);
             panel.append(children);
 
@@ -15278,6 +15291,31 @@ Polymer({
             for( var i = 0; i < region.subregions.length; i++ ) {
                 this.renderRegion(region.subregions[i], children[0]);
             }
+        },
+
+        showAll : function() {
+          $(this.$.content)
+            .find('input')
+            .prop('checked','checked');
+
+          $(this.$.content)
+            .find('.menu-children')
+            .show();
+          this.getEnabled();
+
+          this.fire('select');
+        },
+
+        hideAll : function() {
+          $(this.$.content)
+            .find('input')
+            .prop('checked','');
+
+          $(this.$.content)
+            .find('.menu-children')
+            .hide();
+
+          $(this.$.content).find('input[name="California"]').trigger("click");
         },
 
         onRegionClick : function(name) {
@@ -15609,6 +15647,26 @@ Polymer({
             return markers;
         },
 
+        checkSinkMode : function(inflowSinkMode,  properties) {
+          if( !inflowSinkMode ) {
+            properties._render.stroke = null;
+            return true;
+          }
+
+          if( properties.extras ) {
+            if( properties.extras.inflows ) {
+              properties._render.stroke = 'green';
+              return true;
+            } else if( properties.extras.sinks ) {
+              properties._render.stroke = 'red';
+              return true;
+            }
+          }
+
+          properties._render.stroke = null;
+          return false;
+        },
+
         // marker nodes that are linked to a visible node with the 'nodeStep' attribute
         filter : function() {
             var re, i, d, d2, d3, id;
@@ -15624,9 +15682,10 @@ Polymer({
                         filter_id : d.properties.type.replace(' ','_').replace('-','_')
                     };
                 }
-                d.properties._render.oneStep = false;
+                //d.properties._render.oneStep = false;
                 if( this.mapFilters[d.properties._render.filter_id] && this.isTextMatch(re, d.properties) ) {
-                    if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) {
+                    //if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) {
+                    if( !this.checkSinkMode(this.mapFilters.inflowSinkMode,  d.properties) ) {
                         d.properties._render.show = false;
                     } else {
                         d.properties._render.show = true;
@@ -15635,8 +15694,9 @@ Polymer({
                     d.properties._render.show = false;
                 }
             }
+
             // now mark one step nodes
-            for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+            /*for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
                 if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
@@ -15659,7 +15719,8 @@ Polymer({
                         }
                     }
                 }
-            }
+            }*/
+
             // now mark links that should be show
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
                 d = CWN.ds.data.links[i];
