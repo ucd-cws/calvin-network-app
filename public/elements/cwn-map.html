@@ -296,6 +296,26 @@
             return markers;
         },
 
+        checkSinkMode : function(inflowSinkMode,  properties) {
+          if( !inflowSinkMode ) {
+            properties._render.stroke = null;
+            return true;
+          }
+
+          if( properties.extras ) {
+            if( properties.extras.inflows ) {
+              properties._render.stroke = 'green';
+              return true;
+            } else if( properties.extras.sinks ) {
+              properties._render.stroke = 'red';
+              return true;
+            }
+          }
+
+          properties._render.stroke = null;
+          return false;
+        },
+
         // marker nodes that are linked to a visible node with the 'nodeStep' attribute
         filter : function() {
             var re, i, d, d2, d3, id;
@@ -311,9 +331,10 @@
                         filter_id : d.properties.type.replace(' ','_').replace('-','_')
                     };
                 }
-                d.properties._render.oneStep = false;
+                //d.properties._render.oneStep = false;
                 if( this.mapFilters[d.properties._render.filter_id] && this.isTextMatch(re, d.properties) ) {
-                    if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) {
+                    //if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) {
+                    if( !this.checkSinkMode(this.mapFilters.inflowSinkMode,  d.properties) ) {
                         d.properties._render.show = false;
                     } else {
                         d.properties._render.show = true;
@@ -322,8 +343,9 @@
                     d.properties._render.show = false;
                 }
             }
+
             // now mark one step nodes
-            for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
+            /*for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
                 d = CWN.ds.data.nodes[i];
                 if( d.properties._render.show ) continue;
                 if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
@@ -346,7 +368,8 @@
                         }
                     }
                 }
-            }
+            }*/
+
             // now mark links that should be show
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
                 d = CWN.ds.data.links[i];

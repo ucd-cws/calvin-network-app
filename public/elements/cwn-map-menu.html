@@ -17,10 +17,30 @@
           color: #2196f3;
           cursor: pointer;
         }
-
+        .linkLegend {
+          width: 20px;
+          height: 10px;
+          display: inline-block;
+          margin: 10px;
+          vertical-align: middle;
+        }
     </style>
     <template>
+        <div>
+          <a class="btn btn-link" on-click="showAll">Show All</a> <a class="btn btn-link" on-click="hideAll">Hide All</a>
+        </div>
+
         <div id="content"></div>
+
+        <h5>Link Legend</h5>
+        <div>
+          <div><div class="linkLegend" id="toSink"></div> Flow to Sink</div>
+          <div><div class="linkLegend" id="fromDemand"></div> Flow from Demand</div>
+          <div><div class="linkLegend" id="groundwaterToDemand"></div> Groundwater to Demand</div>
+          <div><div class="linkLegend" id="recharge"></div> Recharge</div>
+          <div><div class="linkLegend" id="region"></div> To/from a Region</div>
+        </div>
+
     </template>
 </dom-module>
 
@@ -30,6 +50,13 @@
 
         ready : function() {
           this.classList.add('closed');
+
+
+          this.$.toSink.style.backgroundColor = CWN.colors.darkCyan;
+          this.$.fromDemand.style.backgroundColor = CWN.colors.red;
+          this.$.groundwaterToDemand.style.backgroundColor = CWN.colors.lightGrey;
+          this.$.recharge.style.backgroundColor = CWN.colors.green;
+          this.$.region.style.backgroundColor = CWN.colors.orange;
         },
 
         init : function(state) {
@@ -97,7 +124,7 @@
                           '<input type="checkbox" name="'+id+'" '+(enabled ? 'checked' : '')+' /> '+label+'</div>');
 
 
-            var children = $('<div style="display:'+( enabled ? 'block' : 'none')+'" name="'+id+'-children"></div>');
+            var children = $('<div style="display:'+( enabled ? 'block' : 'none')+'" name="'+id+'-children" class="menu-children"></div>');
             panel.append(input);
             panel.append(children);
 
@@ -134,6 +161,31 @@
             for( var i = 0; i < region.subregions.length; i++ ) {
                 this.renderRegion(region.subregions[i], children[0]);
             }
+        },
+
+        showAll : function() {
+          $(this.$.content)
+            .find('input')
+            .prop('checked','checked');
+
+          $(this.$.content)
+            .find('.menu-children')
+            .show();
+          this.getEnabled();
+
+          this.fire('select');
+        },
+
+        hideAll : function() {
+          $(this.$.content)
+            .find('input')
+            .prop('checked','');
+
+          $(this.$.content)
+            .find('.menu-children')
+            .hide();
+
+          $(this.$.content).find('input[name="California"]').trigger("click");
         },
 
         onRegionClick : function(name) {
