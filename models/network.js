@@ -4,23 +4,30 @@ var csvStringify = require('csv-stringify');
 var async = require('async');
 
 var extraCollection = global.setup.database.collection('node-extras');
+var heatmapCollection = global.setup.database.collection('heatmap');
 
 module.exports = function() {
     return {
         name: 'network',
         get : getNetwork,
         getExtras : getExtras,
+        getHeatMap : getHeatMap,
         dumpLocation : dumpLocation
     };
 };
 
 function getNetwork(callback) {
-  global.setup.collection.find({}).toArray(callback);
+  global.setup.collection.find({},{_id:0}).toArray(callback);
 }
 
 function getExtras(prmname, callback) {
   extraCollection.findOne({prmname: prmname}, {_id:0}, callback);
 }
+
+function getHeatMap(date, callback) {
+  heatmapCollection.findOne({date: date}, {_id: 0}, callback);
+}
+
 
 function dumpLocation(callback) {
   global.setup.collection.find({},{geometry: 1, 'properties.repo': 1, 'properties.prmname': 1}).toArray(function(err, nodes){

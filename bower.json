@@ -30,6 +30,7 @@
     "paper-toolbar": "PolymerElements/paper-toolbar#~1.0.4",
     "paper-drawer-panel": "PolymerElements/paper-drawer-panel#~1.0.3",
     "paper-toast": "PolymerElements/paper-toast#~1.0.0",
-    "marked": "~0.3.5"
+    "marked": "~0.3.5",
+    "leaflet.heat": "Leaflet.heat#*"
   }
 }

@@ -35,4 +35,19 @@ module.exports = function (router) {
       });
     });
 
+    router.get('/heatmap', function (req, res) {
+      var date = req.query.date;
+      if( !date ) {
+        return res.send({error:true, message:'date required'});
+      }
+
+      model.getHeatMap(date, function(err, data) {
+        if( err ) {
+          res.send({error: true, message: err});
+        } else {
+          res.send(data);
+        }
+      });
+    });
+
 };

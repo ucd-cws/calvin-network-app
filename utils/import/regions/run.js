@@ -60,19 +60,24 @@ module.exports = function(dir, callback) {
           return console.log('Unabled to connect to mongo');
         }
 
-        mongo.updateNetwork(nodes, function(err){
-          if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
+        mongo.updateHeatmap(nodes, function(err){
+          if( err ) return console.log('Unabled to update heatmap: '+JSON.stringify(err));
 
-          mongo.updateRegions(regions, function(err){
+          mongo.updateNetwork(nodes, function(err){
+            if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
 
-            if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
-            console.log('done.');
+            mongo.updateRegions(regions, function(err){
 
-            if( callback ) {
-              callback('done', true);
-            } else {
-              process.exit();
-            }
+              if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
+              console.log('done.');
+
+
+                if( callback ) {
+                  callback('done', true);
+                } else {
+                  process.exit();
+                }
+              });
 
           });
         });
@@ -118,7 +123,18 @@ function readNodes(dir, nodes, gitInfo, callback) {
           d.properties.readme = fs.readFileSync(dir+'/README.md', 'utf-8');
         }
 
-        readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties', function(){
+        var fileLookup = [];
+        readRefs(d.properties.repo.dir, d.properties.filename, d, 'properties', 'properties', fileLookup, function(){
+
+          try {
+            for( var i = 0; i < fileLookup.length; i++ ) {
+              fileLookup[i].file = '.'+fileLookup[i].file.split(d.properties.repo.dirNodeName)[1];
+            }
+          } catch(e) {
+            console.log(e);
+          }
+
+          d.properties.repo.files = fileLookup;
 
           d.properties.repo.dir = dir.replace(re, '');
           nodes.push(d);
@@ -208,7 +224,7 @@ function setRegions(region, path, regions, regionNames, lookup) {
 }
 
 // process $ref pointers
-function readRefs(dir, filename, parent, attr, callback) {
+function readRefs(dir, filename, parent, attr, path, fileLookup, callback) {
   //for( var key in parent[attr] ) {
   var keys = Object.keys(parent[attr]);
 
@@ -217,16 +233,28 @@ function readRefs(dir, filename, parent, attr, callback) {
 
       if( key === '$ref' ) {
         try {
+
           var file, parts = [];
           if( parent[attr].$ref.match(/^\.\/.*/) ) {
             file = dir+'/'+parent[attr].$ref.replace(/^\.\//,'');
             parts.push(parent[attr].$ref.replace(/^\.\//,''));
+
+            fileLookup.push({
+              file : file,
+              path : path+'.'+key
+            });
+
             readFile(file, parent, attr, next);
             return;
           } else {
             file = dir+'/'+parent[attr].$ref;
             parts.push(filename);
             parts.push(parent[attr].$ref);
+
+            fileLookup.push({
+              file : file,
+              path : path+'.'+key
+            });
 
             readFile(file, parent, attr, next);
             return;
@@ -237,7 +265,7 @@ function readRefs(dir, filename, parent, attr, callback) {
         }
 
       } else if( typeof parent[attr][key] === 'object' && parent[attr][key] !== null ) {
-        return readRefs(dir, filename, parent[attr], key, next);
+        return readRefs(dir, filename, parent[attr], key, path+'.'+key, fileLookup, next);
       }
 
       setImmediate(next);

@@ -106,8 +106,17 @@ Polymer({
           this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+
             this.feature.properties.repo.github+'" target="_blank">'+
             '<i class="fa fa-github"></i> Show on GitHub</a>';
+
+          if( this.feature.properties.repo.files && this.feature.properties.repo.files.length > 0 ) {
+            this.$.excelLink.innerHTML = '<a class="btn btn-link" href="/excel/create?prmname='+
+              this.feature.properties.prmname+'" target="_blank">'+
+              '<i class="fa fa-file-excel-o"></i> Download Excel Data File</a>';
+          } else {
+            this.$.excelLink.innerHTML = '';
+          }
         } else {
           this.$.githubLink.innerHTML = '';
+          this.$.excelLink.innerHTML = '';
         }
 
         // stupid polymer hack! when will this stop!!!!!!!!!!
