@@ -42,7 +42,7 @@ function create(prmname, callback) {
         for( var i = 0; i < node.properties.repo.files.length; i++ ) {
           var f = node.properties.repo.files[i];
 
-          var name = f.file.replace(/^\./,'');
+          var name = f.file.replace(/^\.\//,'').replace(/(\.|\/)/g,'_');
 
           f.data.splice(0,0,[]);
           f.data.splice(0,0,[f.file.replace(/^\./,prmname), f.path]);
