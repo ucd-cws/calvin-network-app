@@ -1,3 +1,5 @@
+<link rel="import" href="cwn-node-info-btns.html" />
+
 <dom-module id="cwn-node-info">
     <style>
         #middleCol {
@@ -92,12 +94,7 @@
 
                 <cwn-region-label id="regions"></cwn-region-label>
 
-                <div hidden$="{{!showNavLinks}}" style="margin-top: 15px; border-top: 1px solid #eee">
-                  <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
-                  <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
-                </div>
-                <div id="excelLink"></div>
-                <div id="githubLink"></div>
+                <cwn-node-info-btns id="btns" style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd"></cwn-node-info-btns>
 
               </div>
           </div>

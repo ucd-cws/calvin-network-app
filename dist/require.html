@@ -12376,6 +12376,123 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   });
 </script>
+<dom-module id="cwn-node-info-btns" assetpath="elements/cwn-info-page/node/">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      .info-btn {
+        background-color: #2196f3;
+        color: white;
+      }
+      .btn-circle {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        padding: 6px 0;
+        font-size: 12px;
+        line-height: 1.428571429;
+        border-radius: 15px;
+        margin: 0 7px;
+      }
+      .btn-circle.btn-lg {
+        width: 50px;
+        height: 50px;
+        padding: 8px 14px;
+        font-size: 22px;
+        line-height: 1.5;
+        border-radius: 25px;
+      }
+      .btn-circle.btn-xl {
+        width: 70px;
+        height: 70px;
+        padding: 10px 16px;
+        font-size: 24px;
+        line-height: 1.5;
+        border-radius: 35px;
+      }
+    </style>
+
+    <a class="btn btn-circle btn-lg info-btn" hidden$="{{!showNavLinks}}" on-click="goToGraph" name="View Network Graph" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-code-fork"></i>
+    </a>
+    <a class="btn btn-circle btn-lg info-btn" hidden$="{{!showNavLinks}}" on-click="goTo" name="Show on Map" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-map-marker"></i>
+    </a>
+    <a class="btn btn-circle btn-lg info-btn" id="githubLink" target="_blank" name="Show on GitHub" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-github"></i>
+    </a>
+    <a class="btn btn-circle btn-lg info-btn" id="excelLink" target="_blank" name="Download Excel Data File" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-download"></i>
+    </a>
+
+    <div style="height:40px; padding-top:10px; font-weight: bold">
+      <div id="message" class="animated fadeInUp" style="display:none"></div>
+    </div>
+
+
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-node-info-btns',
+
+      ready : function() {
+        this.showNavLinks = true;
+      },
+
+      onMouseEnter : function(e) {
+        this.$.message.innerHTML = e.currentTarget.getAttribute('name');
+        this.$.message.style.display = 'block';
+      },
+
+      onMouseLeave : function() {
+        this.$.message.style.display = 'none';
+      },
+
+      update : function(feature) {
+        if( !feature ) return;
+        this.feature = feature;
+
+        this.showNavLinks = true;
+
+        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+          this.showNavLinks = false;
+        } else if( this.feature.properties.type == 'Region Link' || this.feature.properties.type == 'Region' ) {
+          this.showNavLinks = false;
+        }
+
+        if( feature.properties.repo ) {
+          this.$.githubLink.style.display = 'inline-block';
+          this.$.githubLink.setAttribute('href', feature.properties.repo.github);
+
+          if( feature.properties.repo.files && feature.properties.repo.files.length > 0 ) {
+            this.$.excelLink.setAttribute('href', '/excel/create?prmname='+feature.properties.prmname);
+            this.$.excelLink.style.display = 'inline-block';
+          } else {
+            this.$.excelLink.style.display = 'none';
+          }
+
+        } else {
+          this.$.githubLink.style.display = 'none';
+          this.$.excelLink.style.display = 'none';
+        }
+      },
+
+      goTo : function() {
+        window.location.hash = 'map';
+        this.async(function() {
+          var pts = this.feature.geometry.coordinates;
+          this.leaflet.setView([pts[1], pts[0]], 12);
+        });
+      },
+
+      goToGraph : function() {
+        window.location.hash = 'graph/'+this.feature.properties.prmname;
+      }
+    });
+  </script>
+</dom-module>
 <dom-module id="cwn-node-info" assetpath="elements/cwn-info-page/node/">
     <style>
         #middleCol {
@@ -12470,12 +12587,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
                 <cwn-region-label id="regions"></cwn-region-label>
 
-                <div hidden$="{{!showNavLinks}}" style="margin-top: 15px; border-top: 1px solid #eee">
-                  <div><a class="btn btn-link" on-click="goToGraph"><i class="fa fa-code-fork"></i> View Network Graph</a></div>
-                  <div><a class="btn btn-link" on-click="goTo"><i class="fa fa-map-marker"></i> Show on Map</a></div>
-                </div>
-                <div id="excelLink"></div>
-                <div id="githubLink"></div>
+                <cwn-node-info-btns id="btns" style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd"></cwn-node-info-btns>
 
               </div>
           </div>
@@ -12554,7 +12666,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       this.editUrl = '';
       this.originUrl = '';
       this.terminalUrl = '';
-      this.showNavLinks = false;
       this.hasTerminalDescription = false;
       this.terminalDescription = '';
       this.type = '';
@@ -12632,22 +12743,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         }.bind(this));
 
-        if( this.feature.properties.repo ) {
-          this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+
-            this.feature.properties.repo.github+'" target="_blank">'+
-            '<i class="fa fa-github"></i> Show on GitHub</a>';
-
-          if( this.feature.properties.repo.files && this.feature.properties.repo.files.length > 0 ) {
-            this.$.excelLink.innerHTML = '<a class="btn btn-link" href="/excel/create?prmname='+
-              this.feature.properties.prmname+'" target="_blank">'+
-              '<i class="fa fa-file-excel-o"></i> Download Excel Data File</a>';
-          } else {
-            this.$.excelLink.innerHTML = '';
-          }
-        } else {
-          this.$.githubLink.innerHTML = '';
-          this.$.excelLink.innerHTML = '';
-        }
 
         // stupid polymer hack! when will this stop!!!!!!!!!!
         this.origins = $.extend(true, [], this.origins);
@@ -12655,7 +12750,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         $(window).on('resize', this.updateSize.bind(this));
 
-        this.onTypeUpdate();
+        if( this.$.btns.update ) {
+          this.$.btns.update(this.feature);
+        }
+
         this.onOriginUpdate();
         this.onTerminalUpdate();
     },
@@ -12738,18 +12836,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         if( CWN.ds.lookupMap[this.feature.properties.terminus] ) {
             this.hasTerminalDescription = true;
             this.terminalDescription = CWN.ds.lookupMap[this.feature.properties.terminus].properties.description
-        }
-    },
-
-    onTypeUpdate : function() {
-        if( !CWN.ds ) return;
-
-        this.showNavLinks = true;
-
-        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-          this.showNavLinks = false;
-        } else if( this.feature.properties.type == 'Region Link' || this.feature.properties.type == 'Region' ) {
-          this.showNavLinks = false;
         }
     },
 

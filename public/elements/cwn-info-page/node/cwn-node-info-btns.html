@@ -1,0 +1,117 @@
+<dom-module id="cwn-node-info-btns">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      .info-btn {
+        background-color: #2196f3;
+        color: white;
+      }
+      .btn-circle {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        padding: 6px 0;
+        font-size: 12px;
+        line-height: 1.428571429;
+        border-radius: 15px;
+        margin: 0 7px;
+      }
+      .btn-circle.btn-lg {
+        width: 50px;
+        height: 50px;
+        padding: 8px 14px;
+        font-size: 22px;
+        line-height: 1.5;
+        border-radius: 25px;
+      }
+      .btn-circle.btn-xl {
+        width: 70px;
+        height: 70px;
+        padding: 10px 16px;
+        font-size: 24px;
+        line-height: 1.5;
+        border-radius: 35px;
+      }
+    </style>
+
+    <a class="btn btn-circle btn-lg info-btn" hidden$="{{!showNavLinks}}" on-click="goToGraph" name="View Network Graph" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-code-fork"></i>
+    </a>
+    <a class="btn btn-circle btn-lg info-btn" hidden$="{{!showNavLinks}}" on-click="goTo" name="Show on Map" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-map-marker"></i>
+    </a>
+    <a class="btn btn-circle btn-lg info-btn" id="githubLink" target="_blank" name="Show on GitHub" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-github"></i>
+    </a>
+    <a class="btn btn-circle btn-lg info-btn" id="excelLink" target="_blank" name="Download Excel Data File" on-mouseenter="onMouseEnter" on-mouseleave="onMouseLeave">
+      <i class="fa fa-download"></i>
+    </a>
+
+    <div style="height:40px; padding-top:10px; font-weight: bold">
+      <div id="message" class="animated fadeInUp" style="display:none"></div>
+    </div>
+
+
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-node-info-btns',
+
+      ready : function() {
+        this.showNavLinks = true;
+      },
+
+      onMouseEnter : function(e) {
+        this.$.message.innerHTML = e.currentTarget.getAttribute('name');
+        this.$.message.style.display = 'block';
+      },
+
+      onMouseLeave : function() {
+        this.$.message.style.display = 'none';
+      },
+
+      update : function(feature) {
+        if( !feature ) return;
+        this.feature = feature;
+
+        this.showNavLinks = true;
+
+        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
+          this.showNavLinks = false;
+        } else if( this.feature.properties.type == 'Region Link' || this.feature.properties.type == 'Region' ) {
+          this.showNavLinks = false;
+        }
+
+        if( feature.properties.repo ) {
+          this.$.githubLink.style.display = 'inline-block';
+          this.$.githubLink.setAttribute('href', feature.properties.repo.github);
+
+          if( feature.properties.repo.files && feature.properties.repo.files.length > 0 ) {
+            this.$.excelLink.setAttribute('href', '/excel/create?prmname='+feature.properties.prmname);
+            this.$.excelLink.style.display = 'inline-block';
+          } else {
+            this.$.excelLink.style.display = 'none';
+          }
+
+        } else {
+          this.$.githubLink.style.display = 'none';
+          this.$.excelLink.style.display = 'none';
+        }
+      },
+
+      goTo : function() {
+        window.location.hash = 'map';
+        this.async(function() {
+          var pts = this.feature.geometry.coordinates;
+          this.leaflet.setView([pts[1], pts[0]], 12);
+        });
+      },
+
+      goToGraph : function() {
+        window.location.hash = 'graph/'+this.feature.properties.prmname;
+      }
+    });
+  </script>
+</dom-module>

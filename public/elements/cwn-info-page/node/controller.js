@@ -24,7 +24,6 @@ Polymer({
       this.editUrl = '';
       this.originUrl = '';
       this.terminalUrl = '';
-      this.showNavLinks = false;
       this.hasTerminalDescription = false;
       this.terminalDescription = '';
       this.type = '';
@@ -102,22 +101,6 @@ Polymer({
           }
         }.bind(this));
 
-        if( this.feature.properties.repo ) {
-          this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+
-            this.feature.properties.repo.github+'" target="_blank">'+
-            '<i class="fa fa-github"></i> Show on GitHub</a>';
-
-          if( this.feature.properties.repo.files && this.feature.properties.repo.files.length > 0 ) {
-            this.$.excelLink.innerHTML = '<a class="btn btn-link" href="/excel/create?prmname='+
-              this.feature.properties.prmname+'" target="_blank">'+
-              '<i class="fa fa-file-excel-o"></i> Download Excel Data File</a>';
-          } else {
-            this.$.excelLink.innerHTML = '';
-          }
-        } else {
-          this.$.githubLink.innerHTML = '';
-          this.$.excelLink.innerHTML = '';
-        }
 
         // stupid polymer hack! when will this stop!!!!!!!!!!
         this.origins = $.extend(true, [], this.origins);
@@ -125,7 +108,10 @@ Polymer({
 
         $(window).on('resize', this.updateSize.bind(this));
 
-        this.onTypeUpdate();
+        if( this.$.btns.update ) {
+          this.$.btns.update(this.feature);
+        }
+
         this.onOriginUpdate();
         this.onTerminalUpdate();
     },
@@ -208,18 +194,6 @@ Polymer({
         if( CWN.ds.lookupMap[this.feature.properties.terminus] ) {
             this.hasTerminalDescription = true;
             this.terminalDescription = CWN.ds.lookupMap[this.feature.properties.terminus].properties.description
-        }
-    },
-
-    onTypeUpdate : function() {
-        if( !CWN.ds ) return;
-
-        this.showNavLinks = true;
-
-        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-          this.showNavLinks = false;
-        } else if( this.feature.properties.type == 'Region Link' || this.feature.properties.type == 'Region' ) {
-          this.showNavLinks = false;
         }
     },
 
