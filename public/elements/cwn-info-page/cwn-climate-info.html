@@ -39,6 +39,11 @@
         <cwn-date-linechart animate id="evaporationChart"></cwn-date-linechart>
       </div>
 
+      <div id="storage" style="display:none">
+        <h4>Storage</h4>
+        <cwn-date-linechart id="storageChart"></cwn-date-linechart>
+      </div>
+
 
       <div>
         <cwn-output-info id="outputs"></cwn-output-info>
@@ -126,6 +131,7 @@
 
       this.renderInflows();
       this.renderEvaporation();
+      this.renderStorage();
 
       this.eacChart.data = [];
       this.renderElArCap();
@@ -212,6 +218,18 @@
           this.$.evaporation.style.display = 'block';
         } else {
           this.$.evaporation.style.display = 'none';
+        }
+      }.bind(this));
+    },
+
+    renderStorage : function() {
+      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        var storage = resp.storage;
+        if( storage ) {
+          this.$.storageChart.update(storage);
+          this.$.storage.style.display = 'block';
+        } else {
+          this.$.storage.style.display = 'none';
         }
       }.bind(this));
     },
