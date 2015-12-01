@@ -6,3 +6,5 @@ public/bower_components
 npm-debug.log
 .build
 import.json
+nodes.csv
+links.csv
