@@ -3,24 +3,27 @@
     <style>
       :host {
         display: block;
+        padding: 7px;
+      }
+      :host(.active) {
+        background-color: rgba(255,255,255, .7);
+        border-top: 1px solid white;
+        box-shadow: 0 0 5px #333;
+      }
+      input[type="number"] {
+        width: 75px;
+        display: inline-block !important;
       }
     </style>
 
     <div class="layout horizontal">
       <div>
-        <input type="checkbox" on-click="toggle"/> Monthly Overlay
+        <input type="checkbox" on-click="toggle"/> Animation Layer
       </div>
-      <div class="flex">
-        <select id="selector" on-change="onTypeChange">
-          <template is="dom-repeat" items="{{types}}">
-            <option value$="{{item}}">{{item}}</option>
-          </template>
-        </select>
-      </div>
-      <div>
+      <div class="flex" style="display:none; text-align:center" id="controls">
         <a class="btn btn-default" on-click="previous"><i class="fa fa-arrow-left"></i></a>
-        <input type="number" id="yearInput" value="1922" on-input="onNumInput" />
-        <input type="number" id="monthInput" value="1" on-input="onNumInput" />
+        <input type="number" id="monthInput" class="form-control" value="1" on-change="onNumInput" />
+        <input type="number" id="yearInput" class="form-control" value="1922" on-change="onNumInput" />
         <a class="btn btn-default" on-click="play"><i id="playIcon" class="fa fa-play"></i></a>
         <a class="btn btn-default" on-click="next"><i class="fa fa-arrow-right"></i></a>
       </div>
@@ -35,10 +38,7 @@
         this.showing = false;
         this.playing = false;
         this.cache = {};
-        this.type = 'flow';
-        this.types = ['flow','sinks','inflows','evaporation','storage'];
-        this.date = '1939-09';
-        this.root = 8;
+        this.date = '1922-01';
 
         this.start = new Date(1922,0,1);
         this.end = new Date(2002,0,1);
@@ -55,7 +55,6 @@
             if( this.minMax[key].max < 1 ) {
               this.minMax[key].max = 1;
             } else {
-              //this.minMax[key].max = Math.pow(this.minMax[key].max, 1/this.root);
               this.minMax[key].max = Math.log(this.minMax[key].max);
             }
           }
@@ -74,6 +73,12 @@
           this.$.playIcon.className = 'fa fa-pause';
         }
         this.playing = !this.playing;
+      },
+
+      onNumInput : function() {
+        this.current = new Date(Number(this.$.yearInput.value), Number(this.$.monthInput.value)-1, 1);
+        this.setDate();
+        this.getData();
       },
 
       previous : function() {
@@ -103,32 +108,80 @@
 
       toggle : function() {
         if( this.showing ) {
+          this.$.controls.style.display = 'none';
           this.heatmap.hide();
           this.featureLayer.show();
+          this.classList.remove('active');
+          if( this.playing ) this.play();
         } else {
+          this.$.controls.style.display = 'block';
           this.heatmap.show();
           this.featureLayer.hide();
           this.getData();
+          this.classList.add('active');
         }
 
         this.showing = !this.showing;
       },
 
-      init : function(map, featureLayer) {
-        this.map = map;
-        this.featureLayer = featureLayer;
+      init : function(mapEle) {
+
+        this.mapEle = mapEle;
+        this.map = mapEle.map;
+        this.featureLayer = mapEle.markerLayer;
 
 
         this.heatmap = new L.CanvasGeojsonLayer({
+          onMouseMove : this.onMouseMove.bind(this),
+          onClick : this.onClick.bind(this),
           zIndex : 10
         });
         this.heatmap.addTo(this.map);
       },
 
-      onTypeChange : function() {
-        this.type = this.$.selector.value;
-        this.getData();
+      onClick : function(features, e) {
+        if( features.length == 0 ) return;
+
+        if( features.length == 1 && features[0].properties.prmname ) {
+          window.location.href = '#info/' + features[0].properties.prmname;
+          return;
+        }
+
+        // grab real features
+        var array = [];
+        for( var i = 0; i < features.length; i++ ) {
+          array.push(CWN.ds.lookupMap[features[i].properties.prmname]);
+        }
+
+        this.mapEle.selector.onClick(array);
       },
+
+      onMouseMove : function(features, e) {
+        this.lastMouseEvent = e;
+        var label = [], linkLabel = '', regionLabel = '';
+        var i, f, key;
+
+        for( i = 0; i < features.length; i++ ) {
+          f = features[i].properties;
+
+          for( key in f ) {
+            if( key !== 'id' && key !== 'scaled' && key !== 'prmname' ) {
+              break;
+            }
+          }
+
+          label.push('<b>'+f.prmname+':</b> '+key+' = '+f[key]);
+        }
+
+        if( features.length > 0 ) {
+          this.mapEle.showHoverLabel(true, label.join('<br />'), e.containerPoint);
+          //this.$.leaflet.style.cursor = 'pointer';
+        } else {
+          this.mapEle.showHoverLabel(false);
+          //this.$.leaflet.style.cursor = '-webkit-grab';
+        }
+      },
+
 
       getData : function() {
         if( this.cache[this.date] ) {
@@ -158,19 +211,20 @@
 
           if( feature.geojson.properties.inflows ) {
             color = 'rgba(0,0,'+
-                (255*feature.geojson.properties.inflows).toFixed(0)+
+                (255*feature.geojson.properties.value).toFixed(0)+
                 ','+
-                this.getOpacity(feature.geojson.properties.inflows)+
+                this.getOpacity(feature.geojson.properties.value)+
                 ')';
-            this.renderPoint(ctx, point, feature.geojson.properties.inflows, color);
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color);
           }
+
           if( feature.geojson.properties.sinks ) {
             color = 'rgba('+
-              (255*feature.geojson.properties.sinks).toFixed(0)+
+              (255*feature.geojson.properties.value).toFixed(0)+
               ',0,0,'+
-              this.getOpacity(feature.geojson.properties.sinks)+
+              this.getOpacity(feature.geojson.properties.value)+
               ')';
-            this.renderPoint(ctx, point, feature.geojson.properties.sinks, color);
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color);
           }
 
         } else if( feature.geojson.properties.flow ){
@@ -179,16 +233,16 @@
           ctx.moveTo(point[0].x, point[0].y);
           ctx.lineTo(point[1].x, point[1].y);
 
-          var o = this.getOpacity(feature.geojson.properties.flow);
+          var o = this.getOpacity(feature.geojson.properties.value);
           color = 'rgba(0,'+
-            (255*feature.geojson.properties.flow).toFixed(0)+
+            (255*feature.geojson.properties.value).toFixed(0)+
             ',0,'+o+')';
 
-          ctx.lineCap="round";
+          ctx.lineCap = 'round';
           ctx.strokeStyle = color;
           ctx.fillStyle = 'rgba(200,200,200,'+o+')';
 
-          var width = Math.ceil(12*feature.geojson.properties.flow);
+          var width = Math.ceil(12*feature.geojson.properties.value);
 
           if( width < 1 ) width = 1;
           ctx.lineWidth = width;
@@ -221,48 +275,7 @@
         this.heatmap.removeAll();
         var arr = [], max = 0;
 
-        /*for( var i = 0; i < data.length; i++ ) {
-          if( !data[i][this.type] ) continue;
-          arr.push([
-            Number(data[i].x),
-            Number(data[i].y),
-            data[i][this.type],
-          ]);
-        }*/
-
-
         if( data.length == 0 ) return;
-
-        /*arr.sort(function(a, b){
-          if( a[2] < b[2] ) return -1;
-          if( a[2] > b[2] ) return 1;
-          return 0;
-        });
-
-        max = Math.floor(.9 * arr.length);
-        max = arr[max][2];*/
-
-        /*for( var i = 0; i < arr.length; i++ ) {
-          arr[i][2] = arr[i][2] / max;
-          if( arr[i][2] > 1 ) {
-            arr[i][2] = 1;
-          } else if( arr[i][2] < 0 ) {
-            arr[i][2] = 0;
-          }
-
-          this.heatmap.addFeature({
-            geojson: {
-              geometry : {
-                type : 'Point',
-                coordinates : [arr[i][1], arr[i][0]]
-              },
-              properties : {
-                value : arr[i][2]
-              }
-            },
-            render: this.render.bind(this)
-          });
-        }*/
 
         for( var i = 0; i < data.length; i++ ) {
           if( !data[i].properties.scaled ) {
@@ -276,21 +289,27 @@
         }
 
         this.heatmap.render();
+
+        // TODO: make sure mouse is still over map
+        // update the hover on animation
+        if( this.lastMouseEvent && this.playing ) {
+          this.heatmap._intersects(this.lastMouseEvent);
+          this.heatmap.onMouseMove(this.heatmap.intersectList, this.lastMouseEvent);
+        }
       },
 
       scale : function(properties) {
         for( var key in properties ) {
           if( this.minMax[key] ) {
-            properties[key] = properties[key] * 1000;
+            properties.value = properties[key] * 1000;
 
-            if( properties[key] < 1 ) {
-              properties[key] = 0;
+            if( properties.value < 1 ) {
+              properties.value = 0;
             } else {
-              //properties[key] = Math.pow(properties[key], 1/this.root) / this.minMax[key].max;
-              properties[key] = Math.log(properties[key]) / this.minMax[key].max;
+              properties.value = Math.log(properties.value) / this.minMax[key].max;
             }
-            if( properties[key] > 1 ) {
-              properties[key] = 1;
+            if( properties.value > 1 ) {
+              properties.value = 1;
             }
           }
         }
