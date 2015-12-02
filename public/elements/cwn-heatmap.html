@@ -200,6 +200,22 @@
               resp.data[i] = JSON.parse(resp.data[i]);
             }
 
+            resp.data.sort(function(a, b){
+              if( a.properties.flow ) return -1;
+              if( b.properties.flow ) return 1;
+
+              if( a.properties.storage ) return -1;
+              if( b.properties.storage ) return 1;
+
+              if( a.properties.inflow ) return -1;
+              if( b.properties.inflow ) return 1;
+
+              if( a.properties.sinks ) return -1;
+              if( b.properties.sinks ) return 1;
+
+              return 0;
+            });
+
             this.onResponse(resp.data);
           }.bind(this));
         }
@@ -222,6 +238,13 @@
             color = 'rgba('+
               (255*feature.geojson.properties.value).toFixed(0)+
               ',0,0,'+
+              this.getOpacity(feature.geojson.properties.value)+
+              ')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color);
+          }
+
+          if( feature.geojson.properties.storage ) {
+            color = 'rgba(255,153,0,'+
               this.getOpacity(feature.geojson.properties.value)+
               ')';
             this.renderPoint(ctx, point, feature.geojson.properties.value, color);
