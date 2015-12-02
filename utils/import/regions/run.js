@@ -8,12 +8,19 @@ var async = require('async');
 var git = require('../../git');
 
 var dir, branch, files;
+var updateHeatmap = false;
 
-module.exports = function(dir, callback) {
+module.exports = function(dir, updateHeatmapFlag, callback) {
   var nodes = [];
   var regions = [];
   var regionNames = {};
   var lookup = {};
+
+  if( typeof updateHeatmapFlag === 'function' ) {
+    callback = updateHeatmapFlag;
+  } else {
+    updateHeatmap = updateHeatmapFlag;
+  }
 
   git.info(dir, function(gitInfo) {
     console.log(gitInfo);
@@ -60,34 +67,42 @@ module.exports = function(dir, callback) {
           return console.log('Unabled to connect to mongo');
         }
 
-        mongo.updateHeatmap(nodes, function(err){
-          if( err ) return console.log('Unabled to update heatmap: '+JSON.stringify(err));
-
-          mongo.updateNetwork(nodes, function(err){
-            if( err ) return console.log('Unabled to update network: '+JSON.stringify(err));
-
-            mongo.updateRegions(regions, function(err){
-
-              if( err ) return console.log('Unabled to update regions: '+JSON.stringify(err));
-              console.log('done.');
-
-
-                if( callback ) {
-                  callback('done', true);
-                } else {
-                  process.exit();
-                }
-              });
-
+        if( updateHeatmap ) {
+          mongo.updateHeatmap(nodes, function(err){
+            if( err ) return console.log('Unabled to update heatmap: '+JSON.stringify(err));
+            afterHeatmap(nodes, regions, callback);
           });
-        });
+        } else {
+          afterHeatmap(nodes, regions, callback);
+        }
+
       });
     });
 
   });
+}
+
+function afterHeatmap(nodes, regions, callback) {
+  mongo.updateNetwork(nodes, function(err){
+    if( err ) {
+      return console.log('Unabled to update network: '+JSON.stringify(err));
+    }
+
+    mongo.updateRegions(regions, function(err){
+
+      if( err ) {
+        return console.log('Unabled to update regions: '+JSON.stringify(err));
+      }
+      console.log('done.');
 
 
-
+        if( callback ) {
+          callback('done', true);
+        } else {
+          process.exit();
+        }
+      });
+  });
 }
 
 function readNodes(dir, nodes, gitInfo, callback) {

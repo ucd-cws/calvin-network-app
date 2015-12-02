@@ -12,6 +12,7 @@ module.exports = function() {
         get : getNetwork,
         getExtras : getExtras,
         getHeatMap : getHeatMap,
+        getHeatMapMinMax : getHeatMapMinMax,
         dumpLocation : dumpLocation
     };
 };
@@ -24,8 +25,19 @@ function getExtras(prmname, callback) {
   extraCollection.findOne({prmname: prmname}, {_id:0}, callback);
 }
 
+function getHeatMapMinMax(callback) {
+  heatmapCollection.findOne({is: 'minMax'}, {_id: 0}, callback);
+}
+
 function getHeatMap(date, callback) {
-  heatmapCollection.findOne({date: date}, {_id: 0}, callback);
+  heatmapCollection.findOne({date: date}, {_id: 0}, function(err, resp){
+    if( err ) {
+      return callback(err);
+    } else if( !resp ) {
+      return callback('No data for: '+date);
+    }
+    callback(null, resp);
+  });
 }
 
 

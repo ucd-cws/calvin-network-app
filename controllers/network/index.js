@@ -50,4 +50,14 @@ module.exports = function (router) {
       });
     });
 
+    router.get('/heatmapMinMax', function (req, res) {
+      model.getHeatMapMinMax(function(err, data) {
+        if( err ) {
+          res.send({error: true, message: err});
+        } else {
+          res.send(data);
+        }
+      });
+    });
+
 };

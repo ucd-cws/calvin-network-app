@@ -1,3 +1,5 @@
+<link rel="import" href="cwn-heatmap.html" />
+
 <dom-module id="cwn-map">
     <style>
         :host {
@@ -45,6 +47,13 @@
           display: none;
           z-index: 100;
         }
+
+        #heatmap {
+          position: absolute;
+          left : 0;
+          right : 0;
+          bottom : 0;
+        }
     </style>
 
     <template>
@@ -56,6 +65,7 @@
         </div>
 
         <div id="hoverLabel"></div>
+        <cwn-heatmap id="heatmap"></cwn-heatmap>
     </template>
 </dom-module>
 
@@ -97,6 +107,8 @@
             polygons : []
           }
 
+
+
           var ref = this;
 
           this.markerLayer = new L.CanvasGeojsonLayer({
@@ -136,6 +148,8 @@
               this.selector.onClick(features);
             }.bind(this)
           });
+
+          this.$.heatmap.init(this.map, this.markerLayer);
 
           this.markerLayer.addTo(this.map);
 
