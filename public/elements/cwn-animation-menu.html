@@ -1,0 +1,128 @@
+<dom-module id="cwn-animation-menu">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+
+    <h4>Animation Layer</h4>
+
+    <template is="dom-repeat" items="{{filters}}">
+      <div style="padding: 10px 25px">
+        <div>
+          <input type="checkbox" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update" />
+          <span style="font-weight: bold; text-transform:capitalize" for$="{{item.type}}">{{item.type}}</span>
+        </div>
+        <div>
+          Max Size: <input type="number"
+                      class="form-control"
+                      style="display:inline-block; width:50px"
+                      name$="{{item.type}}"
+                      value="{{item.size}}"
+                      on-change="updateSize"
+                      />
+          <canvas name$="{{item.type}}" width="26" height="26" style="text-align:middle; padding: 0 15px"></canvas>
+        </div>
+      </div>
+    </template>
+
+
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-animation-menu',
+
+      ready : function() {
+        this.filters = [
+          {
+            type : 'inflows',
+            size : 25,
+            value : true,
+            color : 'rgba(68,138,255,.8)'
+          },
+          {
+            type : 'flow',
+            size : 12,
+            value : true,
+            color : 'rgba(56,142,60,.8)'
+          },
+          {
+            type : 'sinks',
+            size : 25,
+            value : true,
+            color : 'rgba(211,47,47,.8)'
+          },
+          {
+            type : 'storage',
+            size : 25,
+            value : true,
+            color : 'rgba(255,87,34,.8)'
+          },
+          {
+            type : 'evaporation',
+            size : 25,
+            value : false,
+            color : 'rgba(0,121,107,.8)'
+          }
+        ]
+      },
+
+      attached : function() {
+        setTimeout(this.renderLegend.bind(this), 500);
+      },
+
+      renderLegend : function() {
+        for( var i = 0; i < this.filters.length; i++ ) {
+          var canvas = this.querySelector('canvas[name="'+this.filters[i].type+'"]');
+
+          var ctx = canvas.getContext('2d');
+          ctx.beginPath();
+
+          if( this.filters[i].type !== 'flow' ) {
+            ctx.fillStyle = this.filters[i].color;
+            ctx.arc(13, 13, 12, 0, 2*Math.PI);
+            ctx.fill();
+          } else {
+            ctx.strokeStyle = this.filters[i].color;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = '8';
+            ctx.moveTo(4, 13);
+            ctx.lineTo(22, 13);
+            ctx.stroke();
+          }
+        }
+      },
+
+      update : function(e) {
+        var name = e.currentTarget.getAttribute('value');
+        var value = $(e.currentTarget).is(':checked');
+
+        for( var i = 0; i < this.filters.length; i++ ) {
+          if( this.filters[i].type === name ) {
+            this.filters[i].value = value;
+            break;
+          }
+        }
+
+        this.fire('animation-filters-updated');
+      },
+
+      updateSize : function(e) {
+        var name = e.currentTarget.getAttribute('name');
+        var value = Number(e.currentTarget.value);
+
+        for( var i = 0; i < this.filters.length; i++ ) {
+          if( this.filters[i].type === name ) {
+            this.filters[i].size = value;
+            break;
+          }
+        }
+
+        this.fire('animation-filters-updated');
+      }
+
+
+    });
+  </script>
+</dom-module>

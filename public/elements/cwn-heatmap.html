@@ -64,6 +64,24 @@
         var diffMonths = Math.round(Math.abs((this.start.getTime() - this.end.getTime())/(oneMonth)));
       },
 
+      attached : function() {
+        this.mainMenu = document.querySelector('cwn-map-menu');
+        this.animationMenu = document.querySelector('cwn-animation-menu');
+        this.animationMenu.addEventListener('animation-filters-updated', this.onFiltersUpdated.bind(this));
+        this.onFiltersUpdated();
+      },
+
+      onFiltersUpdated : function() {
+        this.filters = {};
+        var filters = this.animationMenu.filters;
+        for( var i = 0; i < filters.length; i++ ) {
+          if( filters[i].value ) {
+            this.filters[filters[i].type] = filters[i].size;
+          }
+        }
+        if( this.heatmap ) this.heatmap.render();
+      },
+
       play : function() {
         if( this.playing ) {
           clearInterval(this.playingTimer);
@@ -113,23 +131,23 @@
           this.featureLayer.show();
           this.classList.remove('active');
           if( this.playing ) this.play();
+          document.querySelector('cwn-map-menu').setMenu('main');
         } else {
           this.$.controls.style.display = 'block';
           this.heatmap.show();
           this.featureLayer.hide();
           this.getData();
           this.classList.add('active');
+          document.querySelector('cwn-map-menu').setMenu('animation');
         }
 
         this.showing = !this.showing;
       },
 
       init : function(mapEle) {
-
         this.mapEle = mapEle;
         this.map = mapEle.map;
         this.featureLayer = mapEle.markerLayer;
-
 
         this.heatmap = new L.CanvasGeojsonLayer({
           onMouseMove : this.onMouseMove.bind(this),
@@ -204,6 +222,9 @@
               if( a.properties.flow ) return -1;
               if( b.properties.flow ) return 1;
 
+              if( a.properties.evaporation ) return -1;
+              if( b.properties.evaporation ) return 1;
+
               if( a.properties.storage ) return -1;
               if( b.properties.storage ) return 1;
 
@@ -222,56 +243,46 @@
       },
 
       render : function(ctx, point, map, feature) {
+        var color;
+        var o = this.getOpacity(feature.geojson.properties.value);
 
         if( feature.geojson.geometry.type === 'Point' ) {
 
-          if( feature.geojson.properties.inflows ) {
-            color = 'rgba(0,0,'+
-                (255*feature.geojson.properties.value).toFixed(0)+
-                ','+
-                this.getOpacity(feature.geojson.properties.value)+
-                ')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color);
+          if( feature.geojson.properties.inflows && this.filters.inflows ) {
+            color = 'rgba(68,138,255,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'inflows');
           }
 
-          if( feature.geojson.properties.sinks ) {
-            color = 'rgba('+
-              (255*feature.geojson.properties.value).toFixed(0)+
-              ',0,0,'+
-              this.getOpacity(feature.geojson.properties.value)+
-              ')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color);
+          if( feature.geojson.properties.sinks && this.filters.sinks ) {
+            color = 'rgba(211,47,47,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'sinks');
           }
 
-          if( feature.geojson.properties.storage ) {
-            color = 'rgba(255,153,0,'+
-              this.getOpacity(feature.geojson.properties.value)+
-              ')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color);
+          if( feature.geojson.properties.storage && this.filters.storage ) {
+            color = 'rgba(255,87,34,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'storage');
           }
 
-        } else if( feature.geojson.properties.flow ){
+          if( feature.geojson.properties.evaporation && this.filters.evaporation ) {
+            color = 'rgba(0,121,107,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'evaporation');
+          }
+
+        } else if( feature.geojson.properties.flow && this.filters.flow ){
           ctx.beginPath();
 
           ctx.moveTo(point[0].x, point[0].y);
           ctx.lineTo(point[1].x, point[1].y);
 
-          var o = this.getOpacity(feature.geojson.properties.value);
-          color = 'rgba(0,'+
-            (255*feature.geojson.properties.value).toFixed(0)+
-            ',0,'+o+')';
-
           ctx.lineCap = 'round';
-          ctx.strokeStyle = color;
-          ctx.fillStyle = 'rgba(200,200,200,'+o+')';
+          ctx.strokeStyle = 'rgba(56,142,60,'+o+')';
 
-          var width = Math.ceil(12*feature.geojson.properties.value);
+          var width = Math.ceil((this.filters.flow || 12)*feature.geojson.properties.value);
 
           if( width < 1 ) width = 1;
           ctx.lineWidth = width;
 
           ctx.stroke();
-          ctx.fill();
         }
       },
 
@@ -281,16 +292,16 @@
         return value;
       },
 
-      getSize : function(value) {
-        value = value * 25;
+      getSize : function(value, type) {
+        value = value * (this.filters[type] || 25);
         if( value < 4 ) return 4;
         return value;
       },
 
-      renderPoint : function(ctx, point, value, color) {
+      renderPoint : function(ctx, point, value, color, type) {
         ctx.beginPath();
         ctx.fillStyle = color;
-        ctx.arc(point.x, point.y, this.getSize(value), 0, 2*Math.PI);
+        ctx.arc(point.x, point.y, this.getSize(value, type), 0, 2*Math.PI);
         ctx.fill();
       },
 

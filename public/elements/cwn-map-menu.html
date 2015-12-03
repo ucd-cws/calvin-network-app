@@ -1,3 +1,5 @@
+<link rel="import" href="cwn-animation-menu.html" />
+
 <dom-module id="cwn-map-menu">
     <style>
         :host {
@@ -26,6 +28,8 @@
         }
     </style>
     <template>
+
+      <div id="mainMenu">
         <div>
           <a class="btn btn-link" on-click="showAll">Show All</a> <a class="btn btn-link" on-click="hideAll">Hide All</a>
         </div>
@@ -40,6 +44,9 @@
           <div><div class="linkLegend" id="recharge"></div> Recharge</div>
           <div><div class="linkLegend" id="region"></div> To/from a Region</div>
         </div>
+      </div>
+
+      <cwn-animation-menu id="animationMenu" style="display:none"></cwn-animation-menu>
 
     </template>
 </dom-module>
@@ -70,6 +77,16 @@
           }
 
           this.render();
+        },
+
+        setMenu : function(type) {
+          if( type === 'animation' ) {
+            this.$.animationMenu.style.display = 'block';
+            this.$.mainMenu.style.display = 'none';
+          } else {
+            this.$.animationMenu.style.display = 'none';
+            this.$.mainMenu.style.display = 'block';
+          }
         },
 
         getEnabled : function() {
