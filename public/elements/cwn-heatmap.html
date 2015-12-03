@@ -264,7 +264,8 @@
           }
 
           if( feature.geojson.properties.evaporation && this.filters.evaporation ) {
-            color = 'rgba(0,121,107,'+o+')';
+            //color = 'rgba(0,121,107,'+o+')';
+            color = 'rgba(255,235,59,'+o+')';
             this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'evaporation');
           }
 
