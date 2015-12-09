@@ -15242,6 +15242,128 @@ Polymer({
 
     });
 </script>
+<dom-module id="cwn-animation-menu" assetpath="elements/">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+
+    <h4>Animation Layer</h4>
+
+    <template is="dom-repeat" items="{{filters}}">
+      <div style="padding: 10px 25px">
+        <div>
+          <input type="checkbox" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update">
+          <span style="font-weight: bold; text-transform:capitalize" for$="{{item.type}}">{{item.type}}</span>
+        </div>
+        <div>
+          Max Size: <input type="number" class="form-control" style="display:inline-block; width:50px" name$="{{item.type}}" value="{{item.size}}" on-change="updateSize">
+          <canvas name$="{{item.type}}" width="26" height="26" style="text-align:middle; padding: 0 15px"></canvas>
+        </div>
+      </div>
+    </template>
+
+
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-animation-menu',
+
+      ready : function() {
+        this.filters = [
+          {
+            type : 'inflows',
+            size : 25,
+            value : true,
+            color : 'rgba(68,138,255,.8)'
+          },
+          {
+            type : 'flow',
+            size : 12,
+            value : true,
+            color : 'rgba(56,142,60,.8)'
+          },
+          {
+            type : 'sinks',
+            size : 25,
+            value : true,
+            color : 'rgba(211,47,47,.8)'
+          },
+          {
+            type : 'storage',
+            size : 25,
+            value : true,
+            color : 'rgba(255,87,34,.8)'
+          },
+          {
+            type : 'evaporation',
+            size : 25,
+            value : false,
+            color : 'rgba(255,235,59,.8)'
+          }
+        ]
+      },
+
+      attached : function() {
+        setTimeout(this.renderLegend.bind(this), 500);
+      },
+
+      renderLegend : function() {
+        for( var i = 0; i < this.filters.length; i++ ) {
+          var canvas = this.querySelector('canvas[name="'+this.filters[i].type+'"]');
+
+          var ctx = canvas.getContext('2d');
+          ctx.beginPath();
+
+          if( this.filters[i].type !== 'flow' ) {
+            ctx.fillStyle = this.filters[i].color;
+            ctx.arc(13, 13, 12, 0, 2*Math.PI);
+            ctx.fill();
+          } else {
+            ctx.strokeStyle = this.filters[i].color;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = '8';
+            ctx.moveTo(4, 13);
+            ctx.lineTo(22, 13);
+            ctx.stroke();
+          }
+        }
+      },
+
+      update : function(e) {
+        var name = e.currentTarget.getAttribute('value');
+        var value = $(e.currentTarget).is(':checked');
+
+        for( var i = 0; i < this.filters.length; i++ ) {
+          if( this.filters[i].type === name ) {
+            this.filters[i].value = value;
+            break;
+          }
+        }
+
+        this.fire('animation-filters-updated');
+      },
+
+      updateSize : function(e) {
+        var name = e.currentTarget.getAttribute('name');
+        var value = Number(e.currentTarget.value);
+
+        for( var i = 0; i < this.filters.length; i++ ) {
+          if( this.filters[i].type === name ) {
+            this.filters[i].size = value;
+            break;
+          }
+        }
+
+        this.fire('animation-filters-updated');
+      }
+
+
+    });
+  </script>
+</dom-module>
 <dom-module id="cwn-map-menu" assetpath="elements/">
     <style>
         :host {
@@ -15270,6 +15392,8 @@ Polymer({
         }
     </style>
     <template>
+
+      <div id="mainMenu">
         <div>
           <a class="btn btn-link" on-click="showAll">Show All</a> <a class="btn btn-link" on-click="hideAll">Hide All</a>
         </div>
@@ -15284,6 +15408,9 @@ Polymer({
           <div><div class="linkLegend" id="recharge"></div> Recharge</div>
           <div><div class="linkLegend" id="region"></div> To/from a Region</div>
         </div>
+      </div>
+
+      <cwn-animation-menu id="animationMenu" style="display:none"></cwn-animation-menu>
 
     </template>
 </dom-module>
@@ -15314,6 +15441,16 @@ Polymer({
           }
 
           this.render();
+        },
+
+        setMenu : function(type) {
+          if( type === 'animation' ) {
+            this.$.animationMenu.style.display = 'block';
+            this.$.mainMenu.style.display = 'none';
+          } else {
+            this.$.animationMenu.style.display = 'none';
+            this.$.mainMenu.style.display = 'block';
+          }
         },
 
         getEnabled : function() {
@@ -15463,6 +15600,361 @@ Polymer({
         }
     })
 </script>
+<dom-module id="cwn-heatmap" assetpath="elements/">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 7px;
+      }
+      :host(.active) {
+        background-color: rgba(255,255,255, .7);
+        border-top: 1px solid white;
+        box-shadow: 0 0 5px #333;
+      }
+      input[type="number"] {
+        width: 75px;
+        display: inline-block !important;
+      }
+    </style>
+
+    <div class="layout horizontal">
+      <div>
+        <input type="checkbox" on-click="toggle"> Animation Layer
+      </div>
+      <div class="flex" style="display:none; text-align:center" id="controls">
+        <a class="btn btn-default" on-click="previous"><i class="fa fa-arrow-left"></i></a>
+        <input type="number" id="monthInput" class="form-control" value="1" on-change="onNumInput">
+        <input type="number" id="yearInput" class="form-control" value="1922" on-change="onNumInput">
+        <a class="btn btn-default" on-click="play"><i id="playIcon" class="fa fa-play"></i></a>
+        <a class="btn btn-default" on-click="next"><i class="fa fa-arrow-right"></i></a>
+      </div>
+    </div>
+
+  </template>
+  <script>
+    Polymer({
+      is: 'cwn-heatmap',
+
+      ready : function() {
+        this.showing = false;
+        this.playing = false;
+        this.cache = {};
+        this.date = '1922-01';
+
+        this.start = new Date(1922,0,1);
+        this.end = new Date(2002,0,1);
+        this.current = new Date(1922,0,1);
+        this.setInputs();
+
+        $.get('/network/heatmapMinMax', function(resp){
+          this.minMax = resp;
+          for( var key in this.minMax ) {
+            if( key === 'is' ) continue;
+            this.minMax[key].min = Number(this.minMax[key].min);
+            this.minMax[key].max = Number(this.minMax[key].max) * 1000;
+
+            if( this.minMax[key].max < 1 ) {
+              this.minMax[key].max = 1;
+            } else {
+              this.minMax[key].max = Math.log(this.minMax[key].max);
+            }
+          }
+        }.bind(this));
+
+        var oneMonth = 30.4*24*60*60*1000;
+        var diffMonths = Math.round(Math.abs((this.start.getTime() - this.end.getTime())/(oneMonth)));
+      },
+
+      attached : function() {
+        this.mainMenu = document.querySelector('cwn-map-menu');
+        this.animationMenu = document.querySelector('cwn-animation-menu');
+        this.animationMenu.addEventListener('animation-filters-updated', this.onFiltersUpdated.bind(this));
+        this.onFiltersUpdated();
+      },
+
+      onFiltersUpdated : function() {
+        this.filters = {};
+        var filters = this.animationMenu.filters;
+        for( var i = 0; i < filters.length; i++ ) {
+          if( filters[i].value ) {
+            this.filters[filters[i].type] = filters[i].size;
+          }
+        }
+        if( this.heatmap ) this.heatmap.render();
+      },
+
+      play : function() {
+        if( this.playing ) {
+          clearInterval(this.playingTimer);
+          this.$.playIcon.className = 'fa fa-play';
+        } else {
+          this.playingTimer = setInterval(this.next.bind(this), 500);
+          this.$.playIcon.className = 'fa fa-pause';
+        }
+        this.playing = !this.playing;
+      },
+
+      onNumInput : function() {
+        this.current = new Date(Number(this.$.yearInput.value), Number(this.$.monthInput.value)-1, 1);
+        this.setDate();
+        this.getData();
+      },
+
+      previous : function() {
+        this.current = new Date(this.current.getFullYear(), this.current.getMonth()-1,1);
+        this.setDate();
+        this.setInputs();
+        this.getData();
+      },
+
+      next : function() {
+        this.current = new Date(this.current.getFullYear(), this.current.getMonth()+1,1);
+        this.setDate();
+        this.setInputs();
+        this.getData();
+      },
+
+      setInputs : function() {
+        this.$.monthInput.value = this.current.getMonth()+1;
+        this.$.yearInput.value = this.current.getFullYear();
+      },
+
+      setDate : function() {
+        var m = this.current.getMonth()+1;
+        if( m < 10 ) m = '0'+m;
+        this.date = this.current.getFullYear()+'-'+m;
+      },
+
+      toggle : function() {
+        if( this.showing ) {
+          this.$.controls.style.display = 'none';
+          this.heatmap.hide();
+          this.featureLayer.show();
+          this.classList.remove('active');
+          if( this.playing ) this.play();
+          document.querySelector('cwn-map-menu').setMenu('main');
+        } else {
+          this.$.controls.style.display = 'block';
+          this.heatmap.show();
+          this.featureLayer.hide();
+          this.getData();
+          this.classList.add('active');
+          document.querySelector('cwn-map-menu').setMenu('animation');
+        }
+
+        this.showing = !this.showing;
+      },
+
+      init : function(mapEle) {
+        this.mapEle = mapEle;
+        this.map = mapEle.map;
+        this.featureLayer = mapEle.markerLayer;
+
+        this.heatmap = new L.CanvasGeojsonLayer({
+          onMouseMove : this.onMouseMove.bind(this),
+          onClick : this.onClick.bind(this),
+          zIndex : 10
+        });
+        this.heatmap.addTo(this.map);
+      },
+
+      onClick : function(features, e) {
+        if( features.length == 0 ) return;
+
+        if( features.length == 1 && features[0].properties.prmname ) {
+          window.location.href = '#info/' + features[0].properties.prmname;
+          return;
+        }
+
+        // grab real features
+        var array = [];
+        for( var i = 0; i < features.length; i++ ) {
+          array.push(CWN.ds.lookupMap[features[i].properties.prmname]);
+        }
+
+        this.mapEle.selector.onClick(array);
+      },
+
+      onMouseMove : function(features, e) {
+        this.lastMouseEvent = e;
+        var label = [], linkLabel = '', regionLabel = '';
+        var i, f, key;
+
+        for( i = 0; i < features.length; i++ ) {
+          f = features[i].properties;
+
+          for( key in f ) {
+            if( key !== 'id' && key !== 'scaled' && key !== 'prmname' ) {
+              break;
+            }
+          }
+
+          label.push('<b>'+f.prmname+':</b> '+key+' = '+f[key]);
+        }
+
+        if( features.length > 0 ) {
+          this.mapEle.showHoverLabel(true, label.join('<br />'), e.containerPoint);
+          //this.$.leaflet.style.cursor = 'pointer';
+        } else {
+          this.mapEle.showHoverLabel(false);
+          //this.$.leaflet.style.cursor = '-webkit-grab';
+        }
+      },
+
+
+      getData : function() {
+        if( this.cache[this.date] ) {
+          this.onResponse(this.cache[this.date].data);
+        } else {
+          $.get('/network/heatmap?date='+this.date, function(resp){
+            this.cache[resp.date] = resp;
+
+            if( resp.error ) {
+              console.log('No data for: '+this.date);
+              this.heatmap.removeAll();
+              return;
+            }
+
+            for( var i = 0; i < resp.data.length; i++ ) {
+              resp.data[i] = JSON.parse(resp.data[i]);
+            }
+
+            resp.data.sort(function(a, b){
+              if( a.properties.flow ) return -1;
+              if( b.properties.flow ) return 1;
+
+              if( a.properties.evaporation ) return -1;
+              if( b.properties.evaporation ) return 1;
+
+              if( a.properties.storage ) return -1;
+              if( b.properties.storage ) return 1;
+
+              if( a.properties.inflow ) return -1;
+              if( b.properties.inflow ) return 1;
+
+              if( a.properties.sinks ) return -1;
+              if( b.properties.sinks ) return 1;
+
+              return 0;
+            });
+
+            this.onResponse(resp.data);
+          }.bind(this));
+        }
+      },
+
+      render : function(ctx, point, map, feature) {
+        var color;
+        var o = this.getOpacity(feature.geojson.properties.value);
+
+        if( feature.geojson.geometry.type === 'Point' ) {
+
+          if( feature.geojson.properties.inflows && this.filters.inflows ) {
+            color = 'rgba(68,138,255,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'inflows');
+          }
+
+          if( feature.geojson.properties.sinks && this.filters.sinks ) {
+            color = 'rgba(211,47,47,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'sinks');
+          }
+
+          if( feature.geojson.properties.storage && this.filters.storage ) {
+            color = 'rgba(255,87,34,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'storage');
+          }
+
+          if( feature.geojson.properties.evaporation && this.filters.evaporation ) {
+            //color = 'rgba(0,121,107,'+o+')';
+            color = 'rgba(255,235,59,'+o+')';
+            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'evaporation');
+          }
+
+        } else if( feature.geojson.properties.flow && this.filters.flow ){
+          ctx.beginPath();
+
+          ctx.moveTo(point[0].x, point[0].y);
+          ctx.lineTo(point[1].x, point[1].y);
+
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = 'rgba(56,142,60,'+o+')';
+
+          var width = Math.ceil((this.filters.flow || 12)*feature.geojson.properties.value);
+
+          if( width < 1 ) width = 1;
+          ctx.lineWidth = width;
+
+          ctx.stroke();
+        }
+      },
+
+      getOpacity : function(value) {
+        value = value * .9;
+        if( value < .1 ) return .1;
+        return value;
+      },
+
+      getSize : function(value, type) {
+        value = value * (this.filters[type] || 25);
+        if( value < 4 ) return 4;
+        return value;
+      },
+
+      renderPoint : function(ctx, point, value, color, type) {
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(point.x, point.y, this.getSize(value, type), 0, 2*Math.PI);
+        ctx.fill();
+      },
+
+      onResponse : function(data) {
+        this.heatmap.removeAll();
+        var arr = [], max = 0;
+
+        if( data.length == 0 ) return;
+
+        for( var i = 0; i < data.length; i++ ) {
+          if( !data[i].properties.scaled ) {
+            this.scale(data[i].properties);
+          }
+
+          this.heatmap.addFeature({
+            geojson: data[i],
+            render: this.render.bind(this)
+          });
+        }
+
+        this.heatmap.render();
+
+        // TODO: make sure mouse is still over map
+        // update the hover on animation
+        if( this.lastMouseEvent && this.playing ) {
+          this.heatmap._intersects(this.lastMouseEvent);
+          this.heatmap.onMouseMove(this.heatmap.intersectList, this.lastMouseEvent);
+        }
+      },
+
+      scale : function(properties) {
+        for( var key in properties ) {
+          if( this.minMax[key] ) {
+            properties.value = properties[key] * 1000;
+
+            if( properties.value < 1 ) {
+              properties.value = 0;
+            } else {
+              properties.value = Math.log(properties.value) / this.minMax[key].max;
+            }
+            if( properties.value > 1 ) {
+              properties.value = 1;
+            }
+          }
+        }
+        properties.scaled = true;
+      }
+    });
+  </script>
+</dom-module>
 <dom-module id="cwn-map" assetpath="elements/">
     <style>
         :host {
@@ -15510,6 +16002,13 @@ Polymer({
           display: none;
           z-index: 100;
         }
+
+        #heatmap {
+          position: absolute;
+          left : 0;
+          right : 0;
+          bottom : 0;
+        }
     </style>
 
     <template>
@@ -15521,6 +16020,7 @@ Polymer({
         </div>
 
         <div id="hoverLabel"></div>
+        <cwn-heatmap id="heatmap"></cwn-heatmap>
     </template>
 </dom-module>
 
@@ -15562,6 +16062,8 @@ Polymer({
             polygons : []
           }
 
+
+
           var ref = this;
 
           this.markerLayer = new L.CanvasGeojsonLayer({
@@ -15601,6 +16103,8 @@ Polymer({
               this.selector.onClick(features);
             }.bind(this)
           });
+
+          this.$.heatmap.init(this);
 
           this.markerLayer.addTo(this.map);
 
