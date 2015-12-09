@@ -1,4 +1,4 @@
-<link rel="import" href="cwn-heatmap.html" />
+<link rel="import" href="cwn-animation-control.html" />
 
 <dom-module id="cwn-map">
     <style>
@@ -48,7 +48,7 @@
           z-index: 100;
         }
 
-        #heatmap {
+        #animationControl {
           position: absolute;
           left : 0;
           right : 0;
@@ -65,7 +65,7 @@
         </div>
 
         <div id="hoverLabel"></div>
-        <cwn-heatmap id="heatmap"></cwn-heatmap>
+        <cwn-animation-control id="animationControl"></cwn-animation-control>
     </template>
 </dom-module>
 
@@ -149,7 +149,7 @@
             }.bind(this)
           });
 
-          this.$.heatmap.init(this);
+          this.$.animationControl.init(this);
 
           this.markerLayer.addTo(this.map);
 

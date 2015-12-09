@@ -9,7 +9,7 @@
     "init-dev": "npm install && bower install",
     "init-prod": "npm install --production",
     "import": "node utils/import/regions/cmd.js",
-    "import-heatmap": "node utils/import/regions/cmd.js --heatmap",
+    "import-timeslice": "node utils/import/regions/cmd.js --timeslice",
     "run-dev": "node server --dev",
     "dev": "node server --dev",
     "test": "grunt test",

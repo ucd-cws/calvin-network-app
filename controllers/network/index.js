@@ -35,13 +35,13 @@ module.exports = function (router) {
       });
     });
 
-    router.get('/heatmap', function (req, res) {
+    router.get('/timeslice', function (req, res) {
       var date = req.query.date;
       if( !date ) {
         return res.send({error:true, message:'date required'});
       }
 
-      model.getHeatMap(date, function(err, data) {
+      model.getTimeslice(date, function(err, data) {
         if( err ) {
           res.send({error: true, message: err});
         } else {
@@ -50,8 +50,8 @@ module.exports = function (router) {
       });
     });
 
-    router.get('/heatmapMinMax', function (req, res) {
-      model.getHeatMapMinMax(function(err, data) {
+    router.get('/timesliceMinMax', function (req, res) {
+      model.getTimesliceMinMax(function(err, data) {
         if( err ) {
           res.send({error: true, message: err});
         } else {

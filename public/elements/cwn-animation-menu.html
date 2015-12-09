@@ -4,25 +4,43 @@
       :host {
         display: block;
       }
+      .filterItem {
+        padding-left: 8px;
+        padding-top: 4px;
+      }
     </style>
 
-    <h4>Animation Layer</h4>
+    <h4 class="page-header">Animation Layer</h4>
 
     <template is="dom-repeat" items="{{filters}}">
-      <div style="padding: 10px 25px">
+      <div style="padding: 15px 15px">
         <div>
           <input type="checkbox" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update" />
           <span style="font-weight: bold; text-transform:capitalize" for$="{{item.type}}">{{item.type}}</span>
-        </div>
-        <div>
-          Max Size: <input type="number"
-                      class="form-control"
-                      style="display:inline-block; width:50px"
-                      name$="{{item.type}}"
-                      value="{{item.size}}"
-                      on-change="updateSize"
-                      />
+
           <canvas name$="{{item.type}}" width="26" height="26" style="text-align:middle; padding: 0 15px"></canvas>
+        </div>
+        <div class="filterItem">
+          <table>
+            <tr>
+              <td>
+                Max Size: <input type="number"
+                            class="form-control"
+                            style="display:inline-block; width:50px"
+                            name$="{{item.type}}"
+                            value="{{item.size}}"
+                            on-change="updateSize"
+                            />
+              </td>
+              <td>px</td>
+              <td>
+                &nbsp; (<span class="maxLabel" name$="{{item.type}}"></span> kaf)
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="filterItem">
+          Log Scale: <input type="checkbox" name$="{{item.type}}" checked on-click="updateLog" />
         </div>
       </div>
     </template>
@@ -39,30 +57,35 @@
             type : 'inflows',
             size : 25,
             value : true,
+            log : true,
             color : 'rgba(68,138,255,.8)'
           },
           {
             type : 'flow',
             size : 12,
             value : true,
+            log : true,
             color : 'rgba(56,142,60,.8)'
           },
           {
             type : 'sinks',
             size : 25,
             value : true,
+            log : true,
             color : 'rgba(211,47,47,.8)'
           },
           {
             type : 'storage',
             size : 25,
             value : true,
+            log : true,
             color : 'rgba(255,87,34,.8)'
           },
           {
             type : 'evaporation',
             size : 25,
             value : false,
+            log : true,
             color : 'rgba(255,235,59,.8)'
           }
         ]
@@ -70,6 +93,15 @@
 
       attached : function() {
         setTimeout(this.renderLegend.bind(this), 500);
+      },
+
+      setMax : function(max) {
+        for( var key in max ) {
+          var ele = this.querySelector('.maxLabel[name="'+key+'"]');
+          if( ele ) {
+            ele.innerHTML = max[key].max.toFixed(2);
+          }
+        }
       },
 
       renderLegend : function() {
@@ -115,6 +147,20 @@
         for( var i = 0; i < this.filters.length; i++ ) {
           if( this.filters[i].type === name ) {
             this.filters[i].size = value;
+            break;
+          }
+        }
+
+        this.fire('animation-filters-updated');
+      },
+
+      updateLog : function(e) {
+        var name = e.currentTarget.getAttribute('name');
+        var value = $(e.currentTarget).is(':checked');
+
+        for( var i = 0; i < this.filters.length; i++ ) {
+          if( this.filters[i].type === name ) {
+            this.filters[i].log = value;
             break;
           }
         }

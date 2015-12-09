@@ -17,9 +17,9 @@ if( !fs.existsSync(importJson) ) {
 
 importJson = require(importJson);
 
-var heatmap = false;
-if( process.argv.length > 2 && process.argv[2] === '--heatmap' ) {
-  heatmap = true;
+var timeslice = false;
+if( process.argv.length > 2 && process.argv[2] === '--timeslice' ) {
+  timeslice = true;
 }
 
-run(importJson.path, heatmap);
+run(importJson.path, timeslice);

@@ -4,15 +4,15 @@ var csvStringify = require('csv-stringify');
 var async = require('async');
 
 var extraCollection = global.setup.database.collection('node-extras');
-var heatmapCollection = global.setup.database.collection('heatmap');
+var timesliceCollection = global.setup.database.collection('timeslice');
 
 module.exports = function() {
     return {
         name: 'network',
         get : getNetwork,
         getExtras : getExtras,
-        getHeatMap : getHeatMap,
-        getHeatMapMinMax : getHeatMapMinMax,
+        getTimeslice : getTimeslice,
+        getTimesliceMinMax : getTimesliceMinMax,
         dumpLocation : dumpLocation
     };
 };
@@ -25,12 +25,12 @@ function getExtras(prmname, callback) {
   extraCollection.findOne({prmname: prmname}, {_id:0}, callback);
 }
 
-function getHeatMapMinMax(callback) {
-  heatmapCollection.findOne({is: 'minMax'}, {_id: 0}, callback);
+function getTimesliceMinMax(callback) {
+  timesliceCollection.findOne({is: 'minMax'}, {_id: 0}, callback);
 }
 
-function getHeatMap(date, callback) {
-  heatmapCollection.findOne({date: date}, {_id: 0}, function(err, resp){
+function getTimeslice(date, callback) {
+  timesliceCollection.findOne({date: date}, {_id: 0}, function(err, resp){
     if( err ) {
       return callback(err);
     } else if( !resp ) {

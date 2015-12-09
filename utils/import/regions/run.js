@@ -8,18 +8,18 @@ var async = require('async');
 var git = require('../../git');
 
 var dir, branch, files;
-var updateHeatmap = false;
+var updateTimeslice = false;
 
-module.exports = function(dir, updateHeatmapFlag, callback) {
+module.exports = function(dir, updateTimesliceFlag, callback) {
   var nodes = [];
   var regions = [];
   var regionNames = {};
   var lookup = {};
 
-  if( typeof updateHeatmapFlag === 'function' ) {
-    callback = updateHeatmapFlag;
+  if( typeof updateTimesliceFlag === 'function' ) {
+    callback = updateTimesliceFlag;
   } else {
-    updateHeatmap = updateHeatmapFlag;
+    updateTimeslice = updateTimesliceFlag;
   }
 
   git.info(dir, function(gitInfo) {
@@ -67,13 +67,13 @@ module.exports = function(dir, updateHeatmapFlag, callback) {
           return console.log('Unabled to connect to mongo');
         }
 
-        if( updateHeatmap ) {
-          mongo.updateHeatmap(nodes, function(err){
-            if( err ) return console.log('Unabled to update heatmap: '+JSON.stringify(err));
-            afterHeatmap(nodes, regions, callback);
+        if( updateTimeslice ) {
+          mongo.updateTimeslice(nodes, function(err){
+            if( err ) return console.log('Unabled to update timeslice: '+JSON.stringify(err));
+            aftertimeslice(nodes, regions, callback);
           });
         } else {
-          afterHeatmap(nodes, regions, callback);
+          aftertimeslice(nodes, regions, callback);
         }
 
       });
@@ -82,7 +82,7 @@ module.exports = function(dir, updateHeatmapFlag, callback) {
   });
 }
 
-function afterHeatmap(nodes, regions, callback) {
+function aftertimeslice(nodes, regions, callback) {
   mongo.updateNetwork(nodes, function(err){
     if( err ) {
       return console.log('Unabled to update network: '+JSON.stringify(err));
