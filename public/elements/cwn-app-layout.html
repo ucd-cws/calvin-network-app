@@ -55,7 +55,9 @@
           display: none;
         }
 
-
+        .paper-drawer-panel#drawer {
+          z-index: 2000 !important;
+        }
 
     </style>
 
@@ -66,13 +68,6 @@
       </div>
 
       <paper-drawer-panel id="mapLayout" responsive-width="768px">
-        <paper-header-panel drawer class="drawer">
-          <paper-toolbar style="background-color: #2196f3">
-            <div class="hidden-xs">CALVIN Water Network <span class="devTitle"></span></div>
-          </paper-toolbar>
-
-          <content select="cwn-map-menu"></content>
-        </paper-header-panel>
 
         <paper-header-panel main style="height:100%">
           <paper-toolbar style="background-color: #2196f3">
@@ -88,6 +83,14 @@
           </div>
 
 
+        </paper-header-panel>
+
+        <paper-header-panel drawer class="drawer" style="z-index:2000">
+          <paper-toolbar style="background-color: #2196f3">
+            <div class="hidden-xs">CALVIN Water Network <span class="devTitle"></span></div>
+          </paper-toolbar>
+
+          <content select="cwn-map-menu"></content>
         </paper-header-panel>
       </paper-drawer-panel>
 
@@ -119,6 +122,14 @@
 <script>
     Polymer({
         is : 'cwn-app-layout',
+
+        attached : function() {
+          // HACK
+          setTimeout(function(){
+            var ele = this.querySelector('.paper-drawer-panel#drawer');
+            if( ele ) ele.style.zIndex = 2000;
+          }.bind(this), 500);
+        },
 
         updateView : function(page) {
           $(this.$.navBtns).remove();

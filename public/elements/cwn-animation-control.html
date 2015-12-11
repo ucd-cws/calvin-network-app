@@ -11,19 +11,20 @@
         box-shadow: 0 0 5px #333;
       }
       input[type="number"] {
-        width: 75px;
         display: inline-block !important;
       }
     </style>
 
-    <div class="layout horizontal">
-      <div>
+    <div class="row">
+      <div class="col-sm-4">
         <input type="checkbox" on-click="toggle"/> Animation Layer
       </div>
-      <div class="flex" style="display:none; text-align:center" id="controls">
+      <div class="col-sm-8"style="display:none; text-align:center" id="controls">
         <a class="btn btn-default" on-click="previous"><i class="fa fa-arrow-left"></i></a>
-        <input type="number" id="monthInput" class="form-control" value="1" on-change="onNumInput" />
-        <input type="number" id="yearInput" class="form-control" value="1922" on-change="onNumInput" />
+        &nbsp;
+        <input type="number" id="monthInput" class="form-control" value="1" on-change="onNumInput" style="width:35px" />-
+        <input type="number" id="yearInput" class="form-control" value="1922" on-change="onNumInput" style="width:60px" />
+        &nbsp;
         <a class="btn btn-default" on-click="play"><i id="playIcon" class="fa fa-play"></i></a>
         <a class="btn btn-default" on-click="next"><i class="fa fa-arrow-right"></i></a>
       </div>

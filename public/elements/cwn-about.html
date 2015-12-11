@@ -3,18 +3,23 @@
     <cwn-popup id="popup" style="z-index: 10000">
       <div class="popup-body" id="body">
         <div>
+          <a href="http://calvin.ucdavis.edu/" target="_blank"><i class="fa fa-globe"></i> CALVIN Homepage</a>
+
+          <h4 class="page-header">Source</h4>
           <p>
-            All data can be accessed via the
+            All <b>data</b> can be accessed via this
+            <a href="https://github.com/ucd-cws/calvin-network-data" target="_blank"><i class="fa fa-github"></i> GitHub Repository.</a><br />
+            Application <b>source</b> can be accessed via this
             <a href="https://github.com/ucd-cws/calvin-network-data" target="_blank"><i class="fa fa-github"></i> GitHub Repository.</a>
-            Tickets for data issues should be made <a href="https://github.com/ucd-cws/calvin-network-data/issues" target="_blank">here.</a>
           </p>
 
+          <h4 class="page-header">Issues</h4>
           <p>
-            Please report application bugs
-            <a href="https://github.com/ucd-cws/ca-water-network/issues" target="_blank"><i class="fa fa-bug"></i> here.</a>
+            Tickets for <b>data issues</b> should be made <a href="https://github.com/ucd-cws/calvin-network-data/issues" target="_blank"><i class="fa fa-bug"></i> here.</a><br />
+            Please report <b>application bugs/issues</b> <a href="https://github.com/ucd-cws/ca-water-network/issues" target="_blank"><i class="fa fa-bug"></i> here.</a>
           </p>
 
-          <p>
+          <p style="margin-top:50px; text-align:center">
             Created by the UC Davis <a href="https://watershed.ucdavis.edu/" target="_blank">Center for Watershed Sciences</a>
           </p>
         </div>
@@ -29,8 +34,7 @@
     is : 'cwn-about',
 
     ready : function() {
-      this.$.popup.$['header-html'].innerHTML = 'CALVIN Water Network '+
-        '<small><a href="http://calvin.ucdavis.edu/" target="_blank"><i class="fa fa-globe"></i> Homepage</a></small>';
+      this.$.popup.$['header-html'].innerHTML = 'CALVIN Water Network';
     },
 
     show : function() {
