@@ -39,6 +39,9 @@
         this.playing = false;
         this.cache = {};
         this.date = '1922-01';
+        this.animationFrameCount = 0;
+        this.speed = 100;
+        this.subFrames = 10;
 
         this.start = new Date(1922,0,1);
         this.end = new Date(2002,0,1);
@@ -107,13 +110,36 @@
 
       play : function() {
         if( this.playing ) {
-          clearInterval(this.playingTimer);
+          clearTimeout(this.playingTimer);
           this.$.playIcon.className = 'fa fa-play';
         } else {
-          this.playingTimer = setInterval(this.next.bind(this), 500);
+          this.startPlaying();
           this.$.playIcon.className = 'fa fa-pause';
         }
         this.playing = !this.playing;
+      },
+
+      startPlaying : function() {
+        this.animationFrameCount = 0;
+        this.animateNext();
+      },
+
+      animateNext : function() {
+        this.animationFrameCount++;
+
+        if( this.animationFrameCount === this.subFrames+1 ) {
+          this.animationFrameCount = 1;
+          this.current = new Date(this.current.getFullYear(), this.current.getMonth()+1, 1);
+          this.setDate();
+          this.setInputs();
+          this.getData(function(){
+            if( !this.playing ) return; // the pause button my have been hit
+            this.animationTimer = setTimeout(this.animateNext.bind(this), this.speed);
+          }.bind(this));
+        } else {
+          this.timeslice.render();
+          this.animationTimer = setTimeout(this.animateNext.bind(this), this.speed);
+        }
       },
 
       onNumInput : function() {
@@ -204,14 +230,7 @@
 
         for( i = 0; i < features.length; i++ ) {
           f = features[i].properties;
-
-          for( key in f ) {
-            if( key !== 'id' && key !== 'scaled' && key !== 'prmname' ) {
-              break;
-            }
-          }
-
-          label.push('<b>'+f.prmname+':</b> '+key+' = '+f[key]);
+          label.push('<b>'+f.prmname+':</b> '+f.type+' = '+f[f.type]);
         }
 
         if( features.length > 0 ) {
@@ -224,9 +243,10 @@
       },
 
 
-      getData : function() {
+      getData : function(callback) {
         if( this.cache[this.date] ) {
           this.onResponse(this.cache[this.date].data);
+          if( callback ) callback();
         } else {
           $.get('/network/timeslice?date='+this.date, function(resp){
             this.cache[resp.date] = resp;
@@ -234,11 +254,15 @@
             if( resp.error ) {
               console.log('No data for: '+this.date);
               this.timeslice.removeAll();
+              if( callback ) callback();
               return;
             }
 
+            resp.lookup = {};
             for( var i = 0; i < resp.data.length; i++ ) {
-              resp.data[i] = JSON.parse(resp.data[i]);
+              var geojson = JSON.parse(resp.data[i]);
+              resp.data[i] = geojson;
+              resp.lookup[geojson.properties.prmname+'-'+geojson.properties.type] = geojson;
             }
 
             resp.data.sort(function(a, b){
@@ -261,38 +285,41 @@
             });
 
             this.onResponse(resp.data);
+            if( callback ) callback();
           }.bind(this));
         }
       },
 
       render : function(ctx, point, map, feature) {
         var color;
-        var o = this.getOpacity(feature.geojson.properties);
+
+
+        var value = feature.geojson.properties.value;
+        if( this.playing && this.animationFrameCount < this.subFrames ) {
+          var fCount = this.animationFrameCount;
+          if( fCount === 0 ) fCount = 1;
+          value = feature.geojson.properties.frames[fCount-1];
+        }
+
+        var o = this.getOpacity(feature.geojson.properties, value);
 
         if( feature.geojson.geometry.type === 'Point' ) {
 
-          if( feature.geojson.properties.inflows && this.filters.inflows ) {
+          if( feature.geojson.properties.type === 'inflows' && this.filters.inflows ) {
             color = 'rgba(68,138,255,'+o+')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'inflows');
-          }
-
-          if( feature.geojson.properties.sinks && this.filters.sinks ) {
+            this.renderPoint(ctx, point, value, color, 'inflows');
+          } else if( feature.geojson.properties.type === 'sinks' && this.filters.sinks ) {
             color = 'rgba(211,47,47,'+o+')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'sinks');
-          }
-
-          if( feature.geojson.properties.storage && this.filters.storage ) {
+            this.renderPoint(ctx, point, value, color, 'sinks');
+          } else if( feature.geojson.properties.type === 'storage' && this.filters.storage ) {
             color = 'rgba(255,87,34,'+o+')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'storage');
-          }
-
-          if( feature.geojson.properties.evaporation && this.filters.evaporation ) {
-            //color = 'rgba(0,121,107,'+o+')';
+            this.renderPoint(ctx, point, value, color, 'storage');
+          } else if( feature.geojson.properties.type === 'evaporation' && this.filters.evaporation ) {
             color = 'rgba(255,235,59,'+o+')';
-            this.renderPoint(ctx, point, feature.geojson.properties.value, color, 'evaporation');
+            this.renderPoint(ctx, point, value, color, 'evaporation');
           }
 
-        } else if( feature.geojson.properties.flow && this.filters.flow ){
+        } else if( feature.geojson.properties.type === 'flow' && this.filters.flow ){
           ctx.beginPath();
 
           ctx.moveTo(point[0].x, point[0].y);
@@ -301,7 +328,7 @@
           ctx.lineCap = 'round';
           ctx.strokeStyle = 'rgba(56,142,60,'+o+')';
 
-          var width = Math.ceil((this.filters.flow ? this.filters.flow.size : 12)*feature.geojson.properties.value);
+          var width = Math.ceil((this.filters.flow ? this.filters.flow.size : 12)*value);
 
           if( width < 1 ) width = 1;
           ctx.lineWidth = width;
@@ -310,17 +337,9 @@
         }
       },
 
-      getOpacity : function(properties) {
-        var type = '', value = properties.value;
-        for( var key in properties ) {
-          if( key === 'prmname' || key === 'value' ) {
-            continue;
-          }
-          type = key;
-          break;
-        }
-
-        if( this.filters[key] && this.filters[key].log ) {
+      getOpacity : function(properties, value) {
+        if( isNaN(value) ) debugger;
+        if( this.filters[properties.type] && this.filters[properties.type].log ) {
           value = value * .9;
           if( value < .1 ) return .1;
           return value;
@@ -349,10 +368,20 @@
 
         if( data.length == 0 ) return;
 
+        var previous = new Date(this.current.getFullYear(), this.current.getMonth()-1, 1);
+        var m = previous.getMonth()+1;
+        if( m < 10 ) m = '0'+m;
+        previous = previous.getFullYear()+'-'+m;
+        var previousData = this.cache[previous];
+
+        var used = {};
+
         for( var i = 0; i < data.length; i++ ) {
           // TODO: don't recalc if we don't need to
           //if( !data[i].properties.scaled ) {
-            this.scale(data[i].properties);
+            var id = data[i].properties.prmname+'-'+data[i].properties.type;
+            used[id] = 1;
+            this.scale(data[i].properties, previousData ? previousData.lookup[id] : null);
           //}
 
           this.timeslice.addFeature({
@@ -360,6 +389,32 @@
             render: this.render.bind(this)
           });
         }
+
+        var disappeared = [];
+        if( previousData ) {
+          for( var key in previousData.lookup ) {
+            if( !used[key] ) {
+              // push a new properties with a 0 value
+              var newNode = $.extend(true, {}, previousData.lookup[key]);
+              newNode.properties[newNode.properties.type] = 0;
+
+              // scale the new node
+              this.scale(newNode.properties, previousData.lookup[key]);
+
+              // add to data
+              data.push(newNode);
+              this.cache[this.date].lookup[key] = newNode;
+
+              // add to layer
+              this.timeslice.addFeature({
+                geojson: newNode,
+                render: this.render.bind(this)
+              });
+            }
+          }
+        }
+        //console.log(disappeared);
+
 
         this.timeslice.render();
 
@@ -371,28 +426,47 @@
         }
       },
 
-      scale : function(properties) {
-        for( var key in properties ) {
-          if( this.minMax[key] ) {
-            properties.value = properties[key] * 1000;
+      scale : function(properties, previousData) {
+        var previous = 0;
+        if( previousData ) {
+          previous = previousData.properties.value;
+        }
 
-            if( properties.value < 1 ) {
-              properties.value = 0;
-            } else {
-              if( this.filters[key] ) {
-                if( this.filters[key].log ) {
-                  properties.value = Math.log(properties.value) / this.minMax[key].max;
-                } else {
-                  properties.value = properties.value / this.minMax[key].max;
-                }
-              }
-            }
-            if( properties.value > 1 ) {
-              properties.value = 1;
-            }
+        if( !this.minMax[properties.type] ) return;
 
+        var value = this.calcValue(properties.type, properties[properties.type]);
+        properties.value = value;
+
+        properties.frames = [];
+        var diff = value - previous;
+        for( var i = 1; i < this.subFrames; i++ ) {
+          if( diff < 0 ) {
+            properties.frames.push(previous + (diff * (1/this.subFrames) * i));
+          } else {
+            properties.frames.push(previous + (diff * (1/this.subFrames) * i));
           }
         }
+      },
+
+      calcValue : function(type, value) {
+        value = value * 1000;
+
+        if( value < 1 ) {
+          value = 0;
+        } else {
+          if( this.filters[type] ) {
+            if( this.filters[type].log ) {
+              value = Math.log(value) / this.minMax[type].max;
+            } else {
+              value = value / this.minMax[type].max;
+            }
+          }
+        }
+        if( value > 1 ) {
+          value = 1;
+        }
+
+        return value;
       }
     });
   </script>
