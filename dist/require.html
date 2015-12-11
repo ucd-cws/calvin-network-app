@@ -15249,18 +15249,21 @@ Polymer({
         display: block;
       }
       .filterItem {
-        padding-left: 8px;
-        padding-top: 4px;
+        margin-left: 8px;
+        margin-top: 4px;
+      }
+      .filterLabel {
+        border-bottom: 1px solid #eee;
       }
     </style>
 
-    <h4 class="page-header">Animation Layer</h4>
+    <h4 class="page-header" style="margin-top: 15px">&nbsp;Animation Layer</h4>
 
     <template is="dom-repeat" items="{{filters}}">
       <div style="padding: 15px 15px">
-        <div>
-          <input type="checkbox" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update">
-          <span style="font-weight: bold; text-transform:capitalize" for$="{{item.type}}">{{item.type}}</span>
+        <div class="filterLabel">
+          <input type="checkbox" style="vertical-align:top" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update">
+          <span style="font-weight: bold; text-transform:capitalize; vertical-align:top" for$="{{item.type}}">{{item.type}}</span>
 
           <canvas name$="{{item.type}}" width="26" height="26" style="text-align:middle; padding: 0 15px"></canvas>
         </div>
@@ -15268,11 +15271,11 @@ Polymer({
           <table>
             <tbody><tr>
               <td>
-                Max Size: <input type="number" class="form-control" style="display:inline-block; width:50px" name$="{{item.type}}" value="{{item.size}}" on-change="updateSize">
+                Max Size: <input type="number" class="form-control" style="display:inline-block; width:40px" name$="{{item.type}}" value="{{item.size}}" on-change="updateSize">
               </td>
               <td>px</td>
-              <td>
-                &nbsp; (<span class="maxLabel" name$="{{item.type}}"></span> kaf)
+              <td style="font-size: 11px; color: #888; font-style: italic">
+                &nbsp; <span class="maxLabel" name$="{{item.type}}"></span> kaf
               </td>
             </tr>
           </tbody></table>
@@ -15749,9 +15752,10 @@ Polymer({
         if( this.minMaxOrg ) this.scaleMinMax();
         if( this.timeslice && this.timeslice.features ) {
           for( var i = 0; i < this.timeslice.features.length; i++ ) {
-            this.scale(this.timeslice.features[i].geojson.properties);
+            this.scale(this.timeslice.features[i].geojson.properties, null, true);
           }
         }
+
 
         if( this.timeslice ) this.timeslice.render();
       },
@@ -15776,8 +15780,6 @@ Polymer({
         this.animationFrameCount++;
 
         if( this.animationFrameCount === this.subFrames+1 ) {
-          this.animationFrameCount = 1;
-
           this.current = new Date(this.current.getFullYear(), this.current.getMonth()+1, 1);
           this.setDate();
           this.setInputs();
@@ -15865,7 +15867,11 @@ Polymer({
 
         // grab real features
         var array = [];
+        var nodes = {};
         for( var i = 0; i < features.length; i++ ) {
+          if( nodes[features[i].properties.prmname] ) continue;
+          nodes[features[i].properties.prmname] = 1;
+
           array.push(CWN.ds.lookupMap[features[i].properties.prmname]);
         }
 
@@ -15894,6 +15900,7 @@ Polymer({
 
       getData : function(callback) {
         if( this.cache[this.date] ) {
+          this.animationFrameCount = 1;
           this.onResponse(this.cache[this.date].data);
           if( callback ) callback();
         } else {
@@ -15933,6 +15940,7 @@ Polymer({
               return 0;
             });
 
+            this.animationFrameCount = 1;
             this.onResponse(resp.data);
             if( callback ) callback();
           }.bind(this));
@@ -15941,7 +15949,6 @@ Polymer({
 
       render : function(ctx, point, map, feature) {
         var color;
-
 
         var value = feature.geojson.properties.value;
         if( this.playing && this.animationFrameCount < this.subFrames ) {
@@ -15989,8 +15996,9 @@ Polymer({
 
           ctx.beginPath();
           ctx.lineWidth = 2;
-          ctx.arc(x+point[0].x, y+point[0].y, (this.filters.flow ? this.filters.flow.size*.8 : 12*.8) * value, 0, 2*Math.PI);
-          ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,'+(o-.1)+')';
+          ctx.arc(x+point[0].x, y+point[0].y, (this.filters.flow ? this.filters.flow.size*.5 : 12*.5) * value, 0, 2*Math.PI);
+          ctx.fill();
         }
       },
 
@@ -16050,7 +16058,7 @@ Polymer({
         var disappeared = [];
         if( previousData ) {
           for( var key in previousData.lookup ) {
-            if( !used[key] ) {
+            if( previousData.lookup[key].properties.value !== 0 && !used[key] ) {
               // push a new properties with a 0 value
               var newNode = $.extend(true, {}, previousData.lookup[key]);
               newNode.properties[newNode.properties.type] = 0;
@@ -16083,7 +16091,7 @@ Polymer({
         }
       },
 
-      scale : function(properties, previousData) {
+      scale : function(properties, previousData, firstRender) {
         var previous = 0;
         if( previousData ) {
           previous = previousData.properties.value;
@@ -16097,6 +16105,11 @@ Polymer({
         properties.frames = [];
         var diff = value - previous;
         for( var i = 1; i < this.subFrames; i++ ) {
+          if( firstRender ) { // we are just getting going
+            properties.frames.push(value);
+            continue;
+          }
+
           if( diff < 0 ) {
             properties.frames.push(previous + (diff * (1/this.subFrames) * i));
           } else {

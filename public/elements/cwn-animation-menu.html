@@ -5,18 +5,21 @@
         display: block;
       }
       .filterItem {
-        padding-left: 8px;
-        padding-top: 4px;
+        margin-left: 8px;
+        margin-top: 4px;
+      }
+      .filterLabel {
+        border-bottom: 1px solid #eee;
       }
     </style>
 
-    <h4 class="page-header">Animation Layer</h4>
+    <h4 class="page-header" style="margin-top: 15px">&nbsp;Animation Layer</h4>
 
     <template is="dom-repeat" items="{{filters}}">
       <div style="padding: 15px 15px">
-        <div>
-          <input type="checkbox" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update" />
-          <span style="font-weight: bold; text-transform:capitalize" for$="{{item.type}}">{{item.type}}</span>
+        <div class="filterLabel">
+          <input type="checkbox" style="vertical-align:top" id$="{{item.type}}" checked$="{{item.value}}" value="{{item.type}}" on-click="update" />
+          <span style="font-weight: bold; text-transform:capitalize; vertical-align:top" for$="{{item.type}}">{{item.type}}</span>
 
           <canvas name$="{{item.type}}" width="26" height="26" style="text-align:middle; padding: 0 15px"></canvas>
         </div>
@@ -26,15 +29,15 @@
               <td>
                 Max Size: <input type="number"
                             class="form-control"
-                            style="display:inline-block; width:50px"
+                            style="display:inline-block; width:40px"
                             name$="{{item.type}}"
                             value="{{item.size}}"
                             on-change="updateSize"
                             />
               </td>
               <td>px</td>
-              <td>
-                &nbsp; (<span class="maxLabel" name$="{{item.type}}"></span> kaf)
+              <td style="font-size: 11px; color: #888; font-style: italic">
+                &nbsp; <span class="maxLabel" name$="{{item.type}}"></span> kaf
               </td>
             </tr>
           </table>
