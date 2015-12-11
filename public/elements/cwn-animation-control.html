@@ -129,6 +129,7 @@
 
         if( this.animationFrameCount === this.subFrames+1 ) {
           this.animationFrameCount = 1;
+
           this.current = new Date(this.current.getFullYear(), this.current.getMonth()+1, 1);
           this.setDate();
           this.setInputs();
@@ -328,11 +329,19 @@
           ctx.lineCap = 'round';
           ctx.strokeStyle = 'rgba(56,142,60,'+o+')';
 
-          var width = Math.ceil((this.filters.flow ? this.filters.flow.size : 12)*value);
+          var width = Math.ceil((this.filters.flow ? this.filters.flow.size : 12) * value);
 
           if( width < 1 ) width = 1;
           ctx.lineWidth = width;
 
+          ctx.stroke();
+
+          var x = (point[1].x - point[0].x) * (this.animationFrameCount / this.subFrames);
+          var y = (point[1].y - point[0].y) * (this.animationFrameCount / this.subFrames);
+
+          ctx.beginPath();
+          ctx.lineWidth = 2;
+          ctx.arc(x+point[0].x, y+point[0].y, (this.filters.flow ? this.filters.flow.size*.8 : 12*.8) * value, 0, 2*Math.PI);
           ctx.stroke();
         }
       },
