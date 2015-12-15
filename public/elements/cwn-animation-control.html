@@ -137,10 +137,19 @@
             if( !this.playing ) return; // the pause button my have been hit
             this.animationTimer = setTimeout(this.animateNext.bind(this), this.speed);
           }.bind(this));
+          this.prefetch();
         } else {
           this.timeslice.render();
           this.animationTimer = setTimeout(this.animateNext.bind(this), this.speed);
         }
+      },
+
+      prefetch : function() {
+        var next = new Date(this.current.getFullYear(), this.current.getMonth()+1,1);
+        var m = next.getMonth()+1;
+        if( m < 10 ) m = '0'+m;
+        next = next.getFullYear()+'-'+m;
+        this.requestData(next);
       },
 
       onNumInput : function() {
@@ -254,47 +263,53 @@
           this.onResponse(this.cache[this.date].data);
           if( callback ) callback();
         } else {
-          $.get('/network/timeslice?date='+this.date, function(resp){
-            this.cache[resp.date] = resp;
-
-            if( resp.error ) {
-              console.log('No data for: '+this.date);
-              this.timeslice.removeAll();
-              if( callback ) callback();
-              return;
-            }
-
-            resp.lookup = {};
-            for( var i = 0; i < resp.data.length; i++ ) {
-              var geojson = JSON.parse(resp.data[i]);
-              resp.data[i] = geojson;
-              resp.lookup[geojson.properties.prmname+'-'+geojson.properties.type] = geojson;
-            }
-
-            resp.data.sort(function(a, b){
-              if( a.properties.flow ) return -1;
-              if( b.properties.flow ) return 1;
-
-              if( a.properties.evaporation ) return -1;
-              if( b.properties.evaporation ) return 1;
-
-              if( a.properties.storage ) return -1;
-              if( b.properties.storage ) return 1;
-
-              if( a.properties.inflow ) return -1;
-              if( b.properties.inflow ) return 1;
-
-              if( a.properties.sinks ) return -1;
-              if( b.properties.sinks ) return 1;
-
-              return 0;
-            });
-
+          this.requestData(this.date, function(resp){
             this.animationFrameCount = 1;
             this.onResponse(resp.data);
             if( callback ) callback();
           }.bind(this));
         }
+      },
+
+      requestData : function(date, callback) {
+        $.get('/network/timeslice?date='+date, function(resp){
+          this.cache[date] = resp;
+
+          if( resp.error ) {
+            console.log('No data for: '+date);
+            this.timeslice.removeAll();
+            if( callback ) callback(resp);
+            return;
+          }
+
+          resp.lookup = {};
+          for( var i = 0; i < resp.data.length; i++ ) {
+            var geojson = JSON.parse(resp.data[i]);
+            resp.data[i] = geojson;
+            resp.lookup[geojson.properties.prmname+'-'+geojson.properties.type] = geojson;
+          }
+
+          resp.data.sort(function(a, b){
+            if( a.properties.flow ) return -1;
+            if( b.properties.flow ) return 1;
+
+            if( a.properties.evaporation ) return -1;
+            if( b.properties.evaporation ) return 1;
+
+            if( a.properties.storage ) return -1;
+            if( b.properties.storage ) return 1;
+
+            if( a.properties.inflow ) return -1;
+            if( b.properties.inflow ) return 1;
+
+            if( a.properties.sinks ) return -1;
+            if( b.properties.sinks ) return 1;
+
+            return 0;
+          });
+
+          if( callback ) callback(resp);
+        }.bind(this));
       },
 
       render : function(ctx, point, map, feature) {
