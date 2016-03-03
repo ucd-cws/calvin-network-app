@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "async": "^1.5.2",
-    "calvin-network-tools": "github:ucd-cws/calvin-network-tools",
+    "calvin-network-tools": "^1.0.11",
     "confit": "^2.0.3",
     "construx": "^1.0.0",
     "construx-copier": "^1.0.0",
