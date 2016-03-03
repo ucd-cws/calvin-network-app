@@ -193,7 +193,7 @@ function Datastore() {
 
                 for( var i = 0; i < this.data.regions.length; i++ ) {
                   this.processRegion(this.data.regions[i]);
-                  this.regionLookupMap[this.data.regions[i].name] = this.data.regions[i];
+                  this.regionLookupMap[this.data.regions[i].properties.id] = this.data.regions[i];
                 }
 
                 done();
@@ -270,38 +270,37 @@ function Datastore() {
     }
 
     this.processRegion = function(region) {
-      if( region.subregions ) {
-        region.subregions.sort();
+      if( region.properties.subregions ) {
+        region.properties.subregions.sort();
       }
 
-      if( !region.geo ) return;
-      if( !region.geo.geometry ) return;
+      if( !region.geometry ) return;
 
       //if( region.name == 'western-uplands' ) debugger;
 
-      var polys = this.getXYPolygons(region.geo);
+      var polys = this.getXYPolygons(region);
 
-      region.simplified = [];
+      region.properties.simplified = [];
       for( var i = 0; i < polys.length; i++ ) {
         if( polys[i].length > 100 ) {
-          region.simplified.push(L.LineUtil.simplify(polys[i], .001));
+          region.properties.simplified.push(L.LineUtil.simplify(polys[i], 0.001));
         } else {
-          region.simplified.push(polys[i]);
+          region.properties.simplified.push(polys[i]);
         }
       }
 
-      region.center = this.getCenter(region.simplified[0]);
+      region.properties.center = this.getCenter(region.properties.simplified[0]);
 
       // todo calc bbox so we know if we need to render geometry or not
 
-      for( var i = 0; i < region.simplified.length; i++ ) {
-        for( var j = 0; j < region.simplified[i].length; j++ ) {
-          region.simplified[i][j] = [region.simplified[i][j].x, region.simplified[i][j].y]
+      for( var i = 0; i < region.properties.simplified.length; i++ ) {
+        for( var j = 0; j < region.properties.simplified[i].length; j++ ) {
+          region.properties.simplified[i][j] = [region.properties.simplified[i][j].x, region.properties.simplified[i][j].y]
         }
       }
 
       // HACK
-      if( isNaN(region.center[0]) ) region.center = region.simplified[0][0];
+      if( isNaN(region.properties.center[0]) ) region.properties.center = region.properties.simplified[0][0];
     }
 
     this.getXYPolygons = function(geojson) {

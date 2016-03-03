@@ -239,7 +239,7 @@
 
             for( var i = 0; i < CWN.ds.data.regions.length; i++ ) {
               this.markerLayer.addFeature({
-                geojson: CWN.ds.data.regions[i].geo,
+                geojson: CWN.ds.data.regions[i],
                 render: CWN.map.renderer.basic
               })
             }
@@ -463,16 +463,16 @@
           var state = this.menu.state;
 
           if( state.enabled.indexOf(name) > -1 ) {
-            this._addStateNodes(region.nodes, state);
+            this._addStateNodes(region.properties.nodes, state);
 
-            if( !region.subregions ) return;
+            if( !region.properties.subregions ) return;
 
-            for( var i = 0; i < region.subregions.length; i++ ) {
-              this._updateRenderState(region.subregions[i]);
+            for( var i = 0; i < region.properties.subregions.length; i++ ) {
+              this._updateRenderState(region.properties.subregions[i]);
             }
           } else {
 
-            if( name != 'California' ) this.renderState.polygons.push(region.geo);
+            if( name != 'California' ) this.renderState.polygons.push(region);
           }
         },
 
@@ -540,7 +540,6 @@
 
         createCustomLink : function(origin, terminal, node) {
           var self = this;
-
           var feature = null;
           if( this.customLines[origin.name+'_'+terminal.name] ) {
             feature = this.customLines[origin.name+'_'+terminal.name];
@@ -590,9 +589,9 @@
 
           for( var i = 0; i < node.properties.regions.length; i++ ) {
             if( state.disabled.indexOf(node.properties.regions[i]) > -1 ) {
-              if( CWN.ds.regionLookupMap[node.properties.regions[i]].center ) {
+              if( CWN.ds.regionLookupMap[node.properties.regions[i]].properties.center ) {
                 return {
-                  center: CWN.ds.regionLookupMap[node.properties.regions[i]].center,
+                  center: CWN.ds.regionLookupMap[node.properties.regions[i]].properties.center,
                   name: node.properties.regions[i],
                   isRegion : true
                 };

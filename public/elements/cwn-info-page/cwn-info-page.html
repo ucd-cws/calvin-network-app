@@ -242,11 +242,11 @@ Polymer({
           nodes : Object.keys(nodes),
           origins : origins,
           terminals : terminals,
-          parents : region.parents,
-          subregions : region.subregions,
-          repo : region.geo.properties.repo,
-          label : region.geo.properties.name,
-          description : region.geo.properties.region
+          parents : region.properties.parents,
+          subregions : region.properties.subregions,
+          repo : region.properties.repo,
+          label : region.properties.name,
+          description : region.properties.region
         }
       };
     },
@@ -271,13 +271,13 @@ Polymer({
       if( CWN.ds.lookupMap[parts[0]] ) {
         node.properties.origin = CWN.ds.lookupMap[parts[0]].properties.prmname;
       } else if( CWN.ds.regionLookupMap[parts[0]] ) {
-        node.properties.origin = CWN.ds.regionLookupMap[parts[0]].name;
+        node.properties.origin = CWN.ds.regionLookupMap[parts[0]].properties.id;
       }
 
       if( CWN.ds.lookupMap[parts[1]] ) {
         node.properties.terminus = CWN.ds.lookupMap[parts[1]].properties.prmname;
       } else if( CWN.ds.regionLookupMap[parts[1]] ) {
-        node.properties.terminus = CWN.ds.regionLookupMap[parts[1]].name;
+        node.properties.terminus = CWN.ds.regionLookupMap[parts[1]].properties.id;
       }
 
       if( !node.properties.origin || !node.properties.terminus ) {
@@ -290,7 +290,6 @@ Polymer({
 
     update : function() {
       if( CWN.ds.loading ) return;
-
       if( this.feature == null ) return alert('Feature not found');
 
       this.hasOutputs = false;

@@ -19,7 +19,6 @@ module.exports = function(region, callback) {
 
     utils.getNodesInRegion(region, function(err, nodelist){
       utils.sumAll(nodelist, sum, function(err, data){
-
         utils.getLinksInRegion(nodelist, function(err, links) {
           if( err ) {
             return callback(err);
@@ -87,6 +86,8 @@ function sum(sum, item) {
         for( i = 0; i < inflow.length; i++ ) {
           if( i === 0 && typeof inflow[0][1] === 'string' ) {
             continue;
+          } else if( typeof inflow[i][1] === 'string' ) {
+            console.log('BADNESS!! '+inflow[i][0]+' '+inflow[i][1]);
           }
 
           if( sum[inflow[i][0]] === undefined ) {

@@ -106,10 +106,10 @@
             var region = CWN.ds.regionLookupMap[name];
 
             if( !region ) return;
-            if( !region.subregions ) return;
+            if( !region.properties.subregions ) return;
 
-            for( var i = 0; i < region.subregions.length; i++ ) {
-              this._getEnabled(region.subregions[i]);
+            for( var i = 0; i < region.properties.subregions.length; i++ ) {
+              this._getEnabled(region.properties.subregions[i]);
             }
           } else {
             this.state.disabled.push(name);
@@ -125,10 +125,10 @@
             var ref = this;
             var region = CWN.ds.regionLookupMap[regionName];
 
-            var id = region.name;
+            var id = region.properties.id;
             var label = id;
-            if( region.geo.properties && region.geo.properties.name ) {
-              label = region.geo.properties.name;
+            if( region.properties && region.properties.name ) {
+              label = region.properties.name;
             }
 
             var enabled = false;
@@ -173,10 +173,10 @@
               }.bind(this));
 
 
-            if( !region.subregions ) return;
+            if( !region.properties.subregions ) return;
 
-            for( var i = 0; i < region.subregions.length; i++ ) {
-                this.renderRegion(region.subregions[i], children[0]);
+            for( var i = 0; i < region.properties.subregions.length; i++ ) {
+                this.renderRegion(region.properties.subregions[i], children[0]);
             }
         },
 

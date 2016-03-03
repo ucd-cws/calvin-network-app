@@ -63,7 +63,7 @@ function getNodesInRegion(name, callback) {
 }
 
 function _getNodesInRegion(name, list, callback) {
-  collection.findOne({name: name}, {nodes: 1, subregions: 1}, function(err, result){
+  collection.findOne({'properties.id': name}, {'properties.nodes': 1, 'properties.subregions': 1}, function(err, result){
     if( err ) {
       return callback(err);
     }
@@ -73,16 +73,16 @@ function _getNodesInRegion(name, list, callback) {
       return callback(null, list);
     }
 
-    for( var key in result.nodes ) {
-      if( result.nodes[key] === 'Diversion' || result.nodes[key] === 'Return Flow' ) {
+    for( var key in result.properties.nodes ) {
+      if( result.properties.nodes[key] === 'Diversion' || result.properties.nodes[key] === 'Return Flow' ) {
         continue;
       }
       list[key] = 1;
     }
 
-    if( result.subregions ) {
+    if( result.properties.subregions ) {
       async.eachSeries(
-        result.subregions,
+        result.properties.subregions,
         function(region, next) {
           _getNodesInRegion(region, list, next);
         },
@@ -97,26 +97,26 @@ function _getNodesInRegion(name, list, callback) {
   });
 }
 
-function getNodeType(prmname, callback) {
-  collection.findOne({name: prmname}, {name: 1}, function(err, result){
+function getNodeType(id, callback) {
+  collection.findOne({'properties.id': id}, {'properties.id': 1}, function(err, result){
     if( err ) {
       return callback(err);
     }
 
-    if( result && result.name === prmname) {
+    if( result && result.properties.id === id) {
       return callback(null, 'Region');
     }
 
-    networkCollection.findOne({'properties.prmname' : prmname}, {'properties.prmname': 1, 'properties.type': 1}, function(err, result){
+    networkCollection.findOne({'properties.prmname' : id}, {'properties.prmname': 1, 'properties.type': 1}, function(err, result){
       if( err ) {
         return callback(err);
       }
 
-      if( result && result.properties && result.properties.prmname === prmname) {
+      if( result && result.properties && result.properties.prmname === id) {
         return callback(null, result.properties.type);
       }
 
-      callback('Unknown Node: '+prmname);
+      callback('Unknown Node: '+id);
     });
   });
 }

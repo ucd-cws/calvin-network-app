@@ -44,10 +44,10 @@
 
     getLabel : function(name) {
       var region = CWN.ds.regionLookupMap[name];
-      if( region && region.geo.properties.name ) {
+      if( region && region.properties.name ) {
         return {
-          label : region.geo.properties.name,
-          id : region.geo.properties.id
+          label : region.properties.name,
+          id : region.properties.id
         }
       }
       return {
