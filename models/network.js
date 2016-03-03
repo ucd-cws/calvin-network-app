@@ -18,7 +18,16 @@ module.exports = function() {
 };
 
 function getNetwork(callback) {
-  global.setup.collection.find({},{_id:0}).toArray(callback);
+  console.log(1);
+  console.log(global.setup.collection);
+  global.setup.collection
+    .find({},{_id:0})
+    .toArray(function(err, resp){
+      console.log(2);
+      console.log(err);
+      console.log(resp);
+      callback(err, resp);
+    });
 }
 
 function getExtras(prmname, callback) {

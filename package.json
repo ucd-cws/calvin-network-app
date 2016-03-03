@@ -17,7 +17,8 @@
     "all": "npm run build && npm run test"
   },
   "dependencies": {
-    "async": "^1.4.2",
+    "async": "^1.5.2",
+    "calvin-network-tools": "github:ucd-cws/calvin-network-tools",
     "confit": "^2.0.3",
     "construx": "^1.0.0",
     "construx-copier": "^1.0.0",
