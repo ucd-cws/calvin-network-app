@@ -14,6 +14,11 @@ module.exports = function copyto(grunt) {
                 dest: 'dist/'
             },
             {
+                cwd: 'public/js',
+                src: ['webcomponents.js'],
+                dest: 'dist/js/'
+            },
+            {
                 cwd: 'public/bower_components/font-awesome',
                 src: ['fonts/**/*'],
                 dest: 'dist/'
