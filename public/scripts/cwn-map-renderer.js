@@ -10,7 +10,12 @@ CWN.map.renderer.basic = function(ctx, xyPoints, map, feature) {
   if( feature.geojson.geometry.type == 'Point' ) {
     renderBasicPoint(ctx, xyPoints, map, feature, render);
   } else if ( feature.geojson.geometry.type == 'LineString' ) {
-    renderBasicLine(ctx, xyPoints, map, feature, render);
+    console.log(feature.geojson.properties.type);
+    if( feature.geojson.properties.type === 'Region Link' ) {
+      renderRegionLine(ctx, xyPoints, map, feature, render);
+    } else {
+      renderBasicLine(ctx, xyPoints, map, feature, render);
+    }
   } else if ( feature.geojson.geometry.type == 'Polygon' ) {
     renderBasicPolygon(ctx, xyPoints, map, feature, render);
   } else if ( feature.geojson.geometry.type == 'MultiPolygon' ) {
@@ -19,6 +24,15 @@ CWN.map.renderer.basic = function(ctx, xyPoints, map, feature) {
       renderBasicPolygon(ctx, points, map, feature, render);
     });
   }
+}
+
+function renderRegionLine(ctx, xyPoints, map, feature, render) {
+  ctx.beginPath();
+  ctx.strokeStyle = CWN.colors.orange;
+  ctx.lineWidth = 2;
+  ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
+  ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
+  ctx.stroke();
 }
 
 function renderBasicPoint(ctx, xyPoints, map, feature, render) {

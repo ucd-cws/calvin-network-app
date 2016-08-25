@@ -33,6 +33,7 @@ function aggregateRegionLinks(n1, n2, callback) {
   };
 
   aggregateRegionLink(n1, n2, function(err, data){
+    if( !data ) data = {};
     data.origin = n1;
     data.terminus = n2;
 

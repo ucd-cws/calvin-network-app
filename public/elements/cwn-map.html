@@ -131,7 +131,7 @@
                 this.markerLayer.render();
 
                 setTimeout(function(){
-                  ref.onRegionClick(features[0].properties.id);
+                  ref.onRegionClick(features[0].properties.hobbes.id);
 
                   features[0].properties._render.hover = false;
                   this.markerLayer.render();
@@ -161,23 +161,6 @@
           setTimeout(function(){
               this.map.invalidateSize();
           }.bind(this), 200);
-        },
-
-        renderRegionLine : function(ctx, xyPoints, config, feature) {
-
-          /*ctx.beginPath();
-          ctx.strokeStyle = CWN.colors.orange;
-          ctx.lineWidth = 6;
-          ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
-          ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
-          ctx.stroke();*/
-
-          ctx.beginPath();
-          ctx.strokeStyle = CWN.colors.orange;
-          ctx.lineWidth = 2;
-          ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
-          ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
-          ctx.stroke();
         },
 
         onMouseMove : function(features, e) {
@@ -358,32 +341,6 @@
                 }
             }
 
-            // now mark one step nodes
-            /*for( i = 0; i < CWN.ds.data.nodes.length; i++ ) {
-                d = CWN.ds.data.nodes[i];
-                if( d.properties._render.show ) continue;
-                if( !this.mapFilters.calibrationMode && d.properties.calibrationNode ) continue;
-
-                if( d.properties.terminals ) {
-                    for( var j = 0; j < d.properties.terminals.length; j++ ) {
-                        d2 = CWN.ds.lookupMap[d.properties.terminals[j]];
-                        if( d2 && d2.properties._render.show ) {
-                            d.properties._render.oneStep = true;
-                            break;
-                        }
-                    }
-                }
-                if( d.properties.origins && !d.properties._render.oneStep) {
-                    for( var j = 0; j < d.properties.origins.length; j++ ) {
-                        d2 = CWN.ds.lookupMap[d.properties.origins[j]];
-                        if( d2 && d2.properties._render.show ) {
-                            d.properties._render.oneStep = true;
-                            break;
-                        }
-                    }
-                }
-            }*/
-
             // now mark links that should be show
             for( var i = 0; i < CWN.ds.data.links.length; i++ ) {
                 d = CWN.ds.data.links[i];
@@ -463,12 +420,12 @@
           var state = this.menu.state;
 
           if( state.enabled.indexOf(name) > -1 ) {
-            this._addStateNodes(region.properties.nodes, state);
+            this._addStateNodes(region.properties.hobbes.nodes, state);
 
-            if( !region.properties.subregions ) return;
+            if( !region.properties.hobbes.subregions ) return;
 
-            for( var i = 0; i < region.properties.subregions.length; i++ ) {
-              this._updateRenderState(region.properties.subregions[i]);
+            for( var i = 0; i < region.properties.hobbes.subregions.length; i++ ) {
+              this._updateRenderState(region.properties.hobbes.subregions[i]);
             }
           } else {
 
@@ -489,16 +446,19 @@
             }
           }
 
-          for( var prmname in nodes ) {
-            var node = CWN.ds.lookupMap[prmname];
+          for( var id in nodes ) {
+            var node = CWN.ds.hobbesLookupMap[id];
 
             // TODO: why!?
-            if( !node ) continue;
+            if( !node ) {
+              continue;
+            }
 
             var render = node.properties._render || {};
             if( render.show === false ) continue;
 
             if( node.properties.type == 'Diversion' || node.properties.type == 'Return Flow' ) {
+              debugger;
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
               var origin = this._getStateNodeLocation(node.properties.origin, state);
 
@@ -560,9 +520,6 @@
                   type : 'Region Link',
                   lines : [$.extend(true, {}, node.properties)],
                 }
-              },
-              render : function(ctx, xyPoints, map) {
-                self.renderRegionLine(ctx, xyPoints, map, this);
               }
             }
 
@@ -587,12 +544,12 @@
 
           if( !node ) return null;
 
-          for( var i = 0; i < node.properties.regions.length; i++ ) {
-            if( state.disabled.indexOf(node.properties.regions[i]) > -1 ) {
-              if( CWN.ds.regionLookupMap[node.properties.regions[i]].properties.center ) {
+          for( var i = 0; i < node.properties.hobbes.regions.length; i++ ) {
+            if( state.disabled.indexOf(node.properties.hobbes.regions[i]) > -1 ) {
+              if( CWN.ds.regionLookupMap[node.properties.hobbes.regions[i]].properties.center ) {
                 return {
-                  center: CWN.ds.regionLookupMap[node.properties.regions[i]].properties.center,
-                  name: node.properties.regions[i],
+                  center: CWN.ds.regionLookupMap[node.properties.hobbes.regions[i]].properties.center,
+                  name: node.properties.hobbes.regions[i],
                   isRegion : true
                 };
               }

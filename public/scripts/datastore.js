@@ -22,7 +22,7 @@ function Datastore() {
     this.originLookupMap = {};
     this.terminalLookupMap = {};
     this.regionLookupMap = {};
-    this.filenameLookupMap = {};
+    this.hobbesLookupMap = {};
 
     this.reset = function() {
         //this.fire('load', this.loading);
@@ -36,7 +36,7 @@ function Datastore() {
         this.originLookupMap = {};
         this.terminalLookupMap = {};
         this.regionLookupMap = {};
-        this.filenameLookupMap = {};
+        this.hobbesLookupMap = {};
     }
 
     this.reload = function(callback) {
@@ -163,6 +163,9 @@ function Datastore() {
                 }
 
                 for( var i = 0; i < resp.length; i++ ) {
+                  if( !resp[i].properties.description ) {
+                      resp[i].properties.description = '';
+                  }
                   if( resp[i].properties.type == 'Diversion' || resp[i].properties.type == 'Return Flow' ) {
                     this.processLink(resp[i]);
                   } else {
@@ -206,21 +209,6 @@ function Datastore() {
         });
     }
 
-    // cwne-fs-network-loader will be injected by the node-webkit app
-    // TODO: let the nw app set this
-    this.loadFromFileSystem = function(callback) {
-        if( !CWN.rootDir ) return;
-        document.querySelector('cwne-fs-network-loader').run(function(resp){
-            for( var i = 0; i < resp.nodes.length; i++ ) {
-                this.processNode(resp.nodes[i]);
-            }
-            for( var i = 0; i < resp.links.length; i++ ) {
-                this.processLink(resp.links[i]);
-            }
-            callback();
-        }.bind(this));
-    }
-
     this.processNode = function(node) {
         if( !node ) return;
         if( !node.properties ) return;
@@ -233,7 +221,7 @@ function Datastore() {
         }
 
         this.lookupMap[node.properties.prmname] = node;
-        this.filenameLookupMap[node.properties.repo.dirNodeName] = node;
+        this.hobbesLookupMap[node.properties.hobbes.id] = node;
     }
 
     this.processLink = function(link) {
@@ -252,7 +240,7 @@ function Datastore() {
         }
 
         this.lookupMap[link.properties.prmname] = link;
-        this.filenameLookupMap[link.properties.repo.dirNodeName] = link;
+        this.hobbesLookupMap[link.properties.hobbes.id] = link;
 
         // set the origin lookup map
         if( !this.originLookupMap[link.properties.origin] ) {
