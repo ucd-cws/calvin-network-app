@@ -6,9 +6,7 @@ var aggregateSinks = require('./aggregateSinks');
 var aggregateRegion = require('./aggregateRegion');
 var aggregateRegionLink = require('./aggregateRegionLink');
 
-var collection = global.setup.database.collection('regions');
-var networkCollection = global.setup.database.collection('network');
-var extrasCollection = global.setup.database.collection('node-extras');
+var db = require('../../lib/database');
 
 /*
  *   Currently supported types
@@ -26,9 +24,8 @@ module.exports = function() {
 };
 
 function getRegions(callback) {
-  collection.find({}).toArray(callback);
+  db.getRegions(callback);
 }
-
 
 function aggregateRegionLinks(n1, n2, callback) {
   var resp = {

@@ -193,7 +193,7 @@ function Datastore() {
 
                 for( var i = 0; i < this.data.regions.length; i++ ) {
                   this.processRegion(this.data.regions[i]);
-                  this.regionLookupMap[this.data.regions[i].properties.id] = this.data.regions[i];
+                  this.regionLookupMap[this.data.regions[i].properties.hobbes.id] = this.data.regions[i];
                 }
 
                 done();

@@ -59,9 +59,13 @@
     testForSocket : function(callback) {
       $.get('/rest/isDev', function(resp){
         if( resp && resp.isDev ) {
+          this.fire('is-dev', true);
+          this.dev = true;
           return callback(true);
         }
 
+        this.fire('is-dev', false);
+        this.dev = false;
         callback(false);
       }.bind(this));
     },

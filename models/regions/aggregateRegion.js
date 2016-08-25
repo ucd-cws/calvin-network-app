@@ -3,10 +3,6 @@
 var utils = require('./utils');
 var calcAmpLoss = require('./calcAmpLoss');
 
-var collection = global.setup.database.collection('regions');
-var networkCollection = global.setup.database.collection('network');
-var extrasCollection = global.setup.database.collection('node-extras');
-
 module.exports = function(region, callback) {
   utils.getNodeType(region, function(err, type){
     if( err ) {

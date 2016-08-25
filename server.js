@@ -3,7 +3,7 @@ var express = require('express');
 var kraken = require('kraken-js');
 var http = require('http');
 
-var db = require('./lib/mongo');
+var db = require('./lib/database');
 var devCon = require('./lib/dev');
 //var mqeLib = require('mongo-query-engine');
 var mqeLib = require('mongo-query-engine');
@@ -29,7 +29,18 @@ options = {
         config.use(require(config.get('mqe-local')));
       }
 
-      db.config(config.get('mqe'), function(err, database) {
+      db.init(config, function(err, database) {
+
+        if( config.get('dev') ) {
+          logger = {
+            info : function(msg) {
+              console.log(msg);
+            }
+          }
+          next(null, config);
+          onReady(config);
+          return;
+        }
 
         var mqeConfig = config.get('mqe');
         mqeConfig.rest.getParamParser = function(query) {
@@ -41,7 +52,7 @@ options = {
           return {'_id': query._id};
         };
 
-        var processor = require('./lib/processQuery')(database);
+        var processor = require('./lib/database/processMqeQuery')(database);
 
         mqeLib.init({
             config: config.get('mqe'),
@@ -88,6 +99,6 @@ function onReady(config) {
 
   server.listen(config.get('mqe').server.localport || process.env.PORT || 8000);
   server.on('listening', function () {
-      logger.info('Server listening on http://localhost:%d', this.address().port);
+      logger.info(`Server listening on http://localhost:${this.address().port}`);
   });
 }

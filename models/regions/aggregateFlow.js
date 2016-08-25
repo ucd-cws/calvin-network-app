@@ -1,9 +1,6 @@
 'use strict';
 var utils = require('./utils');
-
-var collection = global.setup.database.collection('regions');
-var networkCollection = global.setup.database.collection('network');
-var extrasCollection = global.setup.database.collection('node-extras');
+var db = require('../../lib/database');
 
 module.exports = function(origin, terminus, callback) {
   if( typeof terminus === 'string' ) {
@@ -96,6 +93,7 @@ function validateRegionFlow(origin, terminus, callback) {
 
 
 function runAggregate(originlist, terminallist, callback) {
+  var networkCollection = db.mongoConnection.collection('network');
   networkCollection.find({
     'properties.origin' : {
       '$in' : originlist

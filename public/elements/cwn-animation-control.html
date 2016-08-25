@@ -58,7 +58,22 @@
         this.animationMenu = document.querySelector('cwn-animation-menu');
         this.animationMenu.addEventListener('animation-filters-updated', this.onFiltersUpdated.bind(this));
         this.onFiltersUpdated();
-        this.loadMinMax();
+
+        var devElement = document.querySelector('cwn-dev');
+        if( devElement.dev === undefined ) {
+          devElement.addEventListener('is-dev', this.initRender.bind(this));
+        } else {
+          this.initRender({detail: devElement.dev});
+        }
+      },
+
+      initRender : function(e) {
+        if( e.detail === false ) {
+          this.style.display = 'block';
+          this.loadMinMax();
+        } else {
+          this.style.display = 'none';
+        }
       },
 
       loadMinMax : function() {

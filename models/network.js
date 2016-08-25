@@ -2,9 +2,8 @@
 
 var csvStringify = require('csv-stringify');
 var async = require('async');
+var db = require('../lib/database');
 
-var extraCollection = global.setup.database.collection('node-extras');
-var timesliceCollection = global.setup.database.collection('timeslice');
 
 module.exports = function() {
     return {
@@ -18,28 +17,21 @@ module.exports = function() {
 };
 
 function getNetwork(callback) {
-  console.log(1);
-  console.log(global.setup.collection);
-  global.setup.collection
-    .find({},{_id:0})
-    .toArray(function(err, resp){
-      console.log(2);
-      console.log(err);
-      console.log(resp);
-      callback(err, resp);
-    });
+  db.getNetwork(callback);
 }
 
 function getExtras(prmname, callback) {
-  extraCollection.findOne({prmname: prmname}, {_id:0}, callback);
+  db.getExtras(prmname, callback);
 }
 
 function getTimesliceMinMax(callback) {
-  timesliceCollection.findOne({is: 'minMax'}, {_id: 0}, callback);
+  var collection = db.mongoConnection.collection('timeslice');
+  collection.findOne({is: 'minMax'}, {_id: 0}, callback);
 }
 
 function getTimeslice(date, callback) {
-  timesliceCollection.findOne({date: date}, {_id: 0}, function(err, resp){
+  var collection = db.mongoConnection.collection('timeslice');
+  collection.findOne({date: date}, {_id: 0}, function(err, resp){
     if( err ) {
       return callback(err);
     } else if( !resp ) {
@@ -51,7 +43,8 @@ function getTimeslice(date, callback) {
 
 
 function dumpLocation(callback) {
-  global.setup.collection.find({},{geometry: 1, 'properties.repo': 1, 'properties.prmname': 1}).toArray(function(err, nodes){
+  var collection = db.mongoConnection.collection('network');
+  collection.find({},{geometry: 1, 'properties.repo': 1, 'properties.prmname': 1}).toArray(function(err, nodes){
     if( err ) {
       return callback(err);
     }

@@ -5,8 +5,7 @@ var uuid = require('node-uuid');
 var os = require('os');
 var path = require('path');
 
-var extraCollection = global.setup.database.collection('node-extras');
-var collection = global.setup.database.collection('network');
+var db = require('../lib/database');
 
 module.exports = function() {
     return {
@@ -16,13 +15,12 @@ module.exports = function() {
 };
 
 function create(prmname, callback) {
-  collection
-    .findOne({'properties.prmname': prmname}, function(err, node){
+  db.getNode(prmname, function(err, node){
       if( err || !node ) {
         return callback(err || 'invalid prmname');
       }
 
-      extraCollection.findOne({'prmname': prmname}, function(err, resp){
+      db.getExtras(prmname, function(err, resp){
         if( err ) {
           return callback(err);
         }

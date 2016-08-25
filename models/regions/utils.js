@@ -1,12 +1,10 @@
 'use strict';
 var async = require('async');
-
-var collection = global.setup.database.collection('regions');
-var networkCollection = global.setup.database.collection('network');
-var extrasCollection = global.setup.database.collection('node-extras');
-
+var db = require('../../lib/database');
 
 function getNodeLinks(list, callback) {
+  var networkCollection = db.mongoConnection.collection('network');
+
   var resp = {
       origins :  [],
       terminals : []
@@ -42,6 +40,8 @@ function getNodeLinks(list, callback) {
 }
 
 function getLinksInRegion(nodelist, callback) {
+  var networkCollection = db.mongoConnection.collection('network');
+
   networkCollection.find(
     {'$and': [{'properties.origin': {'$in' : nodelist}}, {'properties.terminus': {'$in' : nodelist}}]},
     {'properties.prmname': 1, '_id' : 0, 'properties.amplitude': 1})
@@ -63,6 +63,8 @@ function getNodesInRegion(name, callback) {
 }
 
 function _getNodesInRegion(name, list, callback) {
+  var collection = db.mongoConnection.collection('regions');
+
   collection.findOne({'properties.id': name}, {'properties.nodes': 1, 'properties.subregions': 1}, function(err, result){
     if( err ) {
       return callback(err);
@@ -98,6 +100,9 @@ function _getNodesInRegion(name, list, callback) {
 }
 
 function getNodeType(id, callback) {
+  var collection = db.mongoConnection.collection('regions');
+  var networkCollection = db.mongoConnection.collection('network');
+
   collection.findOne({'properties.id': id}, {'properties.id': 1}, function(err, result){
     if( err ) {
       return callback(err);
@@ -122,6 +127,7 @@ function getNodeType(id, callback) {
 }
 
 function sumAll(nodelist, sumFn, callback) {
+  var extrasCollection = db.mongoConnection.collection('node-extras');
   var total = {};
 
   extrasCollection
@@ -145,6 +151,7 @@ function sumAll(nodelist, sumFn, callback) {
 }
 
 function sumInto(nodelist, attribute, label, data, sumFn, callback) {
+  var extrasCollection = db.mongoConnection.collection('node-extras');
   var projection = {prmname: 1};
   var isSingle = false;
 
@@ -182,6 +189,7 @@ function sumInto(nodelist, attribute, label, data, sumFn, callback) {
 }
 
 function sum(nodelist, attribute, sumFn, callback) {
+  var extrasCollection = db.mongoConnection.collection('node-extras');
   var total = {}, projection = {prmname: 1};
   projection[attribute] = 1;
 
