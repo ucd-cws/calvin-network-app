@@ -74,8 +74,8 @@
 
       update : function(feature) {
         if( !feature ) return;
+        
         this.feature = feature;
-
         this.showNavLinks = true;
 
         if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
@@ -84,11 +84,14 @@
           this.showNavLinks = false;
         }
 
-        if( feature.properties.repo ) {
-          this.$.githubLink.style.display = 'inline-block';
-          this.$.githubLink.setAttribute('href', feature.properties.repo.github);
+        if( feature.properties.hobbes.repo ) {
+          var repo = feature.properties.hobbes.repo;
 
-          if( feature.properties.repo.files && feature.properties.repo.files.length > 0 ) {
+          this.$.githubLink.style.display = 'inline-block';
+          this.$.githubLink.setAttribute('href', 'https://'+repo.origin+'/'+repo.repository+'/tree/'+repo.branch + 
+              ((repo.networkDataPath && repo.networkDataPath !== '/') ? repo.networkDataPath + '/' : '/') + repo.path);
+
+          if( feature.properties.hobbes.repo.files && feature.properties.hobbes.repo.files.length > 0 ) {
             this.$.excelLink.setAttribute('href', '/excel/create?prmname='+feature.properties.prmname);
             this.$.excelLink.style.display = 'inline-block';
           } else {

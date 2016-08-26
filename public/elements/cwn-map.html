@@ -448,17 +448,13 @@
 
           for( var id in nodes ) {
             var node = CWN.ds.hobbesLookupMap[id];
-
-            // TODO: why!?
-            if( !node ) {
-              continue;
-            }
+            if( !node ) node = CWN.ds.lookupMap[id];
+            if( !node ) continue;
 
             var render = node.properties._render || {};
             if( render.show === false ) continue;
 
             if( node.properties.type == 'Diversion' || node.properties.type == 'Return Flow' ) {
-              debugger;
               var terminal = this._getStateNodeLocation(node.properties.terminus, state);
               var origin = this._getStateNodeLocation(node.properties.origin, state);
 
@@ -520,7 +516,8 @@
                   type : 'Region Link',
                   lines : [$.extend(true, {}, node.properties)],
                 }
-              }
+              },
+              render : CWN.map.renderer.basic
             }
 
             this.customLines[origin.name+'_'+terminal.name] = feature;

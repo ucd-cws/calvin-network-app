@@ -10,7 +10,6 @@ CWN.map.renderer.basic = function(ctx, xyPoints, map, feature) {
   if( feature.geojson.geometry.type == 'Point' ) {
     renderBasicPoint(ctx, xyPoints, map, feature, render);
   } else if ( feature.geojson.geometry.type == 'LineString' ) {
-    console.log(feature.geojson.properties.type);
     if( feature.geojson.properties.type === 'Region Link' ) {
       renderRegionLine(ctx, xyPoints, map, feature, render);
     } else {

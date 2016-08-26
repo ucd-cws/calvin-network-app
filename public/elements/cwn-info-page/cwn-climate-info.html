@@ -89,7 +89,7 @@
           series :{
             0: {type: "line", targetAxisIndex:0},
             1: {type: "line", targetAxisIndex:1},
-            2: {targetAxisIndex: 0},
+            // 2: {targetAxisIndex: 0},
           },
           interpolateNulls : true,
           legend : {
@@ -144,6 +144,7 @@
 
       var max = 0;
       var elevationCol = 0, capacityCol = 0, areaCol = 0;
+      var lastCap = 0;
 
       for( var i = 0; i < el_ar_cap.length; i++ ) {
         // make sure col labels are set correctly
@@ -163,18 +164,25 @@
           ]);
         }
 
+        if( this.feature.properties.initialstorage ) {
+          if( this.feature.properties.initialstorage >= lastCap && this.feature.properties.initialstorage < el_ar_cap[i][capacityCol] ) {
+
+              this.eacChart.data.push([
+                this.feature.properties.initialstorage,
+                null,
+                null,
+                max,
+                'Initial: '+this.feature.properties.initialstorage
+              ]);
+
+          }
+        }
+
+        lastCap = el_ar_cap[i][capacityCol];
         if( el_ar_cap[i][elevationCol] > max ) max = el_ar_cap[i][elevationCol];
       }
 
-      if( this.feature.properties.initialstorage ) {
-        this.eacChart.data.push([
-          this.feature.properties.initialstorage,
-          null,
-          null,
-          max,
-          'Initial: '+this.feature.properties.initialstorage
-        ]);
-      }
+
 
       this.eacChart.data.sort(function(a,b){
         if( a[capacityCol] > b[capacityCol] ) return 1;

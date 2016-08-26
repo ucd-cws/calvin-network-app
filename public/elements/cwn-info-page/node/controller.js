@@ -77,10 +77,14 @@ Polymer({
 
         var link, node, types = ['origins', 'terminals'];
         types.forEach(function(type){
-          if( this.feature && this.feature.properties[type] ) {
-            for( var i = 0; i < this.feature.properties[type].length; i++ ) {
-              link = CWN.ds.lookupMap[this.feature.properties[type][i].link_prmname];
-              node = CWN.ds.lookupMap[this.feature.properties[type][i].prmname];
+          if( this.feature && this.feature.properties.hobbes[type] ) {
+            for( var i = 0; i < this.feature.properties.hobbes[type].length; i++ ) {
+              
+              link = CWN.ds.hobbesLookupMap[this.feature.properties.hobbes[type][i].link];
+              node = CWN.ds.hobbesLookupMap[this.feature.properties.hobbes[type][i].node];
+
+              if( !link ) link = CWN.ds.lookupMap[this.feature.properties.hobbes[type][i].link];
+              if( !node ) node = CWN.ds.lookupMap[this.feature.properties.hobbes[type][i].node];
 
               if( link && node ) {
                 this[type].push({
@@ -91,7 +95,7 @@ Polymer({
                 });
               } else {
                 this[type].push({
-                    name: this.feature.properties[type][i].prmname,
+                    name: this.feature.properties.hobbes[type][i].node,
                     hasLink : false,
                     link: '',
                     description: ''
