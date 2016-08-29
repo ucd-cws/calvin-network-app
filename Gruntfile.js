@@ -3,10 +3,12 @@
 
 module.exports = function (grunt) {
 
+
     // Load the project's grunt tasks from a directory
-    require('grunt-config-dir')(grunt, {
-        configDir: require('path').resolve('tasks')
+    require('load-grunt-config')(grunt, {
+        configPath: require('path').join(process.cwd(), 'tasks')
     });
+
 
 
     // Register group tasks
@@ -15,6 +17,10 @@ module.exports = function (grunt) {
         'browserify',
         'copyto',
       'vulcanize']);
-    grunt.registerTask('test', [ 'jshint', 'mochacli' ]);
+
+      grunt.registerTask('printConfig', function() {
+        grunt.log.writeln(JSON.stringify(grunt.config(), null, 2));
+        console.log(require('path').join(process.cwd(), 'taskz'))
+    });
 
 };

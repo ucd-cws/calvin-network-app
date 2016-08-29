@@ -1,9 +1,14 @@
+var EventEmitter = require('events');
+var events = new EventEmitter();
+
 var nodeCollection = require('../collections/nodes');
 var regionsCollection = require('../collections/regions');
-
 var rest = require('../rest');
 
 function loadNetwork(callback) {
+  api.loading = true;
+  events.emit('loading');
+
   rest.loadNetwork((data) => {
     nodeCollection.init(data.nodes);
     processNodesLinks(data.nodes);
@@ -11,6 +16,8 @@ function loadNetwork(callback) {
     regionsCollection.init(data.regions);
     data.regions.forEach(processRegion);
 
+    api.loading = false;
+    events.emit('loading-complete');
     callback();
   });
 }
@@ -224,6 +231,19 @@ function getArea(points){
     return area;
 }
 
-module.exports = {
-  loadNetwork : loadNetwork
+var api = {
+  loading : true,
+  load: loadNetwork,
+  on : function(evt, fn) {
+      events.on(evt, fn);
+  },
+  onLoad : function(callback) {
+      if( this.loading ) {
+          this.on('loading-complete', callback);
+          return;
+      }
+      callback();
+  }
 }
+
+module.exports = api;

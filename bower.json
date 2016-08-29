@@ -24,7 +24,6 @@
     "jquery": "1.9.1",
     "d3": "*",
     "sigma.js": "*",
-    "polymer": "Polymer/polymer#^1.0.7",
     "install": "~1.0.4",
     "bootswatch-dist": "paper",
     "paper-header-panel": "PolymerElements/paper-header-panel#~1.0.2",
@@ -33,6 +32,7 @@
     "paper-toast": "PolymerElements/paper-toast#~1.0.0",
     "marked": "~0.3.5",
     "leaflet.heat": "Leaflet.heat#*",
-    "leaflet-canvas-geojson": "v2.2"
+    "leaflet-canvas-geojson": "v2.2",
+    "polymer": "^1.6.1"
   }
 }

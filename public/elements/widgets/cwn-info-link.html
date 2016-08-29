@@ -58,29 +58,32 @@
             this.prmname = this.getAttribute('prmname');
           }
 
-          if( CWN.ds.loading ) CWN.ds.on('load', this.update.bind(this));
-          else this.update();
+          if( CWN.controllers.network.loading ) {
+            CWN.controllers.network.on('loading-complete', this.update.bind(this));
+          } else {
+            this.update();
+          }
         },
 
         update : function() {
-          if( CWN.ds.loading ) return;
+          if( CWN.controllers.network.loading ) return;
           this.reset();
 
-          if( CWN.ds.regionLookupMap[this.prmname] ) {
+          if( CWN.collections.regions.getByName(this.prmname) ) {
             this.region = true;
             this.type = 'Region';
-            this.label = CWN.ds.regionLookupMap[this.prmname].properties.name;
+            this.label = CWN.collections.regions.getByName(this.prmname).properties.name;
             return;
           }
 
-          if( !CWN.ds.lookupMap[this.prmname] ) {
+          if( !CWN.collections.nodes.getByPrmname(this.prmname) ) {
               this.unknown = true;
               return;
           }
 
           this.valid = true;
 
-          this.type = CWN.ds.lookupMap[this.prmname].properties.type;
+          this.type = CWN.collections.nodes.getByPrmname(this.prmname).properties.type;
           this.link = '#info/'+ this.prmname;
         }
 

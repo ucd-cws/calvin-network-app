@@ -107,49 +107,6 @@
           this.dataLoaded = false;
           this.dataLoadHandlers = [];
 
-          this.legend = {
-            'Power Plant'         : {
-              color : '#3366cc',
-              google : 'small_red'
-            },
-            'Agricultural Demand' : {
-                color : '#ff9900',
-                google : 'small_yellow'
-            },
-            'Junction'            : {
-                color : '#109618',
-                google : 'small_green'
-            },
-            'Pump Plant'          : {
-                color : '#990099',
-                google : 'small_blue'
-            },
-            'Water Treatment'     : {
-                color : '#0099c6',
-                google : 'small_purple'
-            },
-            'Surface Storage'     : {
-                color : '#dd4477',
-                google : 'measle_brown',
-            },
-            'Urban Demand'        : {
-                color : '#66aa00',
-                google : 'measle_grey'
-            },
-            'Sink'                : {
-                color : '#b82e2e',
-                google : 'measle_white'
-            },
-            'Groundwater Storage' : {
-                color : '#316395',
-                google : 'measle_turquoise'
-            },
-            'Non-Standard Demand' : {
-                color : '#22aa99',
-                google : 'shaded_dot'
-            }
-          };
-
           this.$.map.menu = this.$.menu;
           this.$.map.selector = this.$.selector;
         },
@@ -248,7 +205,6 @@
         },
 
         onFeatureSelected : function(e) {
-          //this.$.pages.selected = this.PAGES.INFO;
           this.selectedPage = this.PAGES.info;
           window.location.hash = 'info/'+e.detail.properties.prmname;
         },
@@ -267,10 +223,10 @@
         onDataUpdated : function() {
           var menuState = this.$.menu.getEnabled();
 
-          CWN.ds.reset();
+
           this.$.map.markerLayer.features = [];
 
-          CWN.ds.reload(function(){
+          CWN.controllers.network.load(function(){
             this.$.menu.init(menuState);
             this.$.map.onRegionSelect();
             $(window).trigger('hashchange');

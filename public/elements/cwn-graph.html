@@ -92,28 +92,6 @@
               </div>
             </div>
 
-
-              <!--<div class="layout horizontal">
-                  <div>
-                      <cwn-app-icon type="{{popupNode.properties.type}}" width="96" height="96"></cwn-app-icon>
-                  </div>
-                  <div flex>
-                      <div style="padding-left:25px">
-                          <div>{{popupNode.properties.description}}</div>
-                          <h4 style="margin-top: 30px">Actions</h4>
-                          <ul>
-                              <li><a
-                                      class="btn btn-link"
-                                      href="{{graphLink}}"
-                                      on-click="hide">
-                                      Set as Graph Root</a>
-                              </li>
-                              <li><a class="btn btn-link" href="{{infoLink}}" on-click="hide">View Info</a></li>
-                              <li><a class="btn btn-link" on-click="goTo">View on Map</a></li>
-                          </ul>
-                      </div>
-                  </div>
-              </div>-->
           </div>
       </cwn-popup>
   </template>
@@ -152,10 +130,11 @@
             this.popupLabel = '';
             this.popupDescription = '';
             this.popupType = '';
+
+            this.collection = CWN.collections.nodes;
         },
 
         attached : function() {
-            //this.$.popup.target = this;
             $(window).on('hashchange', this.changeNode.bind(this));
             this.changeNode();
 
@@ -201,6 +180,7 @@
                     setTimeout(function(){
                          this.graph.refresh();
                     }.bind(this), 500);
+
                     setTimeout(function(){
                          this.graph.refresh();
                     }.bind(this), 1000);
@@ -209,16 +189,11 @@
         },
 
         update : function() {
-            if( !CWN.ds ) return;
             if( this.prmname == '' ) return;
 
             this.reset();
 
-            var t1 = new Date().getTime();
-
             this.walk(this.prmname, 0, 'forward');
-
-            var t2 = new Date().getTime();
 
             // check max depth
             if( this.negativeDepth && this.negativeDepth.length > 0 ) {
@@ -227,16 +202,8 @@
                 }
             }
 
-            var t3 = new Date().getTime();
-
             // make sure all links for all node are in tree
             this._addMissingLinks();
-
-            var t4 = new Date().getTime();
-            console.log('positive walk time: '+(t4-t1)+'ms');
-            console.log('negative walk time: '+(t4-t2)+'ms');
-            console.log('missing check time: '+(t4-t3)+'ms');
-
 
             this.setPositions();
         },
@@ -252,16 +219,10 @@
         },
 
         walk : function(prmname, level, direction) {
-            // has this node already been added to the graph?
-            //if( this.cnodes.indexOf(prmname) != -1 ) {
-                // if we are walking backward, we need to process the first node again
-            //    if( direction == 'forward' || level != 0 ) return;
-            //}
-
             // does the node actually exist?
-            if( !CWN.ds.lookupMap[prmname] ) return;
+            var node = this.collection.getByPrmname(prmname);
+            if( !node ) return;
 
-            var node = CWN.ds.lookupMap[prmname];
             // is the node hidden (ie been filtered out)
             if( node.properties._render && !node.properties._render.show && level != 0 ) {
                 return;
@@ -275,11 +236,11 @@
             // find the links by using the datastores lookup indexes
             var links;
             if( direction == 'forward' ) {
-                if( !CWN.ds.originLookupMap[prmname] ) return;
-                links = CWN.ds.originLookupMap[prmname];
+                if( !this.collection.getOrigins(prmname) ) return;
+                links = this.collection.getOrigins(prmname);
             } else {
-                if( !CWN.ds.terminalLookupMap[prmname] ) return;
-                links = CWN.ds.terminalLookupMap[prmname];
+                if( !this.collection.getTerminals(prmname) ) return;
+                links = this.collection.getTerminals(prmname);
             }
 
             // check max depth, quit if we have passed it
@@ -464,11 +425,6 @@
                 top += 75;
             }
 
-            //console.log(this.prmname);
-            //console.log(this.negativeLevels);
-            //console.log(this.nodeLevels);
-            console.log(this.graphJson);
-
             this.render();
         },
 
@@ -488,7 +444,6 @@
                 });
 
                 this.graph.bind('clickNode', function(e){
-                    //window.location.hash = 'graph/'+e.data.node.id;
                     this.popupNode = CWN.ds.lookupMap[e.data.node.id];
 
                     this.$.popup.show();
@@ -500,8 +455,6 @@
                 // Refresh the display:
                 this.graph.refresh();
             }
-            // ForceAtlas Layout
-            //this.graph.startForceAtlas2();
         },
 
         goToGraphLink : function() {

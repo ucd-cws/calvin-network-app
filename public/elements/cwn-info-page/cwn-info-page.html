@@ -83,10 +83,6 @@ Polymer({
     ready : function() {
       this.feature = null;
 
-      //this.hack = '';
-      //this.islocal = false;
-      //this.tableProperties = ['prmname'];
-
       // loading flags
       this.costLoadError = false;
       this.costLoading = false;
@@ -111,14 +107,12 @@ Polymer({
 
     init : function(map) {
       this.map = map;
-      this.islocal = CWN.ds.islocal;
 
-      CWN.ds.on('load', this.onLoad.bind(this));
+
+      CWN.controllers.network.onLoad(this.onLoad.bind(this));
     },
 
     onLoad : function() {
-      if( CWN.ds.loading ) return;
-
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
         if( this.feature && this.feature.prmname == loc[1] ) {
@@ -136,9 +130,9 @@ Polymer({
       this.costsReady = false;
       this.climateReady = false;
 
-      if( CWN.ds.lookupMap[prmname] ) {
-        this.feature = CWN.ds.lookupMap[prmname];
-      } else if( CWN.ds.regionLookupMap[prmname] ) {
+      if( CWN.collections.nodes.getByPrmname(prmname) ) {
+        this.feature = CWN.collections.nodes.getByPrmname(prmname);
+      } else if( CCWN.collections.regions.getByName(prmname) ) {
         this.setRegion(prmname);
       } else {
         // see if this is a region to feature
@@ -182,43 +176,39 @@ Polymer({
     },
 
     setRegion : function(prmname) {
-      var region = CWN.ds.regionLookupMap[prmname];
+      var region = CWN.collections.regions.getByName(prmname);
 
       var nodes = {};
       var origins = {};
       var terminals = {};
       var node;
 
-      for( var key in CWN.ds.lookupMap ) {
-        node = CWN.ds.lookupMap[key].properties;
+      for( var i = 0; i < CWN.collections.nodes.nodes.length; i++ ) {
+        node = CWN.collections.nodes.nodes[i].properties;
         if( !node ) continue;
 
-        if( node.type !== 'Diversion' && node.type !== 'Return Flow' ) {
-          if( node.regions && node.regions.indexOf(prmname) > -1 ) {
-            nodes[node.prmname] = 1;
-          }
+        if( node.regions && node.regions.indexOf(prmname) > -1 ) {
+          nodes[node.prmname] = 1;
         }
       }
 
-      for( var key in CWN.ds.lookupMap ) {
-        node = CWN.ds.lookupMap[key].properties;
+      for( var i = 0; i < CWN.collections.nodes.links.length; i++ ) {
+        node = CWN.collections.nodes.links[i].properties;
         if( !node ) continue;
-        if( node.type === 'Diversion' || node.type === 'Return Flow' ) {
 
-          if( nodes[node.origin] && nodes[node.terminus] ) continue; // ignore internal
+        if( nodes[node.origin] && nodes[node.terminus] ) continue; // ignore internal
 
-          if( nodes[node.origin] ) {
-            terminals[node.terminus] = {
-              link_prmname : node.prmname,
-              prmname : node.terminus
-            }
-          } else if( nodes[node.terminus] ) {
-
-            origins[node.origin] = {
-              link_prmname : node.prmname,
-              prmname : node.origin
-            };
+        if( nodes[node.origin] ) {
+          terminals[node.terminus] = {
+            link_prmname : node.prmname,
+            prmname : node.terminus
           }
+        } else if( nodes[node.terminus] ) {
+
+          origins[node.origin] = {
+            link_prmname : node.prmname,
+            prmname : node.origin
+          };
         }
       }
 
@@ -268,16 +258,16 @@ Polymer({
         }
       };
 
-      if( CWN.ds.lookupMap[parts[0]] ) {
-        node.properties.origin = CWN.ds.lookupMap[parts[0]].properties.prmname;
-      } else if( CWN.ds.regionLookupMap[parts[0]] ) {
-        node.properties.origin = CWN.ds.regionLookupMap[parts[0]].properties.id;
+      if( CWN.collections.nodes.getByPrmname(parts[0]) ) {
+        node.properties.origin = prmname;
+      } else if( CWN.collections.regions.getByName(parts[0]) ) {
+        node.properties.origin = CWN.collections.regions.getByName(parts[0]).properties.id;
       }
 
-      if( CWN.ds.lookupMap[parts[1]] ) {
-        node.properties.terminus = CWN.ds.lookupMap[parts[1]].properties.prmname;
-      } else if( CWN.ds.regionLookupMap[parts[1]] ) {
-        node.properties.terminus = CWN.ds.regionLookupMap[parts[1]].properties.id;
+      if( CWN.collections.nodes.getByPrmname(parts[1])) {
+        node.properties.terminus = prmname;
+      } else if( CWN.collections.regions.getByName(parts[1]) ) {
+        node.properties.terminus = CWN.collections.regions.getByName(parts[1]).properties.id;
       }
 
       if( !node.properties.origin || !node.properties.terminus ) {
@@ -289,7 +279,7 @@ Polymer({
     },
 
     update : function() {
-      if( CWN.ds.loading ) return;
+      if( CWN.controllers.network.loading ) return;
       if( this.feature == null ) return alert('Feature not found');
 
       this.hasOutputs = false;
@@ -315,7 +305,7 @@ Polymer({
         this.$.sinks.style.display = 'block';
         this.$.sinksRoot.innerHTML = '';
 
-        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
           if( !resp.sinks ) return;
           for( var i = 0; i < resp.sinks.length; i++ ) {
             for( var name in resp.sinks[i] ) {
@@ -335,7 +325,7 @@ Polymer({
     updateReadme : function() {
         if( this.feature.properties.extras && this.feature.properties.extras.readme ) {
           this.$.readme.style.display = 'block';
-          CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+          CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
             this.$.readmeMarkdown.innerHTML = marked(resp.readme);
             $(this.$.readmeMarkdown).find('h2').css('fontSize','28px');
           }.bind(this));

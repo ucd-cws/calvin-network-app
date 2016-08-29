@@ -82,6 +82,14 @@ function NodeCollection(){
     this.getById = function(id) {
       return this.index.hobbesId[id];
     }
+
+    this.getOrigins = function(prmname) {
+      return this.index.origins[prmname];
+    }
+
+    this.getTerminals = function(prmname) {
+      return this.index.terminals[prmname];
+    }
 }
 
 module.exports = new NodeCollection();

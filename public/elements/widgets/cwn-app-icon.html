@@ -98,7 +98,7 @@
             this.fontSize = this.width-15;
             if( this.fontSize < 14 ) this.fontSize = 14;
 
-            if( !CWN.render[this.type] ) return;
+            if( !CWN.renderer[this.type] ) return;
 
             this.$.canvas.setAttribute('height', this.height);
             this.$.canvas.setAttribute('width', this.width);
@@ -106,7 +106,7 @@
             var ctx = this.$.canvas.getContext('2d');
             ctx.clearRect(0, 0, this.width, this.height);
 
-            CWN.render[this.type](ctx, {
+            CWN.renderer[this.type](ctx, {
                 x: 2,
                 y: 2,
                 width: this.width-4,

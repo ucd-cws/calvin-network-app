@@ -61,10 +61,12 @@
         if( resp && resp.isDev ) {
           this.fire('is-dev', true);
           this.dev = true;
+          CWN.dev = true;
           return callback(true);
         }
 
         this.fire('is-dev', false);
+        CWN.dev = false;
         this.dev = false;
         callback(false);
       }.bind(this));
