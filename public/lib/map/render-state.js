@@ -1,4 +1,5 @@
 var collections = require('../collections');
+var renderer = require('./renderer');
 
 var behavior = {
   updateRenderState : function() {
@@ -30,11 +31,11 @@ var behavior = {
     this.markerLayer.render();
   },
 
-  _updateRenderState : function(name) {
-    var region = collections.regions.getByName(name);
+  _updateRenderState : function(id) {
+    var region = collections.regions.getById(id);
     var state = this.menu.state;
 
-    if( state.enabled.indexOf(name) > -1 ) {
+    if( state.enabled.indexOf(id) > -1 ) {
       this._addStateNodes(region.properties.hobbes.nodes, state);
 
       if( !region.properties.hobbes.subregions ) return;
@@ -86,7 +87,7 @@ var behavior = {
 
         if( lineFeature ) {
           this.renderState.lines.push(lineFeature.geojson);
-          this.markerLayer.addFeature(lineFeature, index);
+          this.markerLayer.addCanvasFeature(new L.CanvasFeature(lineFeature), index);
         }
 
       } else {
@@ -105,7 +106,7 @@ var behavior = {
         },
         properties : $.extend(true, {}, node.properties)
       },
-      render : CWN.map.renderer.basic
+      render : renderer
     };
   },
 
@@ -132,7 +133,7 @@ var behavior = {
             lines : [$.extend(true, {}, node.properties)],
           }
         },
-        render : CWN.map.renderer.basic
+        render : renderer
       }
 
       this.customLines[origin.name+'_'+terminal.name] = feature;
@@ -152,15 +153,15 @@ var behavior = {
   },
 
   _getStateNodeLocation : function(name, state) {
-    var node = CWN.ds.lookupMap[name];
+    var node = collections.nodes.getByPrmname(name);
 
     if( !node ) return null;
 
     for( var i = 0; i < node.properties.hobbes.regions.length; i++ ) {
       if( state.disabled.indexOf(node.properties.hobbes.regions[i]) > -1 ) {
-        if( CWN.ds.regionLookupMap[node.properties.hobbes.regions[i]].properties.center ) {
+        if( collections.regions.getById(node.properties.hobbes.regions[i]).properties.center ) {
           return {
-            center: CWN.ds.regionLookupMap[node.properties.hobbes.regions[i]].properties.center,
+            center: collections.regions.getById(node.properties.hobbes.regions[i]).properties.center,
             name: node.properties.hobbes.regions[i],
             isRegion : true
           };

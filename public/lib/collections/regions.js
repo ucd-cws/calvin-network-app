@@ -6,6 +6,7 @@ function RegionCollection(){
       hobbesId : {},
     };
 
+    this.data = [],
     this.aggregate = {};
 
     this.init = function(regions) {
@@ -19,6 +20,8 @@ function RegionCollection(){
         this.index.name[region.properties.name] = region;
         this.index.hobbesId[region.properties.hobbes.id] = region;
       });
+
+      this.data = regions;
     }
 
     this.loadAggregate = function(type, origin, terminus, callback) {

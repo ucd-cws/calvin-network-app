@@ -122,8 +122,7 @@
 
           this.selector.init(this, this.markerLayer);
 
-          if( !CWN.controllers.network.loading ) this.process();
-          else CWN.controllers.network.on('loading-complete', this.process.bind(this));
+          CWN.controllers.network.onLoad(this.process.bind(this));
 
           setTimeout(function(){
               this.map.invalidateSize();
@@ -131,31 +130,30 @@
         },
 
         process : function() {
-            if( CWN.controllers.network.loading ) return;
-
             this.edges = [];
             this.knownEdges = [];
+            this.markerLayer.reset();
 
             for( var i = 0; i < CWN.collections.regions.data.length; i++ ) {
-              this.markerLayer.addFeature({
+              this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.regions.data[i],
                 render: CWN.map.renderer
-              })
+              }));
             }
 
             for( var i = 0; i < CWN.collections.nodes.links.length; i++ ) {
-              this.markerLayer.addFeature({
+              this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.nodes.links[i],
                 render: CWN.map.renderer
-              })
+              }));
             }
 
             for( var i = 0; i < CWN.collections.nodes.nodes.length; i++ ) {
-              this.markerLayer.addFeature({
+              this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.nodes.nodes[i],
                 render: CWN.map.renderer,
                 size: 20
-              })
+              }));
             }
 
             this.menu.init();
@@ -180,8 +178,6 @@
 
             // update filtering
             this.filter(this.mapFilters);
-
-            this.links = this.getEdgeMarkers();
 
             this.updateRenderState();
 

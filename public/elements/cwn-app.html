@@ -122,12 +122,11 @@
 
           this.setLocation();
 
-          if( CWN.ds.loading ) CWN.ds.on('load', this.onLoadingChange.bind(this));
-          else this.onLoadingChange();
+          CWN.controllers.network.onLoad(this.onLoadingChange.bind(this));
         },
 
         onLoadingChange : function() {
-          if( CWN.ds.loading ) {
+          if( CWN.controllers.network.loading ) {
             this.$.splash.style.display = 'block';
           } else {
             this.$.splash.style.display = 'none';

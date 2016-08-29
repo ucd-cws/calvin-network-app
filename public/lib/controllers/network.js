@@ -10,15 +10,15 @@ function loadNetwork(callback) {
   events.emit('loading');
 
   rest.loadNetwork((data) => {
-    nodeCollection.init(data.nodes);
-    processNodesLinks(data.nodes);
+    nodeCollection.init(data.network);
+    processNodesLinks(data.network);
 
     regionsCollection.init(data.regions);
     data.regions.forEach(processRegion);
 
     api.loading = false;
     events.emit('loading-complete');
-    callback();
+    if( callback ) callback();
   });
 }
 
@@ -94,7 +94,7 @@ function markLinkTypes(link) {
       } else if( link.properties.type == 'Return Flow' ) {
           link.properties.renderInfo.type = 'returnFlowFromDemand';
 
-      } else if ( this.isGWToDemand(link) ) {
+      } else if ( isGWToDemand(link) ) {
           link.properties.renderInfo.type = 'gwToDemand';
 
       } else if( nodeCollection.getByPrmname(link.properties.origin) &&
@@ -238,10 +238,12 @@ var api = {
       events.on(evt, fn);
   },
   onLoad : function(callback) {
+      this.on('loading-complete', callback);
+
       if( this.loading ) {
-          this.on('loading-complete', callback);
           return;
       }
+
       callback();
   }
 }

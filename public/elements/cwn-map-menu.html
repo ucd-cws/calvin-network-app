@@ -103,7 +103,7 @@
 
           if( ele.is(':checked') ) {
             if( name != 'California' ) this.state.enabled.push(name);
-            var region = CWN.ds.regionLookupMap[name];
+            var region = CWN.collections.regions.getByName(name);
 
             if( !region ) return;
             if( !region.properties.hobbes.subregions ) return;
@@ -121,9 +121,9 @@
             this.renderRegion('California', this.$.content);
         },
 
-        renderRegion : function(regionName, root) {
+        renderRegion : function(regionId, root) {
             var ref = this;
-            var region = CWN.ds.regionLookupMap[regionName];
+            var region = CWN.collections.regions.getById(regionId);
 
             var id = region.properties.hobbes.id;
             var label = id;
@@ -132,7 +132,7 @@
             }
 
             var enabled = false;
-            if( regionName == 'California' || this.state.enabled.indexOf(regionName) > -1 ) {
+            if( regionId == 'California' || this.state.enabled.indexOf(regionId) > -1 ) {
               enabled = true;
             }
 
@@ -166,10 +166,10 @@
                 input.find('input').trigger("click");
               })
               .on('mouseover', function(){
-                this.fire('hover', regionName);
+                this.fire('hover', regionId);
               }.bind(this))
               .on('mouseout', function(){
-                this.fire('nohover', regionName);
+                this.fire('nohover', regionId);
               }.bind(this));
 
 
