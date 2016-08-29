@@ -1,10 +1,7 @@
-(function(){
+var renderUtils = require('../../renderer');
+var collection = require('../../collections/nodes');
 
-
-CWN.map = {};
-CWN.map.renderer = {};
-
-CWN.map.renderer.basic = function(ctx, xyPoints, map, feature) {
+module.exports = function(ctx, xyPoints, map, feature) {
   var render = feature.geojson.properties._render || {};
 
   if( feature.geojson.geometry.type == 'Point' ) {
@@ -27,7 +24,7 @@ CWN.map.renderer.basic = function(ctx, xyPoints, map, feature) {
 
 function renderRegionLine(ctx, xyPoints, map, feature, render) {
   ctx.beginPath();
-  ctx.strokeStyle = CWN.colors.orange;
+  ctx.strokeStyle = renderUtils.colors.orange;
   ctx.lineWidth = 2;
   ctx.moveTo(xyPoints[0].x, xyPoints[0].y);
   ctx.lineTo(xyPoints[1].x, xyPoints[1].y);
@@ -42,7 +39,7 @@ function renderBasicPoint(ctx, xyPoints, map, feature, render) {
   buffer = ms / 2;
 
   // TODO: set feature.size and you want have to worry about -10 offset here
-  CWN.render[feature.geojson.properties.type](ctx, {
+  renderUtils[feature.geojson.properties.type](ctx, {
       x: xyPoints.x - 10,
       y: xyPoints.y - 10,
       width: ms,
@@ -89,47 +86,29 @@ function renderBasicPolygon(ctx, xyPoints, map, feature, render) {
   }
   ctx.lineTo(xyPoints[0].x, xyPoints[0].y);
 
-  ctx.strokeStyle = render.hover ? 'red' : 'rgba('+CWN.colors.rgb.blue.join(',')+',.6)';
-  ctx.fillStyle = render.fillStyle ? render.fillStyle : 'rgba('+CWN.colors.rgb.lightBlue.join(',')+',.6)';
+  ctx.strokeStyle = render.hover ? 'red' : 'rgba('+renderUtils.colors.rgb.blue.join(',')+',.6)';
+  ctx.fillStyle = render.fillStyle ? render.fillStyle : 'rgba('+renderUtils.colors.rgb.lightBlue.join(',')+',.6)';
   ctx.lineWidth = 4;
 
   ctx.stroke();
   ctx.fill();
-
-  // draw center
-  /*if( !config.noCenteriod ) {
-    ctx.beginPath();
-    try {
-      point = this.map.latLngToContainerPoint([region.center[1], region.center[0]]);
-    } catch(e) {
-      debugger;
-    }
-    ctx.arc(point.x, point.y, 25, 0, 2*Math.PI);
-    ctx.stroke();
-    ctx.fill();
-
-    // add name
-    ctx.fillStyle = '#333333';
-    ctx.font="14px \"Helvetica Neue\",Helvetica,Arial,sans-serif";
-    ctx.fillText(region.name, point.x - 20, point.y + 40 );
-  }*/
 }
 
 function getLineColor(feature) {
     var color = 'white';
 
-    var origin = CWN.ds.lookupMap[feature.properties.origin];
-    var terminus = CWN.ds.lookupMap[feature.properties.terminus];
+    var origin = collection.getByPrmname(feature.properties.origin);
+    var terminus = collection.getByPrmname(feature.properties.terminus);
 
     if( feature.properties.renderInfo ) {
         if( terminus && terminus.properties.type == 'Sink' ) {
-          color = CWN.colors.darkCyan;
+          color = renderUtils.colors.darkCyan;
         } else if( origin && origin.properties.type.match(/demand/i) ) {
-            color = CWN.colors.red;
+            color = renderUtils.colors.red;
         } else if( origin && terminus && terminus.properties.type.match(/demand/i) && origin.properties.type == 'Groundwater Storage' ) {
-            color = CWN.colors.lightGrey;
+            color = renderUtils.colors.lightGrey;
         } else if( feature.properties.description.match(/recharge/i, '') ) {
-            color = CWN.colors.green;
+            color =renderUtilsCWN.colors.green;
         }
     }
 
@@ -147,6 +126,3 @@ function getLineColor(feature) {
 
     return color;
 }
-
-
-})();
