@@ -135,25 +135,29 @@
             this.markerLayer.reset();
 
             for( var i = 0; i < CWN.collections.regions.data.length; i++ ) {
+              if( CWN.collections.regions.data[i].properties.name === 'California' ) {
+                continue;
+              }
+
               this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.regions.data[i],
-                render: CWN.map.renderer
-              }));
+                renderer: CWN.map.renderer
+              }, CWN.collections.regions.data[i].properties.hobbes.id));
             }
 
             for( var i = 0; i < CWN.collections.nodes.links.length; i++ ) {
               this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.nodes.links[i],
-                render: CWN.map.renderer
-              }));
+                renderer: CWN.map.renderer
+              }, CWN.collections.nodes.links[i].properties.hobbes.id));
             }
 
             for( var i = 0; i < CWN.collections.nodes.nodes.length; i++ ) {
               this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.nodes.nodes[i],
-                render: CWN.map.renderer,
+                renderer: CWN.map.renderer,
                 size: 20
-              }));
+              }, CWN.collections.nodes.nodes[i].properties.hobbes.id));
             }
 
             this.menu.init();

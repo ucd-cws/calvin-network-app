@@ -17,9 +17,9 @@ var behavior = {
       f = this.markerLayer.features[i];
       r = f.geojson.properties._render || {};
 
-      if( (this.renderState.points.indexOf(f.geojson) > -1 ||
-        this.renderState.lines.indexOf(f.geojson) > -1 ||
-        this.renderState.polygons.indexOf(f.geojson) > -1) &&
+      if( (this.renderState.points.indexOf(f.id) > -1 ||
+        this.renderState.lines.indexOf(f.id) > -1 ||
+        this.renderState.polygons.indexOf(f.id) > -1) &&
         r.show !== false ) {
 
           f.visible = true;
@@ -45,7 +45,7 @@ var behavior = {
       }
     } else {
 
-      if( name != 'California' ) this.renderState.polygons.push(region);
+      if( name != 'California' ) this.renderState.polygons.push(region.properties.hobbes.id);
     }
   },
 
@@ -86,12 +86,12 @@ var behavior = {
         }
 
         if( lineFeature ) {
-          this.renderState.lines.push(lineFeature.geojson);
-          this.markerLayer.addCanvasFeature(new L.CanvasFeature(lineFeature), index);
+          this.renderState.lines.push(lineFeature.geojson.properties.hobbes.id);
+          this.markerLayer.addCanvasFeature(new L.CanvasFeature(lineFeature, lineFeature.geojson.properties.hobbes.id), index);
         }
 
       } else {
-        this.renderState.points.push(node);
+        this.renderState.points.push(node.properties.hobbes.id);
       }
     }
   },
@@ -106,7 +106,7 @@ var behavior = {
         },
         properties : $.extend(true, {}, node.properties)
       },
-      render : renderer
+      renderer : renderer
     };
   },
 
@@ -128,12 +128,15 @@ var behavior = {
             coordinates : [origin.center, terminal.center]
           },
           properties : {
+            hobbes : {
+              id : origin.name+'--'+terminal.name,
+            },
             prmname : origin.name+'--'+terminal.name,
             type : 'Region Link',
             lines : [$.extend(true, {}, node.properties)],
           }
         },
-        render : renderer
+        renderer : renderer
       }
 
       this.customLines[origin.name+'_'+terminal.name] = feature;

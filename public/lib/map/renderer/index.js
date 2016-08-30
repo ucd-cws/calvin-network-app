@@ -108,7 +108,7 @@ function getLineColor(feature) {
         } else if( origin && terminus && terminus.properties.type.match(/demand/i) && origin.properties.type == 'Groundwater Storage' ) {
             color = renderUtils.colors.lightGrey;
         } else if( feature.properties.description.match(/recharge/i, '') ) {
-            color =renderUtilsCWN.colors.green;
+            color = renderUtils.colors.green;
         }
     }
 

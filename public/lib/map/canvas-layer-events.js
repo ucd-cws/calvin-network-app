@@ -2,7 +2,7 @@ var behavior = {
   onLayerClick : function(features, e) {
     if( features.length == 0 ) return;
 
-    var type = features[0].geometry.type;
+    var type = features[0].geojson.geometry.type;
 
     if( features.length == 1 && type == 'Polygon' || type == 'MultiPolygon' ) {
       if( this.shiftPessed ) {
@@ -10,14 +10,14 @@ var behavior = {
         return;
       }
 
-      if( !features[0].properties._render ) features[0].properties._render = {};
-      features[0].properties._render.hover = true;
+      if( !features[0].geojson.properties._render ) features[0].geojson.properties._render = {};
+      features[0].geojson.properties._render.hover = true;
       this.markerLayer.render();
 
       setTimeout(function(){
-        ref.onRegionClick(features[0].properties.hobbes.id);
+        this.onRegionClick(features[0].geojson.properties.hobbes.id);
 
-        features[0].properties._render.hover = false;
+        features[0].geojson.properties._render.hover = false;
         this.markerLayer.render();
 
       }.bind(this), 0);
@@ -37,7 +37,7 @@ var behavior = {
     var i, f;
 
     for( i = 0; i < features.length; i++ ) {
-      f = features[i].properties;
+      f = features[i].geojson.properties;
 
       if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.type+' <b>'+f.prmname+'</b>');
       else if( f.type == 'Link Group' ) label.push(f.type+' <b>Count: '+f.lines.length+'</b>');
@@ -58,7 +58,7 @@ var behavior = {
     var i, f;
 
     for( i = 0; i < features.length; i++ ) {
-      f = features[i].properties;
+      f = features[i].geojson.properties;
 
       if( !f._render ) f._render = {};
       f._render.hover = true;
@@ -67,8 +67,8 @@ var behavior = {
 
   onLayerMouseOut : function(features) {
     for( var i = 0; i < features.length; i++ ) {
-      if( !features[i].properties._render ) features[i].properties._render = {};
-      features[i].properties._render.hover = false;
+      if( !features[i].geojson.properties._render ) features[i].geojson.properties._render = {};
+      features[i].geojson.properties._render.hover = false;
     }
   },
 
