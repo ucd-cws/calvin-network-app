@@ -121,7 +121,7 @@ Polymer({
     },
 
     loadBounds : function() {
-      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+      CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
         this.renderBounds(resp.bounds);
       }.bind(this));
     },

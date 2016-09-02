@@ -196,7 +196,7 @@
     renderInflows : function() {
       this.$.inflows.style.display = 'none';
 
-      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+      CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
         if( resp.inflows ) {
           this.hasInflows = true;
           this.$.inflowCharts.innerHTML = '';
@@ -217,7 +217,7 @@
     },
 
     renderEvaporation : function() {
-      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+      CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
         var evaporation = resp.evaporation;
         if( evaporation ) {
           this.hasEvaporation = true;
@@ -231,7 +231,7 @@
     },
 
     renderStorage : function() {
-      CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+      CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
         var storage = resp.storage;
         if( storage ) {
           this.$.storageChart.update(storage);

@@ -103,7 +103,7 @@
 
           if( ele.is(':checked') ) {
             if( name != 'California' ) this.state.enabled.push(name);
-            var region = CWN.collections.regions.getByName(name);
+            var region = CWN.collections.regions.getById(name);
 
             if( !region ) return;
             if( !region.properties.hobbes.subregions ) return;

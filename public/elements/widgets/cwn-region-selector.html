@@ -28,7 +28,7 @@
     renderFeatures : function() {
       var table = '';
       for (var i = 0; i < this.features.length; i++) {
-        table += this.renderFeature(this.features[i], i);
+        table += this.renderFeature(this.features[i].geojson, i);
       }
 
       this.$.body.innerHTML = table;

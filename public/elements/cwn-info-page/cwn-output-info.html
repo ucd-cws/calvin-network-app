@@ -35,73 +35,8 @@
         }
       },
 
-      /*loadAggregate : function() {
-        CWN.ds.loadAggregate('flow', this.feature.properties.prmname, function(resp) {
-          this.$.loading.style.display = 'none';
-
-          var data = [['date','In','Out','Difference']];
-
-          var oLen = Object.keys(resp.origins.flow).length;
-          var tLen = Object.keys(resp.terminals.flow).length;
-
-          if( oLen > 0 || tLen > 0 ) {
-            var it = resp.origins.flow, key, o, t;
-            if( tLen > oLen ) it = resp.terminals.flow;
-
-
-            for( var key in it) {
-              o = resp.origins.flow[key] || 0;
-              t = resp.terminals.flow[key] || 0;
-              t *= -1;
-
-              data.push([key, o, t, o+t]);
-            }
-          }
-
-          this.data = {
-            flow : data
-          }
-          this.renderFlow();
-        }.bind(this));
-      },*/
-
-      /*loadLinkAggregate : function() {
-        // TODO: include units in aggregate response
-        CWN.ds.loadAggregate('flow', this.feature.properties.origin, this.feature.properties.terminus, function(resp) {
-          this.$.loading.style.display = 'none';
-
-          var data = [[
-            'date',
-            this.feature.properties.origin+' to '+this.feature.properties.terminus+' (kaf)',
-            this.feature.properties.terminus+' to '+this.feature.properties.origin+' (kaf)'
-          ]];
-
-          if( resp.origin.flow ) {
-            for( var key in resp.origin.flow ) {
-              data.push([key, resp.origin.flow[key] || 0, resp.terminus.flow[key] || 0]);
-            }
-          }
-
-          this.data = {
-            flow : data
-          }
-          this.renderFlow();
-
-          this.fire('region-link-update', {
-            origin : {
-              prmname : this.feature.properties.origin,
-              links : resp.origin.included
-            },
-            terminus : {
-              prmname : this.feature.properties.terminus,
-              links : resp.terminus.included
-            }
-          });
-        }.bind(this));
-      },*/
-
       load : function() {
-        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
           this.$.loading.style.display = 'none';
           if( resp.error ) {
             return alert(resp.message);

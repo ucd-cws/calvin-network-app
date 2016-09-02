@@ -73,7 +73,7 @@
       },
 
       load : function() {
-        CWN.ds.loadExtras(this.feature.properties.prmname, function(resp){
+        CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
           this.$.loading.style.display = 'none';
           this.data = resp;
           var positive = [];

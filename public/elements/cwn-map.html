@@ -115,6 +115,7 @@
             onMouseMove : this.onLayerMouseMove.bind(this),
             onClick : this.onLayerClick.bind(this)
           });
+          window.markerLayer = this.markerLayer;
 
           this.$.animationControl.init(this);
 

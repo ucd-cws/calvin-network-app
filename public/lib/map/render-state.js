@@ -8,7 +8,7 @@ var behavior = {
       lines : [],
       polygons : []
     }
-    this.clearCustomLines();
+    this.clearRegionLinks();
 
     this._updateRenderState('California');
 
@@ -70,7 +70,7 @@ var behavior = {
       var render = node.properties._render || {};
       if( render.show === false ) continue;
 
-      if( node.properties.type == 'Diversion' || node.properties.type == 'Return Flow' ) {
+      if( node.properties.hobbes.type === 'link' ) {
         var terminal = this._getStateNodeLocation(node.properties.terminus, state);
         var origin = this._getStateNodeLocation(node.properties.origin, state);
 
@@ -78,16 +78,15 @@ var behavior = {
 
         var lineFeature;
         if( terminal.isNode && origin.isNode ) {
-          lineFeature = this.createNodeLink(origin.center, terminal.center, node);
+          lineFeature = this.createNodeLink(origin.center, terminal.center, node, index);
           this.customLines[node.properties.origin+'_'+node.properties.terminus] = lineFeature;
         } else {
           // if this line already exists, a null value will be returned
-          lineFeature = this.createCustomLink(origin, terminal, node);
+          lineFeature = this.createRegionLink(origin, terminal, node, index);
         }
 
         if( lineFeature ) {
           this.renderState.lines.push(lineFeature.geojson.properties.hobbes.id);
-          this.markerLayer.addCanvasFeature(new L.CanvasFeature(lineFeature, lineFeature.geojson.properties.hobbes.id), index);
         }
 
       } else {
@@ -96,8 +95,8 @@ var behavior = {
     }
   },
 
-  createNodeLink : function(origin, terminal, node) {
-    return {
+  createNodeLink : function(origin, terminal, node, index) {
+    var link = {
       geojson : {
         "type" : "Feature",
         "geometry" : {
@@ -108,9 +107,13 @@ var behavior = {
       },
       renderer : renderer
     };
+    
+    this.markerLayer.addCanvasFeature(new L.CanvasFeature(link, link.geojson.properties.hobbes.id), index);
+
+    return link;
   },
 
-  createCustomLink : function(origin, terminal, node) {
+  createRegionLink : function(origin, terminal, node, index) {
     var self = this;
     var feature = null;
     if( this.customLines[origin.name+'_'+terminal.name] ) {
@@ -130,6 +133,7 @@ var behavior = {
           properties : {
             hobbes : {
               id : origin.name+'--'+terminal.name,
+              type : 'link'
             },
             prmname : origin.name+'--'+terminal.name,
             type : 'Region Link',
@@ -140,6 +144,7 @@ var behavior = {
       }
 
       this.customLines[origin.name+'_'+terminal.name] = feature;
+      this.markerLayer.addCanvasFeature(new L.CanvasFeature(feature, feature.geojson.properties.hobbes.id), index);
 
       return feature;
     }
@@ -147,11 +152,16 @@ var behavior = {
     feature.geojson.properties.lines.push($.extend(true, {}, node.properties));
   },
 
-  clearCustomLines : function() {
-    for( var key in this.customLines ) {
-      var index = this.markerLayer.features.indexOf(this.customLines[key]);
-      if( index > -1 ) this.markerLayer.features.splice(index, 1);
+  clearRegionLinks : function() {
+    var properties;
+    for( var i = this.markerLayer.features.length-1; i >= 0; i-- ) {
+      properties = this.markerLayer.features[i].geojson.properties;
+      if( properties.hobbes.type === 'link' ) {
+        this.markerLayer.features.splice(i, 1);
+      }
     }
+
+    this.markerLayer.rebuildIndex(this.markerLayer.features);
     this.customLines = {};
   },
 
