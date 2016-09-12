@@ -8,10 +8,14 @@
 
     <h4>Aggregate Flow</h4>
 
+    <div id="devMessage" class="text text-warning">
+      <i class="fa fa-warning"></i> Region and Region Link aggregate flow charts are not supported while working in local dev mode.
+    </div>
+
     <div id="loading"><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</div>
 
     <cwn-date-linechart id="flowChart"></cwn-date-linechart>
-    <div class="help-block" style="text-align:right">Click chart point to inspect</div>
+    <div id="help" class="help-block" style="text-align:right">Click chart point to inspect</div>
 
     <cwn-date-linechart id="differenceChart" style="display:none"></cwn-date-linechart>
 
@@ -52,15 +56,28 @@
         this.net = false;
         var props = this.feature.properties;
         this.$.differenceChart.style.display = 'none';
+        this.$.devMessage.style.display = 'none';
 
         if( props.type == 'Region Link' ) {
-          $(this).parent().show();
-          this.$.loading.style.display = 'block';
-          this.loadLinkAggregate();
+
+          if( CWN.dev ) {
+            this.showDevMessage();
+          } else {
+            $(this).parent().show();
+            this.$.loading.style.display = 'block';
+            this.loadLinkAggregate();
+          }
+
        } else if( props.type == 'Region' ) {
-          $(this).parent().show();
-          this.$.loading.style.display = 'block';
-          this.loadAggregate();
+
+          if( CWN.dev ) {
+            this.showDevMessage();
+          } else {
+            $(this).parent().show();
+            this.$.loading.style.display = 'block';
+            this.loadAggregate();
+          }
+
        } else if( props.extras &&
           (props.extras.inflow || props.extras.flow || props.extras.sinks || props.extras.evaporation) ) {
             $(this).parent().show();
@@ -70,6 +87,13 @@
           $(this).parent().hide();
           this.$.loading.style.display = 'none';
         }
+      },
+
+      showDevMessage : function() {
+        this.$.loading.style.display = 'none';
+        this.$.help.style.display = 'none';
+        this.$.flowChart.style.display = 'none';
+        this.$.devMessage.style.display = 'block';
       },
 
       load : function() {
@@ -136,6 +160,7 @@
             height: 500
           }
 
+          this.$.flowChart.style.display = 'block';
           this.$.flowChart.setHeight(500);
           this.$.flowChart.type = 'AreaChart';
           this.$.flowChart.onClick = this.onNodeChartClick.bind(this);
@@ -251,6 +276,7 @@
             }
           }
 
+          this.$.flowChart.style.display = 'block';
           this.$.flowChart.setHeight(500);
           this.$.flowChart.onClick = this.onLinkChartClick.bind(this);
           this.$.flowChart.type = 'AreaChart';

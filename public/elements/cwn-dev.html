@@ -87,6 +87,7 @@
       this.loadLib(function() {
         console.log('Initializing dev socket connection');
         this.toast = document.createElement('paper-toast');
+        this.toast.style.zIndex = 10000;
 
         document.body.appendChild(this.toast);
         this.socket = io(window.location.origin);
@@ -147,17 +148,15 @@
     },
 
     updatePopupInfo : function() {
-      if( !CWN.ds.data ) return;
-      if( !CWN.ds.data.nodes ) return;
-      if( CWN.ds.data.nodes.length == 0 ) return;
+      if( CWN.collections.nodes.nodes.length == 0 ) return;
 
       // grab any node, this is generic information
-      var repo = CWN.ds.data.nodes[0].properties.repo;
+      var repo = CWN.collections.nodes.nodes[0].properties.hobbes.repo;
 
       this.$['popup-branch'].innerHTML = repo.branch;
       this.$['popup-tag'].innerHTML = repo.tag;
       this.$['popup-commit'].innerHTML = repo.commit;
-      this.$['popup-repo'].innerHTML = '<a href="https://github.com/'+repo.repo+'" target="_blank">'+repo.repo+'</a>';
+      this.$['popup-repo'].innerHTML = '<a href="https://'+repo.origin+'/'+repo.repository+'/tree/'+repo.branch+'" target="_blank">'+repo.repository+'</a>';
     },
 
     refreshing : function(refreshing) {

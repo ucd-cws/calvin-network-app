@@ -5,10 +5,12 @@ var http = require('http');
 
 var db = require('./lib/database');
 var devCon = require('./lib/dev');
-//var mqeLib = require('mongo-query-engine');
 var mqeLib = require('mongo-query-engine');
+var sprintf = require('sprintf');
 
 var options, app, server, logger, conf;
+
+console.log(require('./lib/logo'));
 
 /*
  * Create and configure application. Also exports application instance for use by tests.
@@ -79,9 +81,7 @@ options = {
 app = express();
 app.use(kraken(options));
 app.on('start', function () {
-    logger.info('Application ready to serve requests.');
-    logger.info('Environment: %s', app.kraken.get('env:env'));
-    logger.info('Static root: '+conf.get('middleware').static.module.arguments[0]);
+  console.log(sprintf('%-40.40s%10s', 'Server Root:', conf.get('middleware').static.module.arguments[0]));
 });
 
 
@@ -99,6 +99,11 @@ function onReady(config) {
 
   server.listen(config.get('mqe').server.localport || process.env.PORT || 8000);
   server.on('listening', function () {
-      logger.info(`Server listening on http://localhost:${this.address().port}`);
+    console.log(sprintf('%-40.40s%10s', 'Server Url:', `http://localhost:${this.address().port}`));
+
+    if( conf.get('dev') ) {
+      var spawn = require('child_process').spawn
+      spawn('open', [`http://localhost:${this.address().port}`]);
+    }
   });
 }

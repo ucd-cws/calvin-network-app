@@ -6,10 +6,6 @@ Polymer({
           type : Object,
           observer : 'update'
         },
-        ds : {
-          type : Object,
-          observer : 'update'
-        },
         leaflet : {
           type : Object
         },
@@ -34,7 +30,7 @@ Polymer({
     },
 
     update : function() {
-        if( !CWN.ds || !this.feature ) return;
+        if( !this.feature ) return;
 
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
@@ -80,11 +76,11 @@ Polymer({
           if( this.feature && this.feature.properties.hobbes[type] ) {
             for( var i = 0; i < this.feature.properties.hobbes[type].length; i++ ) {
               
-              link = CWN.ds.hobbesLookupMap[this.feature.properties.hobbes[type][i].link];
-              node = CWN.ds.hobbesLookupMap[this.feature.properties.hobbes[type][i].node];
+              link = CWN.collections.nodes.getById(this.feature.properties.hobbes[type][i].link);
+              node = CWN.collections.nodes.getById(this.feature.properties.hobbes[type][i].node);
 
-              if( !link ) link = CWN.ds.lookupMap[this.feature.properties.hobbes[type][i].link];
-              if( !node ) node = CWN.ds.lookupMap[this.feature.properties.hobbes[type][i].node];
+              if( !link ) link = CWN.collections.nodes.getByPrmname(this.feature.properties.hobbes[type][i].link);
+              if( !node ) node = CWN.collections.nodes.getByPrmname(this.feature.properties.hobbes[type][i].node);
 
               if( link && node ) {
                 this[type].push({
@@ -141,17 +137,15 @@ Polymer({
     },
 
     onOriginUpdate : function() {
-        if( !CWN.ds ) return;
-
         if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none';
         else this.$.origin.style.display = 'block';
 
         this.hasOriginDescription = false;
         this.originDescription = '';
 
-        if( CWN.ds.lookupMap[this.feature.properties.origin] ) {
+        if(CWN.collections.nodes.getByPrmname(this.feature.properties.origin) ) {
             this.hasOriginDescription = true;
-            this.originDescription = CWN.ds.lookupMap[this.feature.properties.origin].properties.description
+            this.originDescription = CWN.collections.nodes.getByPrmname(this.feature.properties.origin).properties.description
         }
     },
 
@@ -160,7 +154,7 @@ Polymer({
       for( var i = 0; i < this.feature.properties.nodes.length; i++ ) {
         col = c % 3;
 
-        node = CWN.ds.lookupMap[this.feature.properties.nodes[i]];
+        node = CWN.collections.nodes.getByPrmname(this.feature.properties.nodes[i]);
         if( !node ) continue;
 
         cols[col] +=
@@ -187,17 +181,15 @@ Polymer({
     },
 
     onTerminalUpdate : function() {
-        if( !CWN.ds ) return;
-
         if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none';
         else this.$.terminal.style.display = 'block';
 
         this.hasTerminalDescription = false;
         this.terminalDescription = '';
 
-        if( CWN.ds.lookupMap[this.feature.properties.terminus] ) {
+        if( CWN.collections.nodes.getByPrmname(this.feature.properties.terminus) ) {
             this.hasTerminalDescription = true;
-            this.terminalDescription = CWN.ds.lookupMap[this.feature.properties.terminus].properties.description
+            this.terminalDescription =CWN.collections.nodes.getByPrmname(this.feature.properties.terminus).properties.description
         }
     },
 

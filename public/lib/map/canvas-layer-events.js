@@ -6,7 +6,7 @@ var behavior = {
 
     if( features.length == 1 && type == 'Polygon' || type == 'MultiPolygon' ) {
       if( this.shiftPessed ) {
-        window.location.href = '#info/' + features[0].properties.id;
+        window.location.href = '#info/' + features[0].geojson.properties.name;
         return;
       }
 
@@ -24,8 +24,8 @@ var behavior = {
       return;
     }
 
-    if( features.length == 1 && features[0].properties.prmname ) {
-      window.location.href = '#info/' + features[0].properties.prmname;
+    if( features.length == 1 && features[0].geojson.properties.prmname ) {
+      window.location.href = '#info/' + features[0].geojson.properties.prmname;
       return;
     }
 
