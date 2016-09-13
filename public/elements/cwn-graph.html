@@ -1,4 +1,3 @@
-<!--<polymer-element name="cwn-graph" attributes="ds settings">-->
 <dom-module id="cwn-graph">
   <style>
     #sigma {
@@ -151,7 +150,10 @@
 
             this.graphLink = '#graph/'+props.prmname;
             this.infoLink = '#info/'+props.prmname;
-            this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+props.repo.github+'" '+
+
+            var repo = props.hobbes.repo;
+            var url = 'https://'+repo.origin+'/'+repo.repository+'/tree/'+repo.branch+repo.networkDataPath+'/'+repo.path;
+            this.$.githubLink.innerHTML = '<a class="btn btn-link" href="'+url+'" '+
               ' target="_blank"><i class="fa fa-github fa-fw"></i> Show on GitHub</a>';
 
             this.$.regions.innerHTML = props.regions ?
@@ -168,7 +170,7 @@
             var loc = window.location.hash.replace('#','').split('/');
             if( loc[0] == 'graph' ) {
                 this.async(function(){
-                    this.prmname = loc.length == 1 ? CWN.ds.data.nodes[0] : loc[1];
+                    this.prmname = loc.length == 1 ? CWN.collections.nodes.nodes[0] : loc[1];
                 });
 
                 if( !this.graph ) this.render();
@@ -306,7 +308,7 @@
 
         _addLink : function(link, level, direction) {
             // get the links next node
-            var tNode = CWN.ds.lookupMap[direction == 'forward' ? link.properties.terminus : link.properties.origin];
+            var tNode = CWN.collections.nodes.getByPrmname(direction === 'forward' ? link.properties.terminus : link.properties.origin);
             // make sure the next node exists
             if( !tNode ) return;
 
@@ -361,11 +363,11 @@
             for( i = 0; i < this.graphJson.nodes.length; i++ ) {
                 n = this.graphJson.nodes[i];
 
-                links = CWN.ds.originLookupMap[n.id] || [];
+                links = CWN.collections.nodes.getOrigins(n.id) || [];
                 for( var j = 0; j < links.length; j++ ) {
                     this._addLinkIfMissing(links[j]);
                 }
-                links = CWN.ds.terminalLookupMap[n.id] || [];
+                links = CWN.collections.nodes.getTerminals(n.id) || [];
                 for( var j = 0; j < links.length; j++ ) {
                     this._addLinkIfMissing(links[j]);
                 }
@@ -444,7 +446,7 @@
                 });
 
                 this.graph.bind('clickNode', function(e){
-                    this.popupNode = CWN.ds.lookupMap[e.data.node.id];
+                    this.popupNode = CWN.collections.nodes.getByPrmname(e.data.node.id);
 
                     this.$.popup.show();
                 }.bind(this));
