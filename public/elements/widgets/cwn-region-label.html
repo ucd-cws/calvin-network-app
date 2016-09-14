@@ -14,7 +14,7 @@
     },
 
     prmnameObserver : function() {
-      var node = CWN.ds.lookupMap[this.prmname];
+      var node = CWN.collections.nodes.getByPrmname(this.prmname);
       if( !node ) return;
 
       this.update(node);

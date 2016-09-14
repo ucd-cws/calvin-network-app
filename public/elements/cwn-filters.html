@@ -42,7 +42,7 @@
                         <label for="filter-types" class="col-sm-2 control-label">Types</label>
                         <div class="col-sm-10" id="filter-types">
 
-                            <template is="dom-repeat" items="{{legendArr}}">
+                            <template is="dom-repeat" items="[[legendArr]]">
                               <div>
                                 <label class="checkbox-inline">
                                     <input type="checkbox"
@@ -73,8 +73,16 @@
     Polymer({
         is : 'cwn-filters',
 
+        properties : {
+            legendArr : {
+                type : Array,
+                value : function() {
+                    return [];
+                }
+            }
+        },
+
         ready : function() {
-          this.legendArr = [];
           this.iconSize = 22;
 
           this.filters = {
@@ -99,7 +107,9 @@
                   checked : true
               });
           }
-          this.legendArr = tmp;
+          debugger;
+          console.log(tmp);
+          this.set('legendArr', tmp);
         },
 
         updateInOutMode : function() {

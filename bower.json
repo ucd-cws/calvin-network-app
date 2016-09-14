@@ -33,6 +33,6 @@
     "marked": "~0.3.5",
     "leaflet.heat": "Leaflet.heat#*",
     "leaflet-canvas-geojson": "v2.2",
-    "polymer": "^1.6.1"
+    "polymer": "Polymer#^1.6.1"
   }
 }

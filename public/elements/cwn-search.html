@@ -51,7 +51,7 @@
       var types = ['nodes', 'links'];
 
       types.forEach(function(type){
-        var arr = CWN.ds.data[type];
+        var arr = CWN.collections.nodes[type];
         for( var i = 0; i < arr.length; i++ ) {
           if( arr[i].properties.prmname.toLowerCase().indexOf(txt) > -1 ) {
             if( matchCount > this.MAX_RESULTS ) break;
@@ -65,7 +65,7 @@
 
       if( matchCount < this.MAX_RESULTS ) {
         types.forEach(function(type){
-          var arr = CWN.ds.data[type];
+          var arr = CWN.collections.nodes[type];
           for( var i = 0; i < arr.length; i++ ) {
             if( arr[i].properties.description.toLowerCase().indexOf(txt) > -1 ) {
               if( matchCount > this.MAX_RESULTS ) break;
