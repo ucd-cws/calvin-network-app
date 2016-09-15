@@ -106,7 +106,11 @@ function onReady(config) {
 
     if( conf.get('dev') || conf.get('local') ) {
       var spawn = require('child_process').spawn
-      spawn('open', [`http://localhost:${this.address().port}`]);
+      if( process.platform === 'linux' ) {
+        spawn('xdg-open', [`http://localhost:${this.address().port}`]);
+      } else {
+        spawn('open', [`http://localhost:${this.address().port}`]);
+      }
     }
   });
 }
