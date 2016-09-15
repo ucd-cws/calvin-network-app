@@ -1,6 +1,6 @@
 {
   "name": "calvin-network-app",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "CALVIN water network app",
   "author": "jrmerz",
   "main": "index.js",
