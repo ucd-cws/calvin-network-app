@@ -104,7 +104,7 @@ function onReady(config) {
   server.on('listening', function () {
     console.log(sprintf('%-40.40s%10s', 'Server Url:', `http://localhost:${this.address().port}`));
 
-    if( conf.get('dev') ) {
+    if( conf.get('dev') || conf.get('local') ) {
       var spawn = require('child_process').spawn
       spawn('open', [`http://localhost:${this.address().port}`]);
     }

@@ -9,6 +9,11 @@
         <script src="js/webcomponents.js"></script>
         <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
+        <!-- HACK -->
+        <script src="js/sigma.min.js"></script>
+        <script src="js/sigma.renderers.customEdgeShapes.min.js"></script>
+        <script src="js/sigma.parsers.json.min.js"></script>
+
         <link rel="import" href="require.html">
 
         <style>
@@ -23,7 +28,7 @@
 
         <script>
             $(document).ready(function(){
-                CWN.ds.reload();
+                CWN.controllers.network.load();
             });
         </script>
     </body>

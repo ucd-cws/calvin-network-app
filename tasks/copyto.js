@@ -10,13 +10,13 @@ module.exports = {
         },
         {
             cwd: 'public/js',
-            src: ['webcomponents.js'],
+            src: ['webcomponents.js','sigma.min.js','sigma.renderers.customEdgeShapes.min.js','sigma.parsers.json.min.js'],
             dest: 'dist/js/'
         },
         {
             cwd: 'public/bower_components/font-awesome',
             src: ['fonts/**/*'],
-            dest: 'dist/'
+            dest: 'dist/bower_components/font-awesome/'
         }],
         options: {
             ignore: []

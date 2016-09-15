@@ -14,13 +14,8 @@ module.exports = function (grunt) {
     // Register group tasks
     grunt.registerTask('build', [
         'clean',
-        'browserify',
+        //'browserify',
         'copyto',
       'vulcanize']);
-
-      grunt.registerTask('printConfig', function() {
-        grunt.log.writeln(JSON.stringify(grunt.config(), null, 2));
-        console.log(require('path').join(process.cwd(), 'taskz'))
-    });
 
 };

@@ -8,3 +8,4 @@ npm-debug.log
 import.json
 nodes.csv
 links.csv
+public/js/sigma*
