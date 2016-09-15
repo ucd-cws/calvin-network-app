@@ -1,5 +1,5 @@
 {
-  "name": "ca-water-network",
+  "name": "calvin-network-app",
   "version": "0.2.0",
   "description": "CALVIN water network app",
   "author": "jrmerz",
@@ -16,9 +16,11 @@
     "build": "grunt build",
     "all": "npm run build && npm run test"
   },
+  "bin": {
+    "cna": "bin/cna.bin.js"
+  },
   "dependencies": {
     "async": "^1.5.2",
-    "calvin-network-tools": "^1.0.45",
     "confit": "^2.0.4",
     "construx": "^1.0.1",
     "construx-copier": "^1.0.0",
@@ -28,6 +30,7 @@
     "express": "^4.14.0",
     "extend": "^3.0.0",
     "findit": "^2.0.0",
+    "hobbes-network-format": "0.0.12",
     "kraken-js": "^1.0.6",
     "md5": "^2.1.0",
     "minimist": "^1.2.0",

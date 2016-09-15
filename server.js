@@ -1,10 +1,10 @@
 'use strict';
+
 var express = require('express');
 var kraken = require('kraken-js');
 var http = require('http');
 
 var db = require('./lib/database');
-var devCon = require('./lib/dev');
 var mqeLib = require('mongo-query-engine');
 var sprintf = require('sprintf');
 
@@ -20,6 +20,8 @@ options = {
     onconfig: function (config, next) {
       conf = config;
 
+      require('./lib/config').init(config);
+
       // allow command line switch from serving /dist to /app
       if( config.get('dev') ) {
         var middleware = config.get('middleware').static;
@@ -33,7 +35,7 @@ options = {
 
       db.init(config, function(err, database) {
 
-        if( config.get('dev') ) {
+        if( config.get('dev') || config.get('local') ) {
           logger = {
             info : function(msg) {
               console.log(msg);
@@ -91,7 +93,8 @@ app.on('start', function () {
 function onReady(config) {
   server = http.createServer(app);
 
-  if( conf.get('dev') ) {
+  var devCon = require('./lib/dev');
+  if( conf.get('dev') || config.get('local') ) {
     devCon.init(server, app);
   } else {
     devCon.prod(app);

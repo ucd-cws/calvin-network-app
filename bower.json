@@ -32,7 +32,7 @@
     "paper-toast": "PolymerElements/paper-toast#~1.0.0",
     "marked": "~0.3.5",
     "leaflet.heat": "Leaflet.heat#*",
-    "leaflet-canvas-geojson": "v2.2",
+    "leaflet-canvas-geojson": "v2.3",
     "polymer": "Polymer#^1.6.1"
   }
 }
