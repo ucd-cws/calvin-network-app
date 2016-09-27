@@ -17,9 +17,10 @@
 
     <div class="row">
       <div class="col-sm-4">
-        <input type="checkbox" on-click="toggle"/> Animation Layer
+        <input type="checkbox" on-click="toggle" id="checkbox" style="display:none" /> 
+        <span id="loading"><i class="fa fa-spinner fa-spin"></i> Processing</span> Animation Layer
       </div>
-      <div class="col-sm-8"style="display:none; text-align:center" id="controls">
+      <div class="col-sm-8" style="display:none; text-align:center" id="controls">
         <a class="btn btn-default" on-click="previous"><i class="fa fa-arrow-left"></i></a>
         &nbsp;
         <input type="number" id="monthInput" class="form-control" value="1" on-change="onNumInput" style="width:35px" />-
@@ -59,13 +60,34 @@
         this.animationMenu.addEventListener('animation-filters-updated', this.onFiltersUpdated.bind(this));
         this.onFiltersUpdated();
 
-        var devElement = document.querySelector('cwn-dev');
-        if( devElement.dev === undefined ) {
-          devElement.addEventListener('is-dev', this.initRender.bind(this));
-        } else {
-          this.initRender({detail: devElement.dev});
+        this.style.display = 'block';
+        // var devElement = document.querySelector('cwn-dev');
+        // if( devElement.dev === undefined ) {
+        //   devElement.addEventListener('is-dev', this.initRender.bind(this));
+        // } else {
+        //   this.initRender({detail: devElement.dev});
+        // }
+
+        var dev = document.querySelector('cwn-dev');
+        dev.addEventListener('timeseries-process-start', this.onProcessingStart.bind(this));
+        dev.addEventListener('timeseries-process-end', this.onProcessingEnd.bind(this));
+
+        if( CWN.timeseriesProcessing === false ) {
+          this.onProcessingEnd();
         }
       },
+
+      onProcessingStart : function() {
+        if( this.showing ) this.toggle();
+        this.$.checkbox.style.display = 'none';
+        this.$.loading.style.display = 'inline-block';
+      },
+
+      onProcessingEnd : function() {
+        this.$.loading.style.display = 'none';
+        this.$.checkbox.style.display = 'inline-block';
+      },
+
 
       initRender : function(e) {
         if( e.detail === false ) {
@@ -76,11 +98,14 @@
         }
       },
 
-      loadMinMax : function() {
+      loadMinMax : function(callback) {
+        if( this.minMaxOrg ) return callback();
+
         $.get('/network/timesliceMinMax', function(resp){
           this.minMaxOrg = resp;
           this.scaleMinMax();
           this.animationMenu.setMax(this.minMaxOrg);
+          callback();
         }.bind(this));
       },
 
@@ -228,14 +253,15 @@
           onClick : this.onClick.bind(this),
           zIndex : 10
         });
+        this.timeslice.animating = true;
         this.timeslice.addTo(this.map);
       },
 
       onClick : function(features, e) {
         if( features.length == 0 ) return;
 
-        if( features.length == 1 && features[0].properties.prmname ) {
-          window.location.href = '#info/' + features[0].properties.prmname;
+        if( features.length == 1 && features[0].geojson.properties.prmname ) {
+          window.location.href = '#info/' + features[0].geojson.properties.prmname;
           return;
         }
 
@@ -243,10 +269,10 @@
         var array = [];
         var nodes = {};
         for( var i = 0; i < features.length; i++ ) {
-          if( nodes[features[i].properties.prmname] ) continue;
-          nodes[features[i].properties.prmname] = 1;
+          if( nodes[features[i].geojson.properties.prmname] ) continue;
+          nodes[features[i].geojson.properties.prmname] = 1;
 
-          array.push(CWN.ds.lookupMap[features[i].properties.prmname]);
+          array.push(CWN.ds.lookupMap[features[i].geojson.properties.prmname]);
         }
 
         this.mapEle.selector.onClick(array);
@@ -258,7 +284,7 @@
         var i, f, key;
 
         for( i = 0; i < features.length; i++ ) {
-          f = features[i].properties;
+          f = features[i].geojson.properties;
           label.push('<b>'+f.prmname+':</b> '+f.type+' = '+f[f.type]);
         }
 
@@ -273,17 +299,19 @@
 
 
       getData : function(callback) {
-        if( this.cache[this.date] ) {
-          this.animationFrameCount = 1;
-          this.onResponse(this.cache[this.date].data);
-          if( callback ) callback();
-        } else {
-          this.requestData(this.date, function(resp){
+        this.loadMinMax(function(){
+          if( this.cache[this.date] ) {
             this.animationFrameCount = 1;
-            this.onResponse(resp.data);
+            this.onResponse(this.cache[this.date].data);
             if( callback ) callback();
-          }.bind(this));
-        }
+          } else {
+            this.requestData(this.date, function(resp){
+              this.animationFrameCount = 1;
+              this.onResponse(resp.data);
+              if( callback ) callback();
+            }.bind(this));
+          }
+        }.bind(this));
       },
 
       requestData : function(date, callback) {
@@ -299,9 +327,10 @@
 
           resp.lookup = {};
           for( var i = 0; i < resp.data.length; i++ ) {
-            var geojson = JSON.parse(resp.data[i]);
-            resp.data[i] = geojson;
-            resp.lookup[geojson.properties.prmname+'-'+geojson.properties.type] = geojson;
+            //var geojson = JSON.parse(resp.data[i]);
+            var geojson = resp.data[i];
+            geojson.properties.id = geojson.properties.prmname+'-'+geojson.properties.type;
+            resp.lookup[geojson.properties.id] = geojson;
           }
 
           resp.data.sort(function(a, b){
@@ -356,7 +385,13 @@
           }
 
         } else if( feature.geojson.properties.type === 'flow' && this.filters.flow ){
+          if( point[0].x === point[1].x ) {
+            return; // WHY ARE THESE FOOBAR?
+          }
+
           ctx.beginPath();
+
+
 
           ctx.moveTo(point[0].x, point[0].y);
           ctx.lineTo(point[1].x, point[1].y);
@@ -429,10 +464,10 @@
             this.scale(data[i].properties, previousData ? previousData.lookup[id] : null);
           //}
 
-          this.timeslice.addFeature({
+          this.timeslice.addCanvasFeature(new L.CanvasFeature({
             geojson: data[i],
-            render: this.render.bind(this)
-          });
+            renderer: this.render.bind(this)
+          }));
         }
 
         var disappeared = [];
@@ -451,22 +486,21 @@
               this.cache[this.date].lookup[key] = newNode;
 
               // add to layer
-              this.timeslice.addFeature({
+              this.timeslice.addCanvasFeature(new L.CanvasFeature({
                 geojson: newNode,
-                render: this.render.bind(this)
-              });
+                renderer: this.render.bind(this)
+              }));
             }
           }
         }
         //console.log(disappeared);
-
 
         this.timeslice.render();
 
         // TODO: make sure mouse is still over map
         // update the hover on animation
         if( this.lastMouseEvent && this.playing ) {
-          this.timeslice._intersects(this.lastMouseEvent);
+          // this.timeslice._intersects(this.lastMouseEvent);
           this.timeslice.onMouseMove(this.timeslice.intersectList, this.lastMouseEvent);
         }
       },

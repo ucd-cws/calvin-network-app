@@ -62,6 +62,12 @@
           this.fire('is-dev', true);
           this.dev = true;
           CWN.dev = true;
+
+          if( !resp.timeseriesProcessing ) {
+            this.fire('timeseries-process-end');
+            CWN.timeseriesProcessing = false;
+          }
+
           return callback(true);
         }
 
@@ -96,6 +102,7 @@
           console.log('Dev socket connection established');
           this.setTitle(true);
         }.bind(this));
+
         this.socket.on('disconnect', function() {
           console.log('Dev socket connection established');
           this.setTitle(false);
@@ -103,6 +110,13 @@
 
         this.socket.on('network-wired-to', function (data) {
           this.$['popup-wireto'].innerHTML = data.dir;
+        }.bind(this));
+
+        this.socket.on('timeseries-process-start', function(){
+          this.fire('timeseries-process-start');
+        }.bind(this));
+        this.socket.on('timeseries-process-end', function(){
+          this.fire('timeseries-process-end');
         }.bind(this));
 
         this.socket.on('network-update-start', function (data) {

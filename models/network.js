@@ -25,20 +25,17 @@ function getExtras(prmname, callback) {
 }
 
 function getTimesliceMinMax(callback) {
-  var collection = db.mongoConnection.collection('timeslice');
-  collection.findOne({is: 'minMax'}, {_id: 0}, callback);
+  callback(null, db.getTimeSeriesMinMax());
 }
 
 function getTimeslice(date, callback) {
-  var collection = db.mongoConnection.collection('timeslice');
-  collection.findOne({date: date}, {_id: 0}, function(err, resp){
-    if( err ) {
-      return callback(err);
-    } else if( !resp ) {
-      return callback('No data for: '+date);
-    }
-    callback(null, resp);
-  });
+  var data = db.getTimeSeriesDate(date);
+
+  if( !data ) {
+    callback({error: true, message : 'Either timeseries is still loading or date does not exist'});
+  } else {
+    callback(null, data);
+  }
 }
 
 
