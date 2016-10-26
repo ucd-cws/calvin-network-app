@@ -4,6 +4,7 @@ function RegionCollection(){
     this.index = {
       name : {},
       hobbesId : {},
+      regions : {}
     };
 
     this.data = [],
@@ -12,13 +13,23 @@ function RegionCollection(){
     this.init = function(regions) {
       this.index = {
         name : {},
-        hobbesId : {}
+        hobbesId : {},
+        regions : {}
       };
       this.aggregate = {};
 
       regions.forEach((region) => {
         this.index.name[region.properties.name] = region;
         this.index.hobbesId[region.properties.hobbes.id] = region;
+
+        if( !region.properties.hobbes.region && region.properties.hobbes.id !== 'California' ) {
+          region.properties.hobbes.region = 'California';
+        }
+
+        if( !this.index.regions[region.properties.hobbes.region] ) {
+          this.index.regions[region.properties.hobbes.region] = [];
+        }
+        this.index.regions[region.properties.hobbes.region].push(region);
       });
 
       this.data = regions;
@@ -74,6 +85,10 @@ function RegionCollection(){
           });
         });
       }
+    }
+
+    this.getByRegion = function(id) {
+      return this.index.regions[id] || [];
     }
 
     this.getByName = function(name) {

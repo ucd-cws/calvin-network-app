@@ -31,9 +31,7 @@ function aftertimeslice(nodes, regions, callback) {
     properties : {
       name : 'California',
       id : 'California',
-      parents : [],
       nodes : {},
-      subregions : []
     }
   };
 

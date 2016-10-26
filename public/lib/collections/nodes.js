@@ -10,7 +10,8 @@ function NodeCollection(){
       prmname : {},
       hobbesId : {},
       origins : {},
-      terminals : {}
+      terminals : {},
+      regions : {}
     };
 
     this.init = function(nodes) {
@@ -22,7 +23,8 @@ function NodeCollection(){
         prmname : {},
         hobbesId : {},
         origins : {},
-        terminals : {}
+        terminals : {},
+        regions : {}
       };
 
       nodes.forEach((node) => {
@@ -33,6 +35,14 @@ function NodeCollection(){
           this.links.push(node);
           this.setLinkIndexes(node);
         } else {
+          if( !node.properties.hobbes.region ) {
+            node.properties.hobbes.region = 'California';
+          }
+
+          if( !this.index.regions[node.properties.hobbes.region] ) {
+            this.index.regions[node.properties.hobbes.region] = [];
+          }
+          this.index.regions[node.properties.hobbes.region].push(node);
           this.nodes.push(node);
         }
       });
@@ -73,6 +83,10 @@ function NodeCollection(){
         }
         this.extras[prmname] = resp;
       });
+    }
+
+    this.getByRegion = function(id) {
+      return this.index.regions[id] || [];
     }
 
     this.getByPrmname = function(prmname) {

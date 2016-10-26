@@ -8,7 +8,9 @@
       "program": "${workspaceRoot}/server.js",
       "stopOnEntry": false,
       "args": [
-        "--dev"
+        "--dev",
+        "--path",
+        "/Users/jrmerz/dev/watershed/calvin-network-data-v2/data"
       ],
       "cwd": "${workspaceRoot}",
       "preLaunchTask": null,

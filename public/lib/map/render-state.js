@@ -36,12 +36,14 @@ var behavior = {
     var state = this.menu.state;
 
     if( state.enabled.indexOf(id) > -1 ) {
-      this._addStateNodes(region.properties.hobbes.nodes, state);
+      var childNodes = collections.nodes.getByRegion(region.properties.hobbes.id);
+      this._addStateNodes(childNodes, state);
 
-      if( !region.properties.hobbes.subregions ) return;
+      var children = collections.regions.getByRegion(region.properties.hobbes.id);
+      if( children.length === 0 ) return;
 
-      for( var i = 0; i < region.properties.hobbes.subregions.length; i++ ) {
-        this._updateRenderState(region.properties.hobbes.subregions[i]);
+      for( var i = 0; i < children.length; i++ ) {
+        this._updateRenderState(children[i].properties.hobbes.id);
       }
     } else {
 
@@ -62,10 +64,8 @@ var behavior = {
       }
     }
 
-    for( var id in nodes ) {
-      var node = collections.nodes.getById(id);
-      if( !node ) node = collections.nodes.getByPrmname(id);
-      if( !node ) continue;
+    for( var i = 0; i < nodes.length; i++ ) {
+      var node = nodes[i];
 
       var render = node.properties._render || {};
       if( render.show === false ) continue;
