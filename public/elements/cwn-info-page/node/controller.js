@@ -35,14 +35,14 @@ Polymer({
         this.type = this.feature.properties.type;
         this.editUrl = '#edit/'+this.feature.properties.prmname;
 
-        if( this.feature.properties.type == 'Diversion' || this.feature.properties.type == 'Return Flow' ) {
-          this.$.label.innerHTML = this.feature.properties.origin.replace(/_/g, ' ')+' <small>to</small> '+this.feature.properties.terminus.replace(/_/g, ' ');
+        if( this.feature.properties.hobbes.type === 'link' ) {
+          this.$.label.innerHTML = this.feature.properties.hobbes.origin.replace(/\//g, ' / ') + 
+                                  '<br /><small>to</small><br />' +
+                                  this.feature.properties.hobbes.terminus.replace(/\//g, ' / ');
         } else if( this.feature.properties.type == 'Region Link') {
           this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to/from</small> ').replace(/_/g, ' ');
-        } else if( this.feature.properties.type == 'Region') {
-          this.$.label.innerHTML = this.feature.properties.label;
         } else {
-          this.$.label.innerHTML = this.feature.properties.prmname.replace(/_/g, ' ');
+          this.$.label.innerHTML = this.feature.properties.hobbes.id.replace(/\//g, ' / ');
         }
 
         if( this.feature.properties.type == 'Region Link' ) {
@@ -84,17 +84,15 @@ Polymer({
 
               if( link && node ) {
                 this[type].push({
-                  name: node.properties.prmname,
-                  link: '#info/'+link.properties.prmname,
-                  hasLink : true,
-                  description: node ? node.properties.description : ''
+                  name: node.properties.hobbes.id,
+                  link: '#info/'+link.properties.hobbes.id.replace(/\//g,','),
+                  hasLink : true
                 });
               } else {
                 this[type].push({
                     name: this.feature.properties.hobbes[type][i].node,
                     hasLink : false,
                     link: '',
-                    description: ''
                 });
               }
             }
@@ -111,9 +109,6 @@ Polymer({
         if( this.$.btns.update ) {
           this.$.btns.update(this.feature);
         }
-
-        this.onOriginUpdate();
-        this.onTerminalUpdate();
     },
 
     createRenderLinks : function(name) {
@@ -125,10 +120,9 @@ Polymer({
         link = links[i];
 
         tmp.push({
-          name: link.properties.prmname,
-          link: '#info/'+link.properties.prmname,
-          hasLink : true,
-          description: link.properties.description ? link.properties.description : ''
+          name: link.properties.hobbes.id,
+          link: '#info/'+link.properties.hobbes.id.replace(/\//g,','),
+          hasLink : true
         });
       }
 
@@ -137,29 +131,27 @@ Polymer({
     },
 
     onOriginUpdate : function() {
-        if( !this.feature.properties.origin ) return this.$.origin.style.display = 'none';
+        if( !this.feature.properties.hobbes.origin ) return this.$.origin.style.display = 'none';
         else this.$.origin.style.display = 'block';
+    },
 
-        this.hasOriginDescription = false;
-        this.originDescription = '';
-
-        if(CWN.collections.nodes.getByPrmname(this.feature.properties.origin) ) {
-            this.hasOriginDescription = true;
-            this.originDescription = CWN.collections.nodes.getByPrmname(this.feature.properties.origin).properties.description
-        }
+    onTerminalUpdate : function() {
+        if( !this.feature.properties.hobbes.terminus ) return this.$.terminal.style.display = 'none';
+        else this.$.terminal.style.display = 'block';
     },
 
     renderRegionNodes : function() {
       var cols = ['','',''], col, node, c = 0;
-      for( var i = 0; i < this.feature.properties.nodes.length; i++ ) {
+
+      var nodes = CWN.collections.nodes.getAllNestedForRegion(this.feature.properties.hobbes.id);
+      for( var i = 0; i < nodes.length; i++ ) {
         col = c % 3;
 
-        node = CWN.collections.nodes.getByPrmname(this.feature.properties.nodes[i]);
-        if( !node ) continue;
+        node = nodes[i];
+        if( node.properties.hobbes.type === 'link' ) continue;
 
         cols[col] +=
-          '<cwn-info-link prmname="'+node.properties.prmname+'"></cwn-info-link>'+
-          '<div class="info-block" style="margin-bottom: 15px">'+(node.properties.description || '')+'</div>';
+          '<cwn-info-link hobbes-id="'+node.properties.hobbes.id+'"></cwn-info-link>';
         c++;
       }
 
@@ -178,19 +170,6 @@ Polymer({
         .on('click', function(){
           $(this.$.regionNodes).find('.well').toggle('slow');
         }.bind(this));
-    },
-
-    onTerminalUpdate : function() {
-        if( !this.feature.properties.terminus ) return this.$.terminal.style.display = 'none';
-        else this.$.terminal.style.display = 'block';
-
-        this.hasTerminalDescription = false;
-        this.terminalDescription = '';
-
-        if( CWN.collections.nodes.getByPrmname(this.feature.properties.terminus) ) {
-            this.hasTerminalDescription = true;
-            this.terminalDescription =CWN.collections.nodes.getByPrmname(this.feature.properties.terminus).properties.description
-        }
     },
 
     updateSize : function() {
@@ -261,6 +240,6 @@ Polymer({
     },
 
     goToGraph : function() {
-      window.location.hash = 'graph/'+this.feature.properties.prmname;
+      window.location.hash = 'graph/'+this.feature.properties.hobbes.id.replace(/\//g,',');
     }
 });

@@ -115,6 +115,7 @@ Polymer({
     onLoad : function() {
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
+        loc[1] = loc[1].replace(/,/g, '/');
         if( this.feature && this.feature.prmname == loc[1] ) {
           this.update();
         } else {
@@ -130,9 +131,9 @@ Polymer({
       this.costsReady = false;
       this.climateReady = false;
 
-      if( CWN.collections.nodes.getByPrmname(prmname) ) {
-        this.feature = CWN.collections.nodes.getByPrmname(prmname);
-      } else if( CWN.collections.regions.getByName(prmname) ) {
+      if( CWN.collections.nodes.getById(prmname) ) {
+        this.feature = CWN.collections.nodes.getById(prmname);
+      } else if( CWN.collections.regions.getById(prmname) ) {
         this.setRegion(prmname);
       } else {
         // see if this is a region to feature
@@ -175,70 +176,8 @@ Polymer({
       }, 500);
     },
 
-    setRegion : function(prmname) {
-      var region = CWN.collections.regions.getByName(prmname);
-
-      var nodes = {};
-      var origins = {};
-      var terminals = {};
-      var node;
-
-      for( var i = 0; i < CWN.collections.nodes.nodes.length; i++ ) {
-        node = CWN.collections.nodes.nodes[i].properties;
-        if( !node ) continue;
-
-        if( node.regions && node.regions.indexOf(prmname) > -1 ) {
-          nodes[node.prmname] = 1;
-        }
-      }
-
-      for( var i = 0; i < CWN.collections.nodes.links.length; i++ ) {
-        node = CWN.collections.nodes.links[i].properties;
-        if( !node ) continue;
-
-        if( nodes[node.origin] && nodes[node.terminus] ) continue; // ignore internal
-
-        if( nodes[node.origin] ) {
-          terminals[node.terminus] = {
-            link_prmname : node.prmname,
-            prmname : node.terminus
-          }
-        } else if( nodes[node.terminus] ) {
-
-          origins[node.origin] = {
-            link_prmname : node.prmname,
-            prmname : node.origin
-          };
-        }
-      }
-
-      arr = [];
-      for( var key in origins ) {
-        arr.push(origins[key]);
-      }
-      origins = arr;
-
-      arr = [];
-      for( var key in terminals ) {
-        arr.push(terminals[key]);
-      }
-      terminals = arr;
-
-
-      this.feature = {
-        properties : {
-          prmname : prmname,
-          type : 'Region',
-          nodes : Object.keys(nodes),
-          origins : origins,
-          terminals : terminals,
-          parents : region.properties.parents,
-          subregions : region.properties.subregions,
-          repo : region.properties.repo,
-          label : region.properties.name,
-          description : region.properties.region
-        }
-      };
+    setRegion : function(id) {
+      this.feature = CWN.collections.regions.getById(id);
     },
 
     setRegionToRegion : function(prmname) {

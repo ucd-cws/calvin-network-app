@@ -6,7 +6,7 @@ var behavior = {
 
     if( features.length == 1 && type == 'Polygon' || type == 'MultiPolygon' ) {
       if( this.shiftPessed ) {
-        window.location.href = '#info/' + features[0].geojson.properties.name;
+        window.location.href = '#info/' + features[0].geojson.properties.hobbes.id.replace(/\//g,',');
         return;
       }
 
@@ -25,7 +25,7 @@ var behavior = {
     }
 
     if( features.length == 1 && features[0].geojson.properties.prmname ) {
-      window.location.href = '#info/' + features[0].geojson.properties.prmname;
+      window.location.href = '#info/' + features[0].geojson.properties.hobbes.id.replace(/\//g,',');
       return;
     }
 
@@ -63,6 +63,8 @@ var behavior = {
       if( !f._render ) f._render = {};
       f._render.hover = true;
     }
+
+    this.markerLayer.render();
   },
 
   onLayerMouseOut : function(features) {
@@ -70,6 +72,8 @@ var behavior = {
       if( !features[i].geojson.properties._render ) features[i].geojson.properties._render = {};
       features[i].geojson.properties._render.hover = false;
     }
+
+    this.markerLayer.render();
   },
 
   showHoverLabel : function(show, label, pos) {

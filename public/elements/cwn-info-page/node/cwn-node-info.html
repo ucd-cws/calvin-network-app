@@ -42,10 +42,7 @@
               <div id="origin">
                 <div style="text-align:right">
                   <div>
-                    <cwn-info-link prmname$="{{feature.properties.origin}}"></cwn-info-link>
-                  </div>
-                  <div hidden$="{{!hasOriginDescription}}">
-                    <div class="description">{{originDescription}}</div>
+                    <cwn-info-link hobbes-id$="{{feature.properties.hobbes.origin}}"></cwn-info-link>
                   </div>
                 </div>
               </div>
@@ -54,9 +51,9 @@
 
               <div class="node-info-list">
                 <template is="dom-repeat" items="{{origins}}">
-                  <div style="text-align:right;margin-bottom:20px">
-                    <div>
-                      <cwn-info-link prmname$="{{item.name}}"></cwn-info-link>&nbsp;&nbsp;&nbsp;
+                  <div style="margin-bottom:20px" class="layout horizontal end-justified ">
+
+                      <cwn-info-link hobbes-id$="{{item.name}}" style="padding-right: 10px; width: 100%"></cwn-info-link>
 
                       <span hidden$="{{item.hideArrow}}">
                         <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
@@ -68,8 +65,6 @@
                         </span>
                       </span>
 
-                    </div>
-                    <div class="description" hidden$="{{!item.description}}" style="margin-right: 55px">{{item.description}}</div>
                   </div>
                 </template>
               </div>
@@ -85,7 +80,7 @@
                     <td>
                       <cwn-app-icon type$="{{type}}" width="72" height="72" fillFromType="true" style="margin:35px 15px 0 15px"></cwn-app-icon>
                     </td><td>
-                      <h3 id="label" style="text-transform: capitalize"></h3>
+                      <h4 id="label"></h4>
                       <div><b>{{feature.properties.type}}</b></div>
                     </td>
                   </tr>
@@ -106,10 +101,7 @@
 
             <div id="terminal">
               <div>
-                <cwn-info-link prmname$="{{feature.properties.terminus}}"></cwn-info-link>
-              </div>
-              <div hidden$="{{!hasTerminalDescription}}">
-                <div class="description">{{terminalDescription}}</div>
+                <cwn-info-link hobbes-id$="{{feature.properties.hobbes.terminus}}"></cwn-info-link>
               </div>
             </div>
 
@@ -118,7 +110,7 @@
             <div class="node-info-list">
               <template is="dom-repeat" items="{{terminals}}">
                 <div style="margin-bottom:20px">
-                  <div>
+                  <div class="layout horizontal">
 
                     <span hidden$="{{item.hideArrow}}">
                       <a href="{{item.link}}" hidden$="{{!item.hasLink}}">
@@ -130,11 +122,8 @@
                       </span>
                     </span>
 
-                    &nbsp;&nbsp;&nbsp;<cwn-info-link prmname$="{{item.name}}"></cwn-info-link>
+                    <cwn-info-link hobbes-id$="{{item.name}}"></cwn-info-link>
 
-                  </div>
-                  <div hidden$="{{!item.description}}">
-                    <div class="description" style="margin-left: 55px">{{item.description}}</div>
                   </div>
                 </div>
               </template>

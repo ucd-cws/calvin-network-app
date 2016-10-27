@@ -149,6 +149,7 @@
               }, CWN.collections.regions.data[i].properties.hobbes.id));
             }
 
+            console.log(CWN.collections.nodes.links.length);
             for( var i = 0; i < CWN.collections.nodes.links.length; i++ ) {
               this.markerLayer.addCanvasFeature(new L.CanvasFeature({
                 geojson: CWN.collections.nodes.links[i],
@@ -156,6 +157,7 @@
               }, CWN.collections.nodes.links[i].properties.hobbes.id));
             }
 
+            console.log(CWN.collections.nodes.nodes.length);
             for( var i = 0; i < CWN.collections.nodes.nodes.length; i++ ) {
               if( !CWN.collections.nodes.nodes[i].geometry ) {
                 continue;

@@ -173,7 +173,7 @@
         },
 
         setInfoFeature : function() {
-          var name = window.location.hash.replace('#','').split('/')[1];
+          var name = window.location.hash.replace('#','').split('/')[1].replace(/,/g,'\/');
           name = decodeURIComponent(name);
           this.$.info.setFeature(name);
         },
@@ -204,7 +204,7 @@
 
         onFeatureSelected : function(e) {
           this.selectedPage = this.PAGES.info;
-          window.location.hash = 'info/'+e.detail.properties.prmname;
+          window.location.hash = 'info/'+e.detail.properties.hobbes.id.replace(/\//g,',');
         },
 
         onFiltersUpdated : function(e) {

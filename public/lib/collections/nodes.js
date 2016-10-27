@@ -11,7 +11,10 @@ function NodeCollection(){
       hobbesId : {},
       origins : {},
       terminals : {},
-      regions : {}
+      // only nodes in specified region
+      regions : {},
+      // nodes and links in region and child regions
+      nestedRegions : {}
     };
 
     this.init = function(nodes) {
@@ -24,12 +27,17 @@ function NodeCollection(){
         hobbesId : {},
         origins : {},
         terminals : {},
-        regions : {}
+        regions : {},
+        nestedRegions : {
+          'California' : []
+        }
       };
 
       nodes.forEach((node) => {
         this.index.prmname[node.properties.prmname] = node;
         this.index.hobbesId[node.properties.hobbes.id] = node;
+
+        this._addNestedRegions(node);
 
         if( node.properties.hobbes.type === 'link' ) {
           this.links.push(node);
@@ -48,17 +56,34 @@ function NodeCollection(){
       });
     }
 
+    this._addNestedRegions = function(node) {
+      this.index.nestedRegions.California.push(node);
+
+      var regions = node.properties.hobbes.regions;
+      regions.forEach(function(region) {
+        if( !this.index.nestedRegions[region] ) {
+          this.index.nestedRegions[region] = [];
+        }
+        this.index.nestedRegions[region].push(node);
+      }.bind(this));
+
+      if( !this.index.nestedRegions[node.properties.hobbes.region] ) {
+        this.index.nestedRegions[node.properties.hobbes.region] = [];
+      }
+      this.index.nestedRegions[node.properties.hobbes.region].push(node);
+    }
+
     this.setLinkIndexes = function(link) {
-        if( !this.index.origins[link.properties.origin] ) {
-            this.index.origins[link.properties.origin] = [link];
+        if( !this.index.origins[link.properties.hobbes.origin] ) {
+            this.index.origins[link.properties.hobbes.origin] = [link];
         } else {
-            this.index.origins[link.properties.origin].push(link);
+            this.index.origins[link.properties.hobbes.origin].push(link);
         }
 
-        if( !this.index.terminals[link.properties.terminus] ) {
-            this.index.terminals[link.properties.terminus] = [link];
+        if( !this.index.terminals[link.properties.hobbes.terminus] ) {
+            this.index.terminals[link.properties.hobbes.terminus] = [link];
         } else {
-            this.index.terminals[link.properties.terminus].push(link);
+            this.index.terminals[link.properties.hobbes.terminus].push(link);
         }
     }
 
@@ -89,6 +114,10 @@ function NodeCollection(){
       return this.index.regions[id] || [];
     }
 
+    this.getAllNestedForRegion = function(id) {
+      return this.index.nestedRegions[id] || [];
+    }
+
     this.getByPrmname = function(prmname) {
       return this.index.prmname[prmname];
     }
@@ -97,12 +126,12 @@ function NodeCollection(){
       return this.index.hobbesId[id];
     }
 
-    this.getOrigins = function(prmname) {
-      return this.index.origins[prmname];
+    this.getOrigins = function(id) {
+      return this.index.origins[id] || [];
     }
 
-    this.getTerminals = function(prmname) {
-      return this.index.terminals[prmname];
+    this.getTerminals = function(id) {
+      return this.index.terminals[id] || [];
     }
 }
 

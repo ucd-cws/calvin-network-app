@@ -60,11 +60,11 @@
       if( feature.properties.type == 'Region Link' ) {
         link = '<cwn-app-icon type="Region Link" height="26" width="26"></cwn-app-icon> <a style="font-size:18px;text-transform:capitalize" href="#info/'+feature.properties.prmname+'">'+feature.properties.prmname.replace(/_/g,' ').replace(/--/g,' to ')+'</a> ';
       } else if ( feature.properties.type == 'Region' ) {
-        link = '<cwn-app-icon type="Region" height="26" width="26"></cwn-app-icon> '+feature.properties.name;
+        link = '<cwn-app-icon type="Region" height="26" width="26"></cwn-app-icon> '+feature.properties.hobbes.id;
         regionLinks = '<div style="padding-left:15px"><a class="region btn btn-link" index="'+i+'" style="cusor:pointer"><i class="fa fa-expand"></i> Open</a> '+
                       ' <a href="#info/'+feature.properties.id+'" class="btn btn-link"><i class="fa fa-info"></i> Info</a></div>'
       } else {
-        link = '<a href="#info/'+feature.properties.prmname+'" style="font-size:18px">'+feature.properties.prmname+'</a>';
+        link = '<a href="#info/'+feature.properties.hobbes.id.replace(/\//g, ',')+'" style="font-size:18px">'+feature.properties.hobbes.id+'</a>';
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
       }
 

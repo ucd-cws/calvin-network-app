@@ -9,21 +9,26 @@
             vertical-align: top;
         }
         :host {
-            white-space: nowrap;
             display: inline-block;
+            text-align: left;
         }
     </style>
     <template>
-        <span hidden$="{{!valid}}">
-            <cwn-app-icon type$="{{type}}" width="22" height="22" fillFromType="true"></cwn-app-icon>
-            <a href="{{link}}">{{prmname}}</a> <span style="vertical-align:top; color: #ccc">{{type}}</span>
-        </span>
 
-        <span hidden$="{{!region}}">
-            <span>{{label}}</span> <span style="vertical-align:top; color: #ccc">{{type}}</span>
-        </span>
+        <div hidden$="[[!valid]]" class="layout horizontal">
+            <div style="padding: 10px">
+                <cwn-app-icon type$="[[type]]" width="26" height="26" fillFromType="true"></cwn-app-icon>
+            </div>
+            <div>
+                <div><a href="[[link]]">[[label]]</a></div>
+                <div>
+                    <span style="color: #888; font-weight:bold">[[type]]</span><span style="color: #888">.</span>
+                    <span>[[description]]</span>
+                </div>
+            </div>
+        </div>
 
-        <span hidden$="{{!unknown}}">{{prmname}}</span>
+        <span hidden$="[[!unknown]]">[[id]]</span>
     </template>
 </dom-module>
 
@@ -33,29 +38,29 @@
         is : 'cwn-info-link',
 
         properties : {
-            prmname : {
+            hobbesId : {
               type : String,
               observer : 'update'
             }
         },
 
         ready : function() {
-          this.prmname = '';
+          this.hobbesId = '';
           this.link = '';
           this.type = '';
           this.label = '';
+          this.description = '';
           this.reset();
         },
 
         reset : function() {
           this.valid = false;
           this.unknown = false;
-          this.region = false;
         },
 
         attached : function() {
-          if( !this.prmname && this.getAttribute('prmname') ) {
-            this.prmname = this.getAttribute('prmname');
+          if( !this.hobbesId && this.getAttribute('hobbes-id') ) {
+            this.hobbesId = this.getAttribute('hobbes-id');
           }
 
           if( CWN.controllers.network.loading ) {
@@ -69,22 +74,26 @@
           if( CWN.controllers.network.loading ) return;
           this.reset();
 
-          if( CWN.collections.regions.getByName(this.prmname) ) {
+          var item = CWN.collections.regions.getById(this.hobbesId);
+          if( item ) {
             this.region = true;
+            this.valid = true;
             this.type = 'Region';
-            this.label = CWN.collections.regions.getByName(this.prmname).properties.name;
-            return;
+          } else {
+              item = CWN.collections.nodes.getById(this.hobbesId);
+              if( item ) {
+                  this.valid = true;
+                  this.type = item.properties.type;
+              }
           }
 
-          if( !CWN.collections.nodes.getByPrmname(this.prmname) ) {
-              this.unknown = true;
-              return;
+          if( item ) {
+            this.label = item.properties.hobbes.id.replace(/\//g,' / ');
+            this.link = '#info/'+ item.properties.hobbes.id.replace(/\//g,',');
+            this.description = item.properties.description || '';
+          } else {
+            this.unknown = true;
           }
-
-          this.valid = true;
-
-          this.type = CWN.collections.nodes.getByPrmname(this.prmname).properties.type;
-          this.link = '#info/'+ this.prmname;
         }
 
     });

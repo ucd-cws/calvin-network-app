@@ -106,10 +106,11 @@
             var region = CWN.collections.regions.getById(name);
 
             if( !region ) return;
-            if( !region.properties.hobbes.subregions ) return;
+            var subregions = CWN.collections.regions.getByRegion(region.properties.hobbes.id);
+            if( subregions.length === 0 ) return;
 
-            for( var i = 0; i < region.properties.hobbes.subregions.length; i++ ) {
-              this._getEnabled(region.properties.hobbes.subregions[i]);
+            for( var i = 0; i < subregions.length; i++ ) {
+              this._getEnabled(subregions[i].properties.hobbes.id);
             }
           } else {
             this.state.disabled.push(name);
@@ -172,11 +173,11 @@
                 this.fire('nohover', regionId);
               }.bind(this));
 
+            var subregions = CWN.collections.regions.getByRegion(id);
+            if( subregions.length === 0 ) return;
 
-            if( !region.properties.hobbes.subregions ) return;
-
-            for( var i = 0; i < region.properties.hobbes.subregions.length; i++ ) {
-                this.renderRegion(region.properties.hobbes.subregions[i], children[0]);
+            for( var i = 0; i < subregions.length; i++ ) {
+                this.renderRegion(subregions[i].properties.hobbes.id, children[0]);
             }
         },
 

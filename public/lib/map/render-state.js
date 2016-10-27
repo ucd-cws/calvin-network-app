@@ -13,6 +13,7 @@ var behavior = {
     this._updateRenderState('California');
 
     var f = null, render;
+
     for( var i = 0; i < this.markerLayer.features.length; i++ ) {
       f = this.markerLayer.features[i];
       r = f.geojson.properties._render || {};
@@ -36,8 +37,9 @@ var behavior = {
     var state = this.menu.state;
 
     if( state.enabled.indexOf(id) > -1 ) {
+      var nestedChildNodes = collections.nodes.getAllNestedForRegion(region.properties.hobbes.id);
       var childNodes = collections.nodes.getByRegion(region.properties.hobbes.id);
-      this._addStateNodes(childNodes, state);
+      this._addStateNodes(childNodes, nestedChildNodes, state);
 
       var children = collections.regions.getByRegion(region.properties.hobbes.id);
       if( children.length === 0 ) return;
@@ -51,7 +53,7 @@ var behavior = {
     }
   },
 
-  _addStateNodes : function(nodes, state) {
+  _addStateNodes : function(nodes, nestedNodes, state) {
     var self = this;
 
     // find first region and insert after
@@ -70,29 +72,34 @@ var behavior = {
       var render = node.properties._render || {};
       if( render.show === false ) continue;
 
-      if( node.properties.hobbes.type === 'link' ) {
-        var terminal = this._getStateNodeLocation(node.properties.terminus, state);
-        var origin = this._getStateNodeLocation(node.properties.origin, state);
-
-        if( !terminal || !origin ) continue;
-
-        var lineFeature;
-        if( terminal.isNode && origin.isNode ) {
-          lineFeature = this.createNodeLink(origin.center, terminal.center, node, index);
-          this.customLines[node.properties.origin+'_'+node.properties.terminus] = lineFeature;
-        } else {
-          // if this line already exists, a null value will be returned
-          lineFeature = this.createRegionLink(origin, terminal, node, index);
-        }
-
-        if( lineFeature ) {
-          this.renderState.lines.push(lineFeature.geojson.properties.hobbes.id);
-        }
-
-      } else {
-        this.renderState.points.push(node.properties.hobbes.id);
-      }
+      this.renderState.points.push(node.properties.hobbes.id);
     }
+
+    for( var i = 0; i < nestedNodes.length; i++ ) {
+      var node = nestedNodes[i];
+
+      var render = node.properties._render || {};
+      if( render.show === false ) continue;
+      if( node.properties.hobbes.type === 'node' ) continue;
+      
+      var terminal = this._getStateNodeLocation(node.properties.terminus, state);
+      var origin = this._getStateNodeLocation(node.properties.origin, state);
+
+      if( !terminal || !origin ) continue;
+
+      var lineFeature;
+      if( terminal.isNode && origin.isNode ) {
+        //lineFeature = this.createNodeLink(origin.center, terminal.center, node, index);
+        //this.customLines[node.properties.origin+'_'+node.properties.terminus] = lineFeature;
+        this.renderState.lines.push(node.properties.hobbes.id);
+      } else {
+        // if this line already exists, a null value will be returned
+        lineFeature = this.createRegionLink(origin, terminal, node, index);
+        if( lineFeature ) this.renderState.lines.push(lineFeature.geojson.properties.hobbes.id);
+      }
+
+    }
+
   },
 
   createNodeLink : function(origin, terminal, node, index) {
@@ -156,7 +163,7 @@ var behavior = {
     var properties;
     for( var i = this.markerLayer.features.length-1; i >= 0; i-- ) {
       properties = this.markerLayer.features[i].geojson.properties;
-      if( properties.hobbes.type === 'link' ) {
+      if( properties.type === 'Region Link' ) {
         this.markerLayer.features.splice(i, 1);
       }
     }
