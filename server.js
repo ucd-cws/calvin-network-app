@@ -104,7 +104,7 @@ function onReady(config) {
   server.on('listening', function () {
     console.log(sprintf('%-40.40s%10s', 'Server Url:', `http://localhost:${this.address().port}`));
 
-    if( conf.get('dev') || conf.get('local') ) {
+    if( (conf.get('dev') || conf.get('local')) && !config.get('noautostart') ) {
       var spawn = require('child_process').spawn
       if( process.platform === 'linux' ) {
         spawn('xdg-open', [`http://localhost:${this.address().port}`]);

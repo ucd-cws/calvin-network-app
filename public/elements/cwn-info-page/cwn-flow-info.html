@@ -46,7 +46,7 @@
       },
 
       update : function(feature) {
-        if( this.feature && feature.properties.prmname == this.feature.properties.prmname ) {
+        if( this.feature && feature.properties.hobbes.id == this.feature.properties.hobbes.id ) {
           return;
         }
 
@@ -70,13 +70,13 @@
 
        } else if( props.type == 'Region' ) {
 
-          if( CWN.dev ) {
-            this.showDevMessage();
-          } else {
+          //if( CWN.dev ) {
+          //  this.showDevMessage();
+          //} else {
             $(this).parent().show();
             this.$.loading.style.display = 'block';
             this.loadAggregate();
-          }
+          //}
 
        } else if( props.extras &&
           (props.extras.inflow || props.extras.flow || props.extras.sinks || props.extras.evaporation) ) {
@@ -170,7 +170,7 @@
       },
 
       loadAggregate : function() {
-        $.get('/regions/aggregateRegion?region='+this.feature.properties.prmname, function(resp) {
+        $.get('/regions/aggregateRegion?region='+this.feature.properties.hobbes.id, function(resp) {
           this.data = resp;
           this.$.loading.style.display = 'none';
           this.$.differenceChart.style.display = 'block';
@@ -178,15 +178,15 @@
           var data = [['Date','Amplitude Loss', 'Local Sinks', 'Evaporation', 'Link Outflows', '', 'Local Inflows', 'Link Inflows']];
           var diffData = [['Date', 'Difference']];
 
-          for( var date in resp.aggregate ) {
+          for( var date in this.data ) {
 
-            var localInflow = this.data.aggregate[date].inflows || 0;
-            var linkInflow = this.data.aggregate[date].regionLinkInflow || 0;
+            var localInflow = this.data[date].localInflow || 0;
+            var linkInflow = this.data[date].linkInflow || 0;
 
-            var sink = this.data.aggregate[date].sinks ? this.data.aggregate[date].sinks*-1 : 0;
-            var evaporation = this.data.aggregate[date].evaporation ? this.data.aggregate[date].evaporation*-1 : 0;
-            var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
-            var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
+            var sink = this.data[date].sink ? this.data[date].sink*-1 : 0;
+            var evaporation = this.data[date].evaporation ? this.data[date].evaporation*-1 : 0;
+            var linkOutflow = this.data[date].linkOutflow ? this.data[date].linkOutflow*-1 : 0;
+            var ampLoss = this.data[date].amplitudeLoss ? this.data[date].amplitudeLoss*-1 : 0;
 
             data.push([
               date,
@@ -412,12 +412,12 @@
         this.popup.modal('show');
         this.$.colChartRoot.innerHTML = '';
 
-        var localInflow = this.data.aggregate[date].inflows || 0;
-        var linkInflow = this.data.aggregate[date].regionLinkInflow || 0;
-        var evaporation = this.data.aggregate[date].evaporation ? this.data.aggregate[date].evaporation*-1 : 0;
-        var sinks = this.data.aggregate[date].sinks ? this.data.aggregate[date].sinks*-1 : 0;
-        var linkOutflow = this.data.aggregate[date].regionLinkOutflow ? this.data.aggregate[date].regionLinkOutflow*-1 : 0;
-        var ampLoss = this.data.aggregate[date].amplitudeLoss ? this.data.aggregate[date].amplitudeLoss*-1 : 0;
+        var localInflow = this.data[date].localInflow || 0;
+        var linkInflow = this.data[date].linkInflow || 0;
+        var evaporation = this.data[date].evaporation ? this.data[date].evaporation*-1 : 0;
+        var sinks = this.data[date].sink ? this.data[date].sink*-1 : 0;
+        var linkOutflow = this.data[date].linkOutflow ? this.data[date].linkOutflow*-1 : 0;
+        var ampLoss = this.data[date].amplitudeLoss ? this.data[date].amplitudeLoss*-1 : 0;
 
         var data = [
           ['Local Inflows', localInflow,'#4caf50'],
