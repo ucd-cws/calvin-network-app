@@ -1,137 +1,138 @@
 'use strict';
-var utils = require('./utils');
+var async = require('async');
 var calcAmpLoss = require('./calcAmpLoss');
 var db = require('../../lib/database');
 
-module.exports = function(origin, terminus, callback) {
-  validateRegionFlow(origin, terminus, function(err, valid){
-    if( err ) {
-      return callback(err);
-    }
-    utils.getNodesInRegion(origin, function(err, originlist){
-      utils.getNodesInRegion(terminus, function(err, terminallist){
-
-        runAggregate(originlist, terminallist, function(err, result){
-          callback(err, result);
-        });
-      });
+module.exports = function(originRegion, terminusRegion, callback) {
+  db.getRegionById(originRegion, (err, origin) => {
+    if( err ) return callback(err);
+    db.getRegionById(terminusRegion, (err, terminus) => {
+      if( err ) return callback(err);
+      process(origin, terminus, callback);
     });
   });
 };
 
-function validateRegionFlow(origin, terminus, callback) {
-  utils.getNodeType(origin, function(err, origintype){
-    if( err ) {
-      return callback(err);
+function process(origin, terminus, callback) {
+  var incomingLinks = [];
+  var outgoingLinks = [];
+
+  var results = {
+    __init__ : true
+  };
+
+  for( var i = 0; i < origin.properties.hobbes.origins.length; i++ ) {
+    var info = origin.properties.hobbes.origins[i];
+    if( terminus.properties.hobbes.nodes.indexOf(info.node) > -1 ) {
+      incomingLinks.push(info.link);
     }
+  }
 
-    utils.getNodeType(terminus, function(err, terminustype){
-      if( err ) {
-        return callback(err);
-      }
+  for( var i = 0; i < origin.properties.hobbes.terminals.length; i++ ) {
+    var info = origin.properties.hobbes.terminals[i];
+    if( terminus.properties.hobbes.nodes.indexOf(info.node) > -1 ) {
+      outgoingLinks.push(info.link);
+    }
+  }
 
-      if( origintype !== 'Region' && terminustype !== 'Region' ) {
-        return callback('Invalid origin and terminus.  At least one needs to be a region');
-      }
-
-      callback(null, true);
+  calcLinkInflows(incomingLinks, results, () => {
+    calcLinkOutflows(outgoingLinks, results, () => {
+      callback(null, {
+        data: results,
+        incomingLinks : incomingLinks,
+        outgoingLinks : outgoingLinks
+      });
     });
   });
 }
 
-function runAggregate(originlist, terminallist, callback) {
-  var networkCollection = db.mongoConnection.collection('network');
-  networkCollection.find({
-    'properties.origin' : {
-      '$in' : originlist
+function calcLinkInflows(ids, results, callback) {
+  async.eachSeries(ids,
+    (id, next) => {
+      db.getNodeById(id, (err, link) => {
+        db.getExtras(link.properties.prmname, (err, extras) => {
+          processLinkInflow(link, extras, results);
+          next();
+        });
+      });
     },
-    'properties.terminus' : {
-      '$in' : terminallist
+    (err) => {
+      callback();
     }
-  },{'properties.prmname':1, 'properties.amplitude':1}).toArray(function(err, result){
-    if( err ) {
-      return callback(err);
-    }
-
-    var list = [];
-    var lookup = {};
-    for( var i = 0; i < result.length; i++ ) {
-      list.push(result[i].properties.prmname);
-      lookup[result[i].properties.prmname] = result[i].properties.amplitude;
-    }
-
-    var data = {};
-
-    utils.sumInto(list, ['flow','sinks'], '', data, function(sum, label, item, prmname){
-        if( item.flow ) {
-          sumFlow(sum, item.flow, lookup[prmname]);
-        }
-        if( item.sinks ) {
-          sumSinks(sum, item.sinks);
-        }
-
-      }, function(err){
-        if( err ) {
-          return callback(err);
-        }
-
-        var resp = {
-          included : list,
-          data : data
-        };
-
-        callback(null, resp);
-    });
-  });
+  )
 }
 
+function calcLinkOutflows(ids, results, callback) {
+  async.eachSeries(ids,
+    (id, next) => {
+      db.getNodeById(id, (err, link) => {
+        db.getExtras(link.properties.prmname, (err, extras) => {
+          processLinkOutflow(link, extras, results);
+          next();
+        });
+      });
+    },
+    (err) => {
+      callback();
+    }
+  )
+}
 
+function processLinkInflow(link, extras, results) {
+  if( !extras.flow ) return;
 
-function sumFlow(sum, item, amplitude) {
-  if( amplitude === undefined || amplitude === null ) {
-    amplitude = 0;
+  var data = extras.flow;
+  if( results.__init__ ) {
+    initResults(results, data);
   }
 
-
-  for( var i = 0; i < item.length; i++ ) {
-    if( i === 0 && typeof item[0][1] === 'string' ) {
-      continue;
-    }
-
-    var flow = item[i][1] || 0;
-    if( sum[item[i][0]] === undefined ) {
-      sum[item[i][0]] = {
-        flow : flow,
-        amplitudeLoss : calcAmpLoss(amplitude, flow)
-      };
-    } else {
-      sum[item[i][0]].flow += flow;
-      sum[item[i][0]].amplitudeLoss += calcAmpLoss(amplitude, flow);
+  for( var i = 1; i < data.length; i++ ) {
+    results[data[i][0]].linkInflow += data[i][1] || 0;
+    if( link.properties.amplitude !== undefined ) {
+      results[data[i][0]].amplitudeLoss += calcAmpLoss(link.properties.amplitude, data[i][1] || 0);
     }
   }
 }
 
-function sumSinks(sum, sinks) {
-  for( var i = 0; i < sinks.length; i++ ) {
-    for( var name in sinks[i] ) {
-      var flow = sinks[i][name].flow, f;
+function processLinkOutflow(link, extras, results) {
+  if( !extras.flow ) return;
 
-      for( var j = 0; j < flow.length; j++ ) {
-        if( j === 0 && typeof flow[0][1] === 'string' ) {
-          continue;
-        }
+  var data = extras.flow;
+  if( results.__init__ ) {
+    initResults(results, data);
+  }
 
-        f = flow[j][1] || 0;
-        if( sum[flow[j][0]] === undefined ) {
-          sum[flow[j][0]] = {
-            sinks : f
-          };
-        } else if( sum[flow[j][0]].sinks === undefined ) {
-          sum[flow[j][0]].sinks = f;
-        } else {
-          sum[flow[j][0]].sinks += f;
-        }
-      }
+  for( var i = 1; i < data.length; i++ ) {
+    results[data[i][0]].linkOutflow += data[i][1] || 0;
+    if( link.properties.amplitude !== undefined ) {
+      results[data[i][0]].amplitudeLoss += calcAmpLoss(link.properties.amplitude, data[i][1] || 0);
     }
+  }
+}
+
+function appendResults(label, data, results) {
+  if( !data ) return;
+
+  if( results.__init__ ) {
+    initResults(results, data);
+  }
+
+  for( var i = 1; i < data.length; i++ ) {
+    results[data[i][0]][label] += data[i][1];
+  }
+}
+
+function initResults(results, data) {
+  for( var i = 1; i < data.length; i++ ) {
+    results[data[i][0]] = initResult();
+  }
+  delete results.__init__;
+}
+
+function initResult() {
+  return {
+    amplitudeLoss : 0,
+    linkInflow : 0,
+    linkOutflow : 0
   }
 }

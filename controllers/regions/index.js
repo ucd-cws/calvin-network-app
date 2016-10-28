@@ -63,14 +63,14 @@ module.exports = function (router) {
     });
 
     router.get('/aggregateLinks', function (req, res) {
-      var n1 = req.query.n1;
-      var n2 = req.query.n2;
+      var r1 = req.query.origin;
+      var r2 = req.query.terminus;
 
-      if( !n1 || !n2 ) {
-        return res.send({error:true, message:'n1 & n2 required'});
+      if( !r1 || !r2 ) {
+        return res.send({error:true, message:'origin & terminus required'});
       }
 
-      model.aggregateRegionLinks(n1, n2, function(err, data){
+      model.aggregateRegionLinks(r1, r2, function(err, data){
         if( err ) {
           res.send({error: true, message: err});
         } else {

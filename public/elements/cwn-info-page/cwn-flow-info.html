@@ -8,16 +8,14 @@
 
     <h4>Aggregate Flow</h4>
 
-    <div id="devMessage" class="text text-warning">
-      <i class="fa fa-warning"></i> Region and Region Link aggregate flow charts are not supported while working in local dev mode.
-    </div>
-
     <div id="loading"><i class="fa fa-circle-o-notch fa-spin"></i> Loading...</div>
 
-    <cwn-date-linechart id="flowChart"></cwn-date-linechart>
-    <div id="help" class="help-block" style="text-align:right">Click chart point to inspect</div>
+    <div id="charts">
+      <cwn-date-linechart id="flowChart"></cwn-date-linechart>
+      <div id="help" class="help-block" style="text-align:right">Click chart point to inspect</div>
 
-    <cwn-date-linechart id="differenceChart" style="display:none"></cwn-date-linechart>
+      <cwn-date-linechart id="differenceChart" style="display:none"></cwn-date-linechart>
+    </div>
 
     <div class="modal fade" id="popup">
       <div class="modal-dialog">
@@ -56,49 +54,39 @@
         this.net = false;
         var props = this.feature.properties;
         this.$.differenceChart.style.display = 'none';
-        this.$.devMessage.style.display = 'none';
 
         if( props.type == 'Region Link' ) {
 
-          if( CWN.dev ) {
-            this.showDevMessage();
-          } else {
-            $(this).parent().show();
-            this.$.loading.style.display = 'block';
-            this.loadLinkAggregate();
-          }
+          $(this).parent().show();
+          this.loading(true);
+          this.loadLinkAggregate();
 
        } else if( props.type == 'Region' ) {
 
-          //if( CWN.dev ) {
-          //  this.showDevMessage();
-          //} else {
-            $(this).parent().show();
-            this.$.loading.style.display = 'block';
-            this.loadAggregate();
-          //}
+          $(this).parent().show();
+          this.loading(true);
+          this.loadAggregate();
 
        } else if( props.extras &&
           (props.extras.inflow || props.extras.flow || props.extras.sinks || props.extras.evaporation) ) {
             $(this).parent().show();
-            this.$.loading.style.display = 'block';
+            this.loading(true);
             this.load();
         } else {
           $(this).parent().hide();
-          this.$.loading.style.display = 'none';
+          this.loading(false);
         }
       },
 
-      showDevMessage : function() {
-        this.$.loading.style.display = 'none';
-        this.$.help.style.display = 'none';
-        this.$.flowChart.style.display = 'none';
-        this.$.devMessage.style.display = 'block';
+      loading : function(loading) {
+        this.$.loading.style.display = loading ? 'block' : 'none';
+        this.$.charts.style.display = loading ? 'none' : 'block';
       },
+
 
       load : function() {
         CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
-          this.$.loading.style.display = 'none';
+          this.loading(false);
           this.data = resp;
           var positive = [];
           var negative = [];
@@ -172,7 +160,7 @@
       loadAggregate : function() {
         $.get('/regions/aggregateRegion?region='+this.feature.properties.hobbes.id, function(resp) {
           this.data = resp;
-          this.$.loading.style.display = 'none';
+          this.loading(false);
           this.$.differenceChart.style.display = 'block';
 
           var data = [['Date','Amplitude Loss', 'Local Sinks', 'Evaporation', 'Link Outflows', '', 'Local Inflows', 'Link Inflows']];
@@ -241,36 +229,40 @@
       },
 
       loadLinkAggregate : function() {
-        $.get('/regions/aggregateLinks?n1='+this.feature.properties.origin+'&n2='+this.feature.properties.terminus, function(resp) {
-          this.$.loading.style.display = 'none';
+        $.get('/regions/aggregateLinks?origin='+this.feature.properties.origin+'&terminus='+this.feature.properties.terminus, function(resp) {
+          this.loading(false);
           this.data = resp.data;
+          this.$.differenceChart.style.display = 'block';
+          
 
-          this.fire('region-link-update', this.data);
+          var data = [['Date', 'Incoming Flow', '', 'Outgoing Flow', 'Amplitude Loss']];
+          var diffData = [['Date', 'Difference']];
 
-          var data = [['Date','Flow', 'Amplitude Loss', 'Sinks']];
-
-          var total = {};
-          for( var date in this.data[0].data ) {
-            total[date] = {
-              flow : (this.data[0].data[date].flow || 0) - (this.data[1].data[date] ? this.data[1].data[date].flow || 0 : 0),
-              amplitudeLoss : -1*((this.data[0].data[date].amplitudeLoss || 0) + (this.data[1].data[date] ? this.data[1].data[date].amplitudeLoss || 0 : 0)),
-              sinks : -1*((this.data[0].data[date].sinks || 0) + (this.data[1].data[date] ? this.data[1].data[date].sinks || 0 : 0))
-            }
-          }
-
-          for( var date in total ) {
+          for( var date in this.data ) {
             data.push([
               date,
-              total[date].flow,
-              total[date].amplitudeLoss,
-              total[date].sinks
+              this.data[date].linkInflow,
+              this.data[date].linkInflow * -1,
+              this.data[date].linkOutflow * -1,
+              this.data[date].amplitudeLoss * -1
+            ]);
+            diffData.push([
+              date,
+              this.data[date].linkInflow - this.data[date].linkOutflow
             ]);
           }
 
           this.$.flowChart.options = {
-            title: 'Rendered as '+this.data[0].origin+' to '+this.data[0].terminus,
+            title: 'Rendered as '+this.feature.properties.origin+' (origin) to '+this.feature.properties.terminus+' (terminus)',
             isStacked : true,
             height: 500,
+            series: {
+              1: {
+                  visibleInLegend: false,
+                  areaOpacity : 0,
+                  color : 'transparent'
+              }
+            },
             legend : {
               position: 'right'
             }
@@ -281,6 +273,25 @@
           this.$.flowChart.onClick = this.onLinkChartClick.bind(this);
           this.$.flowChart.type = 'AreaChart';
           this.$.flowChart.update(data);
+
+          this.$.differenceChart.options = {
+            isStacked : true,
+            height: 400,
+            legend : {
+              position: 'right'
+            }
+          }
+
+          this.$.differenceChart.setHeight(500);
+          this.$.differenceChart.onClick = this.onRegionChartClick.bind(this);
+          this.$.differenceChart.type = 'AreaChart';
+          this.$.differenceChart.update(diffData);
+
+          this.fire('region-link-update', {
+            origin: this.feature.properties.origin,
+            terminus: this.feature.properties.terminus,
+            info: resp
+          });
 
         }.bind(this));
       },
@@ -360,42 +371,18 @@
         this.popup.modal('show');
         this.$.colChartRoot.innerHTML = '';
 
-        var r1 = {
-          flow : 0,
-          ampLoss : 0,
-          sinks : 0
-        }
-        var r2 = {
-          flow : 0,
-          ampLoss : 0,
-          sinks : 0
-        }
-
-        if( this.data[0].data[date] ) {
-          r1.flow = this.data[0].data[date].flow || 0;
-          r1.ampLoss = this.data[0].data[date].ampLoss || 0;
-          r1.sinks = this.data[0].data[date].sinks || 0;
-        }
-        if( this.data[1].data[date] ) {
-          r2.flow = this.data[1].data[date].flow || 0;
-          r2.ampLoss = this.data[1].data[date].ampLoss || 0;
-          r2.sinks = this.data[1].data[date].sinks || 0;
-        }
 
         var data = [
           ['Type', 'Value'],
-          ['r1 to r2: Flow', r1.flow],
-          ['r1 to r2: Amplitude Loss', r1.ampLoss],
-          ['r1 to r2: Sinks', r1.sinks],
-          ['r2 to r1: Flow', r2.flow],
-          ['r2 to r1: Amplitude Loss', r2.ampLoss],
-          ['r1 to r2: Sinks', r2.sinks],
-          ['Flow Difference (r1 - r2)', r1.flow - r2.flow]
+          ['Link Inflow', this.data[date].linkInflow],
+          ['Link Outflow', this.data[date].linkOutflow*-1],
+          ['Amplitude Loss', this.data[date].amplitudeLoss],
+          ['Flow Difference', this.data[date].linkInflow - this.data[date].linkOutflow]
         ];
 
         var dt = google.visualization.arrayToDataTable(data);
         var options = {
-          title: date+': r1='+this.data[0].origin+', r2='+this.data[0].terminus,
+          title: date+': Origin='+this.feature.properties.origin+', Terminus='+this.feature.properties.terminus,
           height: 500,
           legend: { position: 'none' },
         };

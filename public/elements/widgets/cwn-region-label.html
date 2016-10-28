@@ -3,9 +3,9 @@
     is : 'cwn-region-label',
 
     properties : {
-      prmname : {
+      hobbesId : {
         type : String,
-        observer : 'prmnameObserver'
+        observer : 'hobbesIdObserver'
       }
     },
 
@@ -13,47 +13,39 @@
       this.style.display = 'inline-block';
     },
 
-    prmnameObserver : function() {
-      var node = CWN.collections.nodes.getByPrmname(this.prmname);
-      if( !node ) return;
-
-      this.update(node);
+    hobbesIdObserver : function() {
+      this.update();
     },
 
-    update : function(feature) {
-      this.innerHTML = '';
-      if( !feature.properties ) return;
-      if( !feature.properties.regions ) return;
+    update : function(node) {
+      if( node ) {
+        this.hobbesId = node.properties.hobbes.id;
+        return;
+      }
+
+      if( this.hobbesId.match(/--/) ) {
+        var parts = this.hobbesId.split('--');
+        this.innerHTML = this.getLabel(parts[0], true)+' | '+this.getLabel(parts[1], true);
+      } else {
+        this.innerHTML = this.getLabel(this.hobbesId);
+      }
+    },
+
+    getLabel : function(id, includeLast) {
+      var regions = id.split('/');
+      if( !includeLast ) regions.pop();
 
       var html = [];
-      for( var i = 0; i < feature.properties.regions.length; i++ ) {
-        var r = feature.properties.regions[i];
-        //if( r.toLowerCase() == 'california' ) continue;
+      for( var i = 0; i < regions.length; i++ ) {
+        var region = regions[i];
+        var path = [regions[0]];
+        for( var j = 0; j < i; j++ ) path.push(regions[i]);
 
-        var info = this.getLabel(r);
-
-        html.push('<span class="label label-default">'+info.label+
-          (r.toLowerCase() !== 'california' ? ' <a href="#info/'+info.id+'"><i class="fa fa-info-circle"></i></a>' : '')+
+        html.push('<span class="label label-default">'+region+
+          ' <a href="#info/'+path.join(',')+'"><i class="fa fa-info-circle"></i></a>'+
           '</span>');
       }
-
-
-      this.innerHTML = html.join(' <i class="fa fa-angle-right" style="vertical-align:middle"></i> ');
-
-    },
-
-    getLabel : function(name) {
-      var region = CWN.ds.regionLookupMap[name];
-      if( region && region.properties.name ) {
-        return {
-          label : region.properties.name,
-          id : region.properties.id
-        }
-      }
-      return {
-        label : name,
-        id : name
-      }
+      return html.join(' <i class="fa fa-angle-right" style="vertical-align:middle"></i> ');
     }
   });
 </script>

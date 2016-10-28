@@ -20,8 +20,6 @@ module.exports = function(id, callback) {
     var nodesAndLinks = extend(true, [], region.properties.hobbes.nodes);
     region.properties.hobbes.links.forEach(id => nodesAndLinks.push(id));
 
-    console.log(nodesAndLinks.length);
-
     async.eachSeries(nodesAndLinks,
       (id, next) => {
         db.getNodeById(id, (err, node) => {

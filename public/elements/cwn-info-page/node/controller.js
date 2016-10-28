@@ -40,7 +40,7 @@ Polymer({
                                   '<br /><small>to</small><br />' +
                                   this.feature.properties.hobbes.terminus.replace(/\//g, ' / ');
         } else if( this.feature.properties.type == 'Region Link') {
-          this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to/from</small> ').replace(/_/g, ' ');
+          this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to</small> ').replace(/_/g, ' ');
         } else {
           this.$.label.innerHTML = this.feature.properties.hobbes.id.replace(/\//g, ' / ');
         }
@@ -59,7 +59,8 @@ Polymer({
           $(this).find('.node-info-list').addClass('overflow');
           this.renderRegionNodes();
         } else {
-          $(this).find('.node-info-list').removeClass('overflow');
+          $(this).find('.node-info-list').addClass('overflow');
+          //$(this).find('.node-info-list').removeClass('overflow');
           this.$.regionNodes.innerHTML = '';
         }
 
@@ -143,12 +144,12 @@ Polymer({
     renderRegionNodes : function() {
       var cols = ['','',''], col, node, c = 0;
 
-      var nodes = CWN.collections.nodes.getAllNestedForRegion(this.feature.properties.hobbes.id);
+      var nodes = this.feature.properties.hobbes.nodes;
       for( var i = 0; i < nodes.length; i++ ) {
         col = c % 3;
 
-        node = nodes[i];
-        if( node.properties.hobbes.type === 'link' ) continue;
+        node = CWN.collections.nodes.getById(nodes[i]);
+
 
         cols[col] +=
           '<cwn-info-link hobbes-id="'+node.properties.hobbes.id+'"></cwn-info-link>';
@@ -190,41 +191,35 @@ Polymer({
       this.$.middleCol.style.marginTop = Math.floor(((h-ele.height()) / 2)) + 'px';
     },
 
-    setRegionLinkInfo : function(info) {
-      var order = 0;
-      if( info[0].origin !== this.feature.properties.origin ) {
-        order = 1;
-      }
+    setRegionLinkInfo : function(e) {
+      var info = e.info;
 
-      for( var i = 0; i < info[order].included.length; i++ ) {
+      for( var i = 0; i < info.incomingLinks.length; i++ ) {
         this.origins.push({
-            name: info[order].included[i],
+            name: info.incomingLinks[i],
             hasLink : false,
             hideArrow : true,
-            link: '#info/'+info[order].included[i],
+            link: '#info/'+info.incomingLinks[i].replace(/\//g,','),
             description: ''
         });
       }
 
-      if( info[order].included.length > 0 ) {
-        this.$.originExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.terminus.replace(/_/g,' ')+'</h5>';
+      if( this.origins.length > 0 ) {
+        this.$.originExtra.innerHTML = '<h5 class="page-header" style="margin:0">Incoming Links From '+e.terminus.replace(/\//,' / ')+'</h5>';
       }
 
-      if( order === 0 ) order++;
-      else order--;
-
-      for( var i = 0; i < info[order].included.length; i++ ) {
+      for( var i = 0; i < info.outgoingLinks.length; i++ ) {
         this.terminals.push({
-            name: info[order].included[i],
+            name: info.outgoingLinks[i],
             hasLink : false,
             hideArrow : true,
-            link: '#info/'+info[order].included[i],
+            link: '#info/'+info.outgoingLinks[i].replace(/\//g,','),
             description: ''
         });
       }
 
-      if( info[order].included.length > 0 ) {
-        this.$.terminusExtra.innerHTML = '<h5 class="page-header" style="margin:0;text-transform:capitalize">Links to '+this.feature.properties.origin.replace(/_/g,' ')+'</h5>';
+      if( info.outgoingLinks.length > 0 ) {
+        this.$.terminusExtra.innerHTML = '<h5 class="page-header" style="margin:0">Outgoing Links To '+e.terminus.replace(/\//,' / ')+'</h5>';
       }
 
       this.origins = $.extend(true, [], this.origins);
