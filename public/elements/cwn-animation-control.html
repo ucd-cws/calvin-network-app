@@ -260,8 +260,8 @@
       onClick : function(features, e) {
         if( features.length == 0 ) return;
 
-        if( features.length == 1 && features[0].geojson.properties.prmname ) {
-          window.location.href = '#info/' + features[0].geojson.properties.prmname;
+        if( features.length == 1 && features[0].geojson.properties.hobbes.id ) {
+          window.location.href = '#info/' + features[0].geojson.properties.hobbes.id;
           return;
         }
 
@@ -269,10 +269,10 @@
         var array = [];
         var nodes = {};
         for( var i = 0; i < features.length; i++ ) {
-          if( nodes[features[i].geojson.properties.prmname] ) continue;
-          nodes[features[i].geojson.properties.prmname] = 1;
+          if( nodes[features[i].geojson.properties.hobbes.id] ) continue;
+          nodes[features[i].geojson.properties.hobbes.id] = 1;
 
-          array.push(CWN.ds.lookupMap[features[i].geojson.properties.prmname]);
+          array.push(CWN.ds.lookupMap[features[i].geojson.properties.hobbes.id]);
         }
 
         this.mapEle.selector.onClick(array);
@@ -285,7 +285,7 @@
 
         for( i = 0; i < features.length; i++ ) {
           f = features[i].geojson.properties;
-          label.push('<b>'+f.prmname+':</b> '+f.type+' = '+f[f.type]);
+          label.push('<b>'+f.hobbes.id+':</b> '+f.type+' = '+f[f.type]);
         }
 
         if( features.length > 0 ) {
@@ -329,7 +329,7 @@
           for( var i = 0; i < resp.data.length; i++ ) {
             //var geojson = JSON.parse(resp.data[i]);
             var geojson = resp.data[i];
-            geojson.properties.id = geojson.properties.prmname+'-'+geojson.properties.type;
+            geojson.properties.id = geojson.properties.hobbes.id+'-'+geojson.properties.type;
             resp.lookup[geojson.properties.id] = geojson;
           }
 
@@ -459,7 +459,7 @@
         for( var i = 0; i < data.length; i++ ) {
           // TODO: don't recalc if we don't need to
           //if( !data[i].properties.scaled ) {
-            var id = data[i].properties.prmname+'-'+data[i].properties.type;
+            var id = data[i].properties.hobbes.id+'-'+data[i].properties.type;
             used[id] = 1;
             this.scale(data[i].properties, previousData ? previousData.lookup[id] : null);
           //}

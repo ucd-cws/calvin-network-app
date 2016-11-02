@@ -97,8 +97,8 @@ function renderBasicPolygon(ctx, xyPoints, map, feature, render) {
 function getLineColor(feature) {
     var color = 'white';
 
-    var origin = collection.getByPrmname(feature.properties.origin);
-    var terminus = collection.getByPrmname(feature.properties.terminus);
+    var origin = collection.getById(feature.properties.hobbes.origin);
+    var terminus = collection.getById(feature.properties.hobbes.terminus);
 
     if( feature.properties.renderInfo ) {
         if( terminus && terminus.properties.type == 'Sink' ) {

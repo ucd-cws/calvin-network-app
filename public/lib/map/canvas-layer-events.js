@@ -24,7 +24,7 @@ var behavior = {
       return;
     }
 
-    if( features.length == 1 && features[0].geojson.properties.prmname ) {
+    if( features.length == 1 && features[0].geojson.properties.hobbes.id ) {
       window.location.href = '#info/' + features[0].geojson.properties.hobbes.id.replace(/\//g,',');
       return;
     }
@@ -39,10 +39,10 @@ var behavior = {
     for( i = 0; i < features.length; i++ ) {
       f = features[i].geojson.properties;
 
-      if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.type+' <b>'+f.prmname+'</b>');
+      if( f.type == 'Diversion' || f.type == 'Return Flow' ) label.push(f.type+' <b>'+f.hobbes.id+'</b>');
       else if( f.type == 'Link Group' ) label.push(f.type+' <b>Count: '+f.lines.length+'</b>');
       else if ( f.type == 'Region' ) label.push(f.type+' <b>'+f.name+'</b>');
-      else label.push(f.type+' <b>'+f.prmname+'</b>');
+      else label.push(f.type+' <b>'+f.hobbes.id+'</b>');
     }
 
     if( features.length > 0 ) {

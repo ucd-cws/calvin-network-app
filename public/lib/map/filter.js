@@ -33,8 +33,8 @@ var behavior = {
         // now mark links that should be show
         for( var i = 0; i < collection.links.length; i++ ) {
             d = collection.links[i];
-            d2 = collection.getByPrmname(d.properties.origin);
-            d3 = collection.getByPrmname(d.properties.terminus);
+            d2 = collection.getById(d.properties.hobbes.origin);
+            d3 = collection.getById(d.properties.hobbes.terminus);
 
             checkRenderNs(d);
             checkRenderNs(d2);
@@ -62,7 +62,7 @@ function checkRenderNs(node) {
 function isTextMatch(re, props, mapFilters) {
     if( mapFilters.text == '' || !re ) return true;
 
-    if( re.test(props.prmname.toLowerCase()) ) return true;
+    if( re.test(props.hobbes.id.toLowerCase()) ) return true;
     if( props.description && re.test(props.description.toLowerCase()) ) return true;
     return false;
 }

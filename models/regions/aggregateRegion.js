@@ -1,6 +1,5 @@
 'use strict';
 
-var utils = require('./utils');
 var async = require('async');
 var extend = require('extend');
 var calcAmpLoss = require('./calcAmpLoss');
@@ -10,48 +9,46 @@ var db = require('../../lib/database');
 module.exports = function(id, callback) {
   id = id.replace(/,/g, '/');
 
-  db.getRegionById(id, (err, region) => {
-    if( err ) return callback(err);
+  var region = db.getRegionById(id);
+  if( region ) return callback(`Invalid region id: ${id}`);
 
-    var results = {
-      __init__ : true
-    };
+  var results = {
+    __init__ : true
+  };
 
-    var nodesAndLinks = extend(true, [], region.properties.hobbes.nodes);
-    region.properties.hobbes.links.forEach(id => nodesAndLinks.push(id));
+  var nodesAndLinks = extend(true, [], region.properties.hobbes.nodes);
+  region.properties.hobbes.links.forEach(id => nodesAndLinks.push(id));
 
-    async.eachSeries(nodesAndLinks,
-      (id, next) => {
-        db.getNodeById(id, (err, node) => {
-          if( err ) throw err; 
+  async.eachSeries(nodesAndLinks,
+    (id, next) => {
+      var node = db.getNodeById(id);
+      if( !node ) throw new Error(`Invalid node id: ${id}`); 
 
-          db.getExtras(node.properties.prmname, (err, extras) => {
-            if( err ) throw err; 
+      db.getExtras(node.properties.hobbes.id, (err, extras) => {
+        if( err ) throw err; 
 
-            processRegionNode(node, extras, results);
-            next();
-          });
+        processRegionNode(node, extras, results);
+        next();
+      });
+    },
+    (err) => {
+      calcLinkInflows(region, results, () => {
+        calcLinkOutflows(region, results, () => {
+          callback(err, results);
         });
-      },
-      (err) => {
-        calcLinkInflows(region, results, () => {
-          calcLinkOutflows(region, results, () => {
-            callback(err, results);
-          });
-        });
-      }
-    );
-  });
+      });
+    }
+  );
+
 };
 
 function calcLinkInflows(region, results, callback) {
   async.eachSeries(region.properties.hobbes.origins,
     (origin, next) => {
-      db.getNodeById(origin.link, (err, node) => {
-        db.getExtras(node.properties.prmname, (err, extras) => {
-          processRegionLinkInflow(node, extras, results);
-          next();
-        });
+      var node = db.getNodeById(id);
+      db.getExtras(node.properties.hobbes.id, (err, extras) => {
+        processRegionLinkInflow(node, extras, results);
+        next();
       });
     },
     (err) => {
@@ -63,11 +60,10 @@ function calcLinkInflows(region, results, callback) {
 function calcLinkOutflows(region, results, callback) {
   async.eachSeries(region.properties.hobbes.terminals,
     (origin, next) => {
-      db.getNodeById(origin.link, (err, node) => {
-        db.getExtras(node.properties.prmname, (err, extras) => {
-          processRegionLinkOutflow(node, extras, results);
-          next();
-        });
+      var node = db.getNodeById(id);
+      db.getExtras(node.properties.hobbes.id, (err, extras) => {
+        processRegionLinkOutflow(node, extras, results);
+        next();
       });
     },
     (err) => {

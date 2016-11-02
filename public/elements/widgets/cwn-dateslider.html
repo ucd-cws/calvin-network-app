@@ -350,7 +350,7 @@
 
           // grab the bounds data
           if( this.feature.properties.extras && this.feature.properties.extras.bounds ) {
-            CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
+            CWN.collections.nodes.getExtras(this.feature.properties.hobbes.id, function(resp){
               if( !resp.bounds ) return;
 
               for( var i = 0; i < resp.bounds.length; i++ ) {

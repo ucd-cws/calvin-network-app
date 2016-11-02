@@ -16,7 +16,7 @@
       is : 'cwn-output-info',
 
       update : function(feature) {
-        if( this.feature && feature.properties.prmname == this.feature.properties.prmname ) {
+        if( this.feature && feature.properties.hobbes.id == this.feature.properties.hobbes.id ) {
           return;
         }
 
@@ -36,7 +36,7 @@
       },
 
       load : function() {
-        CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
+        CWN.collections.nodes.getExtras(this.feature.properties.hobbes.id, function(resp){
           this.$.loading.style.display = 'none';
           if( resp.error ) {
             return alert(resp.message);

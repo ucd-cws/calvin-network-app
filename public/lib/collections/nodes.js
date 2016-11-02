@@ -7,8 +7,7 @@ function NodeCollection(){
     this.extras = {}; // extra data for node
 
     this.index = {
-      prmname : {},
-      hobbesId : {},
+      id : {},
       origins : {},
       terminals : {},
       // only nodes in specified region
@@ -23,8 +22,7 @@ function NodeCollection(){
       this.extras = {};
 
       this.index = {
-        prmname : {},
-        hobbesId : {},
+        id : {},
         origins : {},
         terminals : {},
         regions : {},
@@ -34,8 +32,7 @@ function NodeCollection(){
       };
 
       nodes.forEach((node) => {
-        this.index.prmname[node.properties.prmname] = node;
-        this.index.hobbesId[node.properties.hobbes.id] = node;
+        this.index.id[node.properties.hobbes.id] = node;
 
         this._addNestedRegions(node);
 
@@ -87,26 +84,26 @@ function NodeCollection(){
         }
     }
 
-    this.getExtras = function(prmname, callback) {
-      if( this.extras[prmname] ) {
-        if( this.extras[prmname].__loading__ ) {
-          this.extras[prmname].handlers.push(callback);
+    this.getExtras = function(id, callback) {
+      if( this.extras[id] ) {
+        if( this.extras[id].__loading__ ) {
+          this.extras[id].handlers.push(callback);
         } else {
-          callback(this.extras[prmname]);
+          callback(this.extras[id]);
         }
         return;
       }
 
-      this.extras[prmname] = {
+      this.extras[id] = {
         __loading__ : true,
         handlers : [callback]
       };
 
-      rest.getExtras(prmname, (resp) => {
-        for( var i = 0; i < this.extras[prmname].handlers.length; i++ ) {
-          this.extras[prmname].handlers[i](resp);
+      rest.getExtras(id, (resp) => {
+        for( var i = 0; i < this.extras[id].handlers.length; i++ ) {
+          this.extras[id].handlers[i](resp);
         }
-        this.extras[prmname] = resp;
+        this.extras[id] = resp;
       });
     }
 
@@ -118,12 +115,8 @@ function NodeCollection(){
       return this.index.nestedRegions[id] || [];
     }
 
-    this.getByPrmname = function(prmname) {
-      return this.index.prmname[prmname];
-    }
-
     this.getById = function(id) {
-      return this.index.hobbesId[id];
+      return this.index.id[id];
     }
 
     this.getOrigins = function(id) {

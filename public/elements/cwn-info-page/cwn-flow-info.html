@@ -85,7 +85,7 @@
 
 
       load : function() {
-        CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
+        CWN.collections.nodes.getExtras(this.feature.properties.hobbes.id, function(resp){
           this.loading(false);
           this.data = resp;
           var positive = [];

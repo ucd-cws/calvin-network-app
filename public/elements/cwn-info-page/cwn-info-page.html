@@ -6,8 +6,6 @@
 <link rel="import" href="cwn-sink-info.html" />
 
 <dom-module id="cwn-info-page">
-
-
     <template>
       <style>
         :host {
@@ -116,7 +114,7 @@ Polymer({
       var loc = window.location.hash.replace('#','').split('/');
       if( loc[0] == 'info' && loc.length > 1) {
         loc[1] = loc[1].replace(/,/g, '/');
-        if( this.feature && this.feature.prmname == loc[1] ) {
+        if( this.feature && this.feature.hobbes.id == loc[1] ) {
           this.update();
         } else {
           this.setFeature(loc[1]);
@@ -124,20 +122,20 @@ Polymer({
       }
     },
 
-    setFeature : function(prmname) {
-      if( this.prmname == prmname ) return;
-      if( prmname ) this.prmname = prmname;
+    setFeature : function(id) {
+      if( this.id === id ) return;
+      if( id ) this.id = id;
 
       this.costsReady = false;
       this.climateReady = false;
 
-      if( CWN.collections.nodes.getById(prmname) ) {
-        this.feature = CWN.collections.nodes.getById(prmname);
-      } else if( CWN.collections.regions.getById(prmname) ) {
-        this.setRegion(prmname);
+      if( CWN.collections.nodes.getById(id) ) {
+        this.feature = CWN.collections.nodes.getById(id);
+      } else if( CWN.collections.regions.getById(id) ) {
+        this.setRegion(id);
       } else {
         // see if this is a region to feature
-        this.setRegionToRegion(prmname);
+        this.setRegionToRegion(id);
       }
 
       this.update();
@@ -180,8 +178,8 @@ Polymer({
       this.feature = CWN.collections.regions.getById(id);
     },
 
-    setRegionToRegion : function(prmname) {
-      var parts = prmname.split('--');
+    setRegionToRegion : function(id) {
+      var parts = id.split('--');
 
       if( parts.length == 0 ) {
         this.feature = null;
@@ -190,30 +188,29 @@ Polymer({
 
       var node = {
         properties : {
-          prmname : prmname,
-          origin : null,
-          terminus : null,
           type : 'Region Link',
           hobbes : {
             type : 'Region Link',
-            id : prmname
+            id : id,
+            origin : null,
+            terminus : null,
           }
         }
       };
 
-      if( CWN.collections.nodes.getByPrmname(parts[0]) ) {
-        node.properties.origin = prmname;
+      if( CWN.collections.nodes.getById(parts[0]) ) {
+        node.properties.hobbes.origin = parts[0];
       } else if( CWN.collections.regions.getById(parts[0]) ) {
-        node.properties.origin = CWN.collections.regions.getById(parts[0]).properties.hobbes.id;
+        node.properties.hobbes.origin = CWN.collections.regions.getById(parts[0]).properties.hobbes.id;
       }
 
-      if( CWN.collections.nodes.getByPrmname(parts[1])) {
-        node.properties.terminus = prmname;
+      if( CWN.collections.nodes.getById(parts[1])) {
+        node.properties.terminus = parts[1];
       } else if( CWN.collections.regions.getById(parts[1]) ) {
         node.properties.terminus = CWN.collections.regions.getById(parts[1]).properties.hobbes.id;
       }
 
-      if( !node.properties.origin || !node.properties.terminus ) {
+      if( !node.properties.hobbes.origin || !node.properties.hobbes.terminus ) {
         this.feature = null;
         return;
       }
@@ -248,7 +245,7 @@ Polymer({
         this.$.sinks.style.display = 'block';
         this.$.sinksRoot.innerHTML = '';
 
-        CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
+        CWN.collections.nodes.getExtras(this.feature.properties.hobbes.id, function(resp){
           if( !resp.sinks ) return;
           for( var i = 0; i < resp.sinks.length; i++ ) {
             for( var name in resp.sinks[i] ) {
@@ -268,7 +265,7 @@ Polymer({
     updateReadme : function() {
         if( this.feature.properties.extras && this.feature.properties.extras.readme ) {
           this.$.readme.style.display = 'block';
-          CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
+          CWN.collections.nodes.getExtras(this.feature.properties.hobbes.id, function(resp){
             this.$.readmeMarkdown.innerHTML = marked(resp.readme);
             $(this.$.readmeMarkdown).find('h2').css('fontSize','28px');
           }.bind(this));

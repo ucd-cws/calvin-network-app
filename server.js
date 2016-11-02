@@ -5,7 +5,6 @@ var kraken = require('kraken-js');
 var http = require('http');
 
 var db = require('./lib/database');
-var mqeLib = require('mongo-query-engine');
 var sprintf = require('sprintf');
 
 var options, app, server, logger, conf;
@@ -28,54 +27,9 @@ options = {
         middleware.module.arguments[0] = middleware.module.arguments[0].replace(/dist$/,'public');
       }
 
-      // command line override of mqe config
-      if( config.get('mqe-local') ) {
-        config.use(require(config.get('mqe-local')));
-      }
-
       db.init(config, function(err, database) {
-
-        if( config.get('dev') || config.get('local') ) {
-          logger = {
-            info : function(msg) {
-              console.log(msg);
-            }
-          }
-          next(null, config);
-          onReady(config);
-          return;
-        }
-
-        var mqeConfig = config.get('mqe');
-        mqeConfig.rest.getParamParser = function(query) {
-          if( query.id ) {
-            return {'_id': query.id };
-          } else if ( query.prmname ) {
-            return {'properties.prmname': query.prmname};
-          }
-          return {'_id': query._id};
-        };
-
-        var processor = require('./lib/database/processMqeQuery')(database);
-
-        mqeLib.init({
-            config: config.get('mqe'),
-            app: app,
-            express: express,
-            mongo: database,
-            process : processor
-          }, function(){
-            global.setup = mqeLib.getSetup();
-            logger = global.setup.logger;
-            /*
-             * Add any additional config setup or overrides here. `config` is an initialized
-             * `confit` (https://github.com/krakenjs/confit/) configuration object.
-             */
-            next(null, config);
-
-            onReady(config);
-        });
-
+        next(null, config);
+        onReady(config);
       });
     }
 };
@@ -100,7 +54,7 @@ function onReady(config) {
     devCon.prod(app);
   }
 
-  server.listen(config.get('mqe').server.localport || process.env.PORT || 8000);
+  server.listen(config.get('server').port || process.env.PORT || 8000);
   server.on('listening', function () {
     console.log(sprintf('%-40.40s%10s', 'Server Url:', `http://localhost:${this.address().port}`));
 

@@ -121,7 +121,7 @@ Polymer({
     },
 
     loadBounds : function() {
-      CWN.collections.nodes.getExtras(this.feature.properties.prmname, function(resp){
+      CWN.collections.nodes.getExtras(this.feature.properties.hobbes.id, function(resp){
         this.renderBounds(resp.bounds);
       }.bind(this));
     },

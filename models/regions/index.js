@@ -1,8 +1,5 @@
 'use strict';
 
-var aggregateFlow = require('./aggregateFlow');
-var aggregateInflows = require('./aggregateInflows');
-var aggregateSinks = require('./aggregateSinks');
 var aggregateRegion = require('./aggregateRegion');
 var aggregateRegionLink = require('./aggregateRegionLink');
 

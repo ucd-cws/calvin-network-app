@@ -44,10 +44,10 @@ function loadNetwork(callback) {
     });
 }
 
-function getExtras(prmname, callback) {
+function getExtras(id, callback) {
   request
     .get('/network/extras')
-    .query({prmname: prmname})
+    .query({id: id})
     .end((err, resp) => {
       callback(resp.body);
     });

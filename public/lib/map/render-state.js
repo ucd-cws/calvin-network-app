@@ -82,8 +82,8 @@ var behavior = {
       if( render.show === false ) continue;
       if( node.properties.hobbes.type === 'node' ) continue;
       
-      var terminal = this._getStateNodeLocation(node.properties.terminus, state);
-      var origin = this._getStateNodeLocation(node.properties.origin, state);
+      var terminal = this._getStateNodeLocation(node.properties.hobbes.terminus, state);
+      var origin = this._getStateNodeLocation(node.properties.hobbes.origin, state);
 
       if( !terminal || !origin ) continue;
 
@@ -139,6 +139,8 @@ var behavior = {
           },
           properties : {
             hobbes : {
+              origin: origin.name,
+              terminus: terminal.name,
               id : origin.name+'--'+terminal.name,
               type : 'link'
             },
@@ -173,7 +175,7 @@ var behavior = {
   },
 
   _getStateNodeLocation : function(name, state) {
-    var node = collections.nodes.getByPrmname(name);
+    var node = collections.nodes.getById(name);
 
     if( !node ) return null;
 
@@ -191,7 +193,7 @@ var behavior = {
 
     return {
       center : node.geometry.coordinates || [0,0],
-      name : name,
+      name : node.properties.hobbes.id,
       isNode : true
     }
   },

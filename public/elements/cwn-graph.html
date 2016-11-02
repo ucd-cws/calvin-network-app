@@ -102,7 +102,7 @@
 
 
         properties : {
-            prmname : {
+            hobbesId : {
                 type : String,
                 observer : 'update'
             },
@@ -117,7 +117,7 @@
             this.graph = null;
             this.graphJson = {};
             this.updateTimer = -1;
-            this.prmname = '';
+            this.hobbesId = '';
             this.popupNode = {};
 
             this.nodeLevels = {};
@@ -148,8 +148,8 @@
             var props = this.popupNode.properties;
 
 
-            this.graphLink = '#graph/'+props.prmname;
-            this.infoLink = '#info/'+props.prmname;
+            this.graphLink = '#graph/'+props.hobbes.id.replace(/\//g, ',');
+            this.infoLink = '#info/'+props.hobbes.id.replace(/\//g, ',');
 
             var repo = props.hobbes.repo;
             var url = 'https://'+repo.origin+'/'+repo.repository+'/tree/'+repo.branch+repo.networkDataPath+'/'+repo.path;
@@ -159,7 +159,7 @@
             this.$.regions.innerHTML = props.regions ?
                 '<i>'+props.regions.join(' <i class="fa fa-arrow-right"></i> ')+'</i>' : '';
 
-            this.popupLabel = props.prmname.replace(/_/g, ' ');
+            this.popupLabel = props.hobbes.id.replace(/_/g, ' ');
             this.popupDescription = props.description || '';
             this.popupType = props.type;
         },
@@ -170,7 +170,7 @@
             var loc = window.location.hash.replace('#','').split('/');
             if( loc[0] == 'graph' ) {
                 this.async(function(){
-                    this.prmname = loc.length == 1 ? CWN.collections.nodes.nodes[0] : loc[1];
+                    this.hobbesId = loc.length == 1 ? CWN.collections.nodes.nodes[0] : loc[1];
                 });
 
                 if( !this.graph ) this.render();
@@ -191,16 +191,16 @@
         },
 
         update : function() {
-            if( this.prmname == '' ) return;
+            if( this.hobbesId == '' ) return;
 
             this.reset();
 
-            this.walk(this.prmname, 0, 'forward');
+            this.walk(this.hobbesId, 0, 'forward');
 
             // check max depth
             if( this.negativeDepth && this.negativeDepth.length > 0 ) {
                 if( 0 < parseInt(this.negativeDepth) ) {
-                    this.walk(this.prmname, 0, 'backward');
+                    this.walk(this.hobbesId, 0, 'backward');
                 }
             }
 
@@ -220,9 +220,9 @@
             this.cnodes = [];
         },
 
-        walk : function(prmname, level, direction) {
+        walk : function(id, level, direction) {
             // does the node actually exist?
-            var node = this.collection.getByPrmname(prmname);
+            var node = this.collection.getById(id);
             if( !node ) return;
 
             // is the node hidden (ie been filtered out)
@@ -231,18 +231,18 @@
             }
 
             // add the node, unless this is level 0 and we are walking backward
-            if( (direction == 'forward' || level != 0) && this.cnodes.indexOf(prmname) == -1  ) {
+            if( (direction == 'forward' || level != 0) && this.cnodes.indexOf(id) == -1  ) {
                 this._addNode(node, level, direction);
             }
 
             // find the links by using the datastores lookup indexes
             var links;
             if( direction == 'forward' ) {
-                if( !this.collection.getOrigins(prmname) ) return;
-                links = this.collection.getOrigins(prmname);
+                if( !this.collection.getOrigins(id) ) return;
+                links = this.collection.getOrigins(id);
             } else {
-                if( !this.collection.getTerminals(prmname) ) return;
-                links = this.collection.getTerminals(prmname);
+                if( !this.collection.getTerminals(id) ) return;
+                links = this.collection.getTerminals(id);
             }
 
             // check max depth, quit if we have passed it
@@ -271,15 +271,15 @@
 
 
         _addNode : function(node, level, direction) {
-            if( this.cnodes.indexOf(node.properties.prmname) != -1 ) {
-                console.log('found repeat: '+node.properties.prmname);
+            if( this.cnodes.indexOf(node.properties.hobbes.id) != -1 ) {
+                console.log('found repeat: '+node.properties.hobbes.id);
                 return;
             }
 
             var gnode = {
-                id : node.properties.prmname,
+                id : node.properties.hobbes.id,
                 calvin : node.properties,
-                label : node.properties.prmname,
+                label : node.properties.hobbes.id,
                 type : node.properties.type,
                 size : 8,
             };
@@ -301,14 +301,14 @@
             }
 
             // add the nodes name to the list of nodes already in the graph
-            this.cnodes.push(node.properties.prmname);
+            this.cnodes.push(node.properties.hobbes.id);
             // add the node to the graph
             this.graphJson.nodes.push(gnode);
         },
 
         _addLink : function(link, level, direction) {
             // get the links next node
-            var tNode = CWN.collections.nodes.getByPrmname(direction === 'forward' ? link.properties.terminus : link.properties.origin);
+            var tNode = CWN.collections.nodes.getById(direction === 'forward' ? link.properties.hobbes.terminus : link.properties.hobbes.origin);
             // make sure the next node exists
             if( !tNode ) return;
 
@@ -319,7 +319,7 @@
             }
 
             // make sure the link hasn't already been added
-            if( this.cnodes.indexOf(link.properties.prmname) != -1 ) {
+            if( this.cnodes.indexOf(link.properties.hobbes.id) != -1 ) {
                 this._followLink(link, level, direction);
                 return;
             }
@@ -330,7 +330,7 @@
             this.graphJson.edges.push(edge);
 
             // add to the list of nodes/links already used
-            this.cnodes.push(link.properties.prmname);
+            this.cnodes.push(link.properties.hobbes.id);
 
             this._followLink(link, level, direction);
         },
@@ -338,20 +338,20 @@
         _followLink : function(link, level, direction) {
             // walk the next node in the graph
             if( direction == 'forward' ) {
-                this.walk(link.properties.terminus, level, direction);
+                this.walk(link.properties.hobbes.terminus, level, direction);
             } else {
-                this.walk(link.properties.origin, level, direction);
+                this.walk(link.properties.hobbes.origin, level, direction);
             }
         },
 
         _createEdge : function(link) {
             return {
-                id : link.properties.prmname,
-                label : link.properties.prmname,
+                id : link.properties.hobbes.id,
+                label : link.properties.hobbes.id,
                 calvin : link.properties,
                 type : 'cwn',
-                source : link.properties.origin,
-                target : link.properties.terminus,
+                source : link.properties.hobbes.origin,
+                target : link.properties.hobbes.terminus,
                 color: 'blue'
             };
         },
@@ -375,9 +375,9 @@
         },
 
         _addLinkIfMissing : function(link) {
-            if( this.cnodes.indexOf(link.properties.origin) != -1 &&
-                this.cnodes.indexOf(link.properties.terminus) != -1 &&
-                this.cnodes.indexOf(link.properties.prmname) == -1 ) {
+            if( this.cnodes.indexOf(link.properties.hobbes.origin) != -1 &&
+                this.cnodes.indexOf(link.properties.hobbes.terminus) != -1 &&
+                this.cnodes.indexOf(link.properties.hobbes.id) == -1 ) {
 
                 var edge = this._createEdge(link);
 
@@ -446,7 +446,7 @@
                 });
 
                 this.graph.bind('clickNode', function(e){
-                    this.popupNode = CWN.collections.nodes.getByPrmname(e.data.node.id);
+                    this.popupNode = CWN.collections.nodes.getById(e.data.node.id);
 
                     this.$.popup.show();
                 }.bind(this));
@@ -460,12 +460,12 @@
         },
 
         goToGraphLink : function() {
-          window.location.hash = 'graph/'+this.popupNode.properties.prmname;
+          window.location.hash = 'graph/'+this.popupNode.properties.hobbes.id;
           this.hide();
         },
 
         goToInfoLink : function() {
-          window.location.hash = 'info/'+this.popupNode.properties.prmname;
+          window.location.hash = 'info/'+this.popupNode.properties.hobbes.id;
           this.hide();
         },
 

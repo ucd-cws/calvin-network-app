@@ -17,7 +17,7 @@ Polymer({
     ready : function() {
       this.hasOriginDescription = false;
       this.originDescription = '';
-      this.editUrl = '';
+
       this.originUrl = '';
       this.terminalUrl = '';
       this.hasTerminalDescription = false;
@@ -33,14 +33,14 @@ Polymer({
         if( !this.feature ) return;
 
         this.type = this.feature.properties.type;
-        this.editUrl = '#edit/'+this.feature.properties.prmname;
+
 
         if( this.feature.properties.hobbes.type === 'link' ) {
           this.$.label.innerHTML = this.feature.properties.hobbes.origin.replace(/\//g, ' / ') + 
                                   '<br /><small>to</small><br />' +
                                   this.feature.properties.hobbes.terminus.replace(/\//g, ' / ');
         } else if( this.feature.properties.type == 'Region Link') {
-          this.$.label.innerHTML = this.feature.properties.prmname.replace(/--/, ' <small>to</small> ').replace(/_/g, ' ');
+          this.$.label.innerHTML = this.feature.properties.hobbes.id.replace(/--/, ' <small>to</small> ').replace(/_/g, ' ');
         } else {
           this.$.label.innerHTML = this.feature.properties.hobbes.id.replace(/\//g, ' / ');
         }
@@ -79,9 +79,6 @@ Polymer({
               
               link = CWN.collections.nodes.getById(this.feature.properties.hobbes[type][i].link);
               node = CWN.collections.nodes.getById(this.feature.properties.hobbes[type][i].node);
-
-              if( !link ) link = CWN.collections.nodes.getByPrmname(this.feature.properties.hobbes[type][i].link);
-              if( !node ) node = CWN.collections.nodes.getByPrmname(this.feature.properties.hobbes[type][i].node);
 
               if( link && node ) {
                 this[type].push({

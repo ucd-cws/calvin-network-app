@@ -37,6 +37,7 @@ function processNodesLinks(nodes) {
 }
 
 function markCalibrationNode(node) {
+    // TODO: how do we remove this prmname 
     if( node.properties.prmname.indexOf('_') > -1 ) {
         var parts = node.properties.prmname.split('_');
         if( !(parts[0].match(/^CN.*/) || parts[1].match(/^CN.*/)) ) {
@@ -87,8 +88,8 @@ function markLinkTypes(link) {
   try {
 
       // Flow to a sink
-      if( nodeCollection.getByPrmname(link.properties.terminus) &&
-          nodeCollection.getByPrmname(link.properties.terminus).properties.type == 'Sink' ) {
+      if( nodeCollection.getById(link.properties.hobbes.terminus) &&
+          nodeCollection.getById(link.properties.hobbes.terminus).properties.type == 'Sink' ) {
           link.properties.renderInfo.type = 'flowToSink';
 
       } else if( link.properties.type == 'Return Flow' ) {
@@ -97,9 +98,9 @@ function markLinkTypes(link) {
       } else if ( isGWToDemand(link) ) {
           link.properties.renderInfo.type = 'gwToDemand';
 
-      } else if( nodeCollection.getByPrmname(link.properties.origin) &&
-          (nodeCollection.getByPrmname(link.properties.origin).properties.calibrationMode == 'in' ||
-          nodeCollection.getByPrmname(link.properties.origin).properties.calibrationMode == 'both') ) {
+      } else if( nodeCollection.getById(link.properties.origin) &&
+          (nodeCollection.getById(link.properties.hobbes.origin).properties.calibrationMode == 'in' ||
+          nodeCollection.getById(link.properties.hobbes.origin).properties.calibrationMode == 'both') ) {
 
           link.properties.renderInfo.type = 'artificalRecharge';
       } else {
@@ -122,8 +123,8 @@ function markLinkTypes(link) {
 }
 
 function isGWToDemand(link) {
-    var origin = nodeCollection.getByPrmname(link.properties.origin);
-    var terminal = nodeCollection.getByPrmname(link.properties.terminal);
+    var origin = nodeCollection.getById(link.properties.hobbes.origin);
+    var terminal = nodeCollection.getById(link.properties.hobbes.terminus);
 
     if( !origin || !terminal ) return false;
 

@@ -4,13 +4,19 @@ var calcAmpLoss = require('./calcAmpLoss');
 var db = require('../../lib/database');
 
 module.exports = function(originRegion, terminusRegion, callback) {
-  db.getRegionById(originRegion, (err, origin) => {
-    if( err ) return callback(err);
-    db.getRegionById(terminusRegion, (err, terminus) => {
-      if( err ) return callback(err);
-      process(origin, terminus, callback);
-    });
-  });
+  var origin = db.getRegionById(originRegion);
+  if( !origin ) origin = db.getNodeById(originRegion);
+  if( !origin ) return callback(`Invalid origin id: ${originRegion}`);
+
+  var terminus = db.getRegionById(terminusRegion);
+  if( !terminus ) terminus = db.getNodeById(terminusRegion);
+  if( !terminus ) return callback(`Invalid terminus id: ${terminusRegion}`);
+
+  if( origin.properties.hobbes.type !== 'region' && terminus.properties.hobbes.type !== 'region' ) {
+    return callback(`Either the origin or the terminus needs to be an region`);
+  }
+
+  process(origin, terminus, callback);
 };
 
 function process(origin, terminus, callback) {
@@ -21,6 +27,45 @@ function process(origin, terminus, callback) {
     __init__ : true
   };
 
+  if( origin.properties.hobbes.type === 'region' && terminus.properties.hobbes.type === 'region' ) {
+    createRegionToRegionLinks(origin, terminus, incomingLinks, outgoingLinks);
+  } else if( origin.properties.hobbes.type === 'region' && terminus.properties.hobbes.type !== 'region' ) {
+    createNodeToRegionLinks(terminus, origin, incomingLinks, outgoingLinks);
+  } else if( origin.properties.hobbes.type !== 'region' && terminus.properties.hobbes.type === 'region' ) {
+    createNodeToRegionLinks(origin, terminus, outgoingLinks, incomingLinks);
+  }
+
+
+  calcLinkInflows(incomingLinks, results, () => {
+    calcLinkOutflows(outgoingLinks, results, () => {
+      callback(null, {
+        data: results,
+        incomingLinks : incomingLinks,
+        outgoingLinks : outgoingLinks
+      });
+    });
+  });
+}
+
+function createNodeToRegionLinks(node, region, incomingLinks, outgoingLinks) {
+  console.log(region.properties.hobbes);
+
+  for( var i = 0; i < region.properties.hobbes.origins.length; i++ ) {
+    var info = region.properties.hobbes.origins[i];
+    if( info.node === node.properties.hobbes.id ) {
+      incomingLinks.push(info.link);
+    }
+  }
+
+  for( var i = 0; i < region.properties.hobbes.terminals.length; i++ ) {
+    var info = region.properties.hobbes.terminals[i];
+    if( info.node === node.properties.hobbes.id) {
+      outgoingLinks.push(info.link);
+    }
+  }
+}
+
+function createRegionToRegionLinks(origin, terminus, incomingLinks, outgoingLinks) {
   for( var i = 0; i < origin.properties.hobbes.origins.length; i++ ) {
     var info = origin.properties.hobbes.origins[i];
     if( terminus.properties.hobbes.nodes.indexOf(info.node) > -1 ) {
@@ -34,26 +79,16 @@ function process(origin, terminus, callback) {
       outgoingLinks.push(info.link);
     }
   }
-
-  calcLinkInflows(incomingLinks, results, () => {
-    calcLinkOutflows(outgoingLinks, results, () => {
-      callback(null, {
-        data: results,
-        incomingLinks : incomingLinks,
-        outgoingLinks : outgoingLinks
-      });
-    });
-  });
 }
+
 
 function calcLinkInflows(ids, results, callback) {
   async.eachSeries(ids,
     (id, next) => {
-      db.getNodeById(id, (err, link) => {
-        db.getExtras(link.properties.prmname, (err, extras) => {
-          processLinkInflow(link, extras, results);
-          next();
-        });
+      var link = db.getNodeById(id);
+      db.getExtras(link.properties.hobbes.id, (err, extras) => {
+        processLinkInflow(link, extras, results);
+        next();
       });
     },
     (err) => {
@@ -65,11 +100,10 @@ function calcLinkInflows(ids, results, callback) {
 function calcLinkOutflows(ids, results, callback) {
   async.eachSeries(ids,
     (id, next) => {
-      db.getNodeById(id, (err, link) => {
-        db.getExtras(link.properties.prmname, (err, extras) => {
-          processLinkOutflow(link, extras, results);
-          next();
-        });
+      var link = db.getNodeById(id);
+      db.getExtras(link.properties.hobbes.id, (err, extras) => {
+        processLinkOutflow(link, extras, results);
+        next();
       });
     },
     (err) => {

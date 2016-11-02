@@ -36,9 +36,9 @@ function RegionCollection(){
     }
 
     this.loadAggregate = function(type, origin, terminus, callback) {
-      var prmname = origin;
+      var id = origin;
       if( typeof terminus === 'string' ) {
-        prmname = prmname+'--'+terminus;
+        id = id+'--'+terminus;
       } else {
         callback = terminus;
       }
@@ -48,26 +48,26 @@ function RegionCollection(){
         this.aggregate[type] = {};
       }
 
-      if( this.aggregate[type][prmname] ) {
-        if( this.aggregate[type][prmname].__loading__ ) {
-          this.aggregate[type][prmname].handlers.push(callback);
+      if( this.aggregate[type][id] ) {
+        if( this.aggregate[type][id].__loading__ ) {
+          this.aggregate[type][id].handlers.push(callback);
         } else {
-          callback(this.aggregate[type][prmname]);
+          callback(this.aggregate[type][id]);
         }
         return;
       }
 
-      this.aggregate[type][prmname] = {
+      this.aggregate[type][id] = {
         __loading__ : true,
         handlers : [callback]
       };
 
       if( typeof terminus !== 'string' ) {
         rest.getAggregate({type: type, region: origin}, (resp) => {
-          for( var i = 0; i < this.aggregate[type][prmname].handlers.length; i++ ) {
-            this.aggregate[type][prmname].handlers[i](resp);
+          for( var i = 0; i < this.aggregate[type][id].handlers.length; i++ ) {
+            this.aggregate[type][id].handlers[i](resp);
           }
-          this.aggregate[type][prmname] = resp;
+          this.aggregate[type][id] = resp;
         });
 
       } else {
@@ -78,10 +78,10 @@ function RegionCollection(){
               terminus : resp2
             };
 
-            for( var i = 0; i < this.aggregate[type][prmname].handlers.length; i++ ) {
-              this.aggregate[type][prmname].handlers[i](data);
+            for( var i = 0; i < this.aggregate[type][id].handlers.length; i++ ) {
+              this.aggregate[type][id].handlers[i](data);
             }
-            this.aggregate[type][prmname] = data;
+            this.aggregate[type][id] = data;
           });
         });
       }

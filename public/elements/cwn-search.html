@@ -44,7 +44,7 @@
       txt = txt.toLowerCase();
 
       var matchCount = 0;
-      this.prmnameMatches = [];
+      this.idMatches = [];
       this.otherMatches = [];
 
 
@@ -53,10 +53,10 @@
       types.forEach(function(type){
         var arr = CWN.collections.nodes[type];
         for( var i = 0; i < arr.length; i++ ) {
-          if( arr[i].properties.prmname.toLowerCase().indexOf(txt) > -1 ) {
+          if( arr[i].properties.hobbes.id.toLowerCase().indexOf(txt) > -1 ) {
             if( matchCount > this.MAX_RESULTS ) break;
             matchCount++;
-            this.prmnameMatches.push(arr[i]);
+            this.idMatches.push(arr[i]);
           }
         }
       }.bind(this));
@@ -81,8 +81,8 @@
 
     renderResults : function() {
       var list = '';
-      for( var i = 0; i < this.prmnameMatches.length; i++ ) {
-        list += this.renderResult(this.prmnameMatches[i]);
+      for( var i = 0; i < this.idMatches.length; i++ ) {
+        list += this.renderResult(this.idMatches[i]);
       }
       for( var i = 0; i < this.otherMatches.length; i++ ) {
         list += this.renderResult(this.otherMatches[i]);
@@ -100,7 +100,6 @@
         '<div class="flex">'+
           '<h4><a style="font-size: 18px" href="#info/'+feature.properties.hobbes.id.replace(/\//g,',')+'">'+feature.properties.hobbes.id.replace(/\//g,' / ')+'</a> <small>'+feature.properties.type+'</small></h4>'+
           (feature.properties.description ? '<div style="color: #888">'+feature.properties.description+'</div>' : '')+
-          '<div><cwn-region-label prmname="'+feature.properties.prmname+'"></cwn-region-label></div>'+
         '</div>'+
       '</div>'
     }

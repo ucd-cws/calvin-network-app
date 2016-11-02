@@ -21,12 +21,12 @@ module.exports = function (router) {
     });
 
     router.get('/extras', function (req, res) {
-      var prmname = req.query.prmname;
-      if( !prmname ) {
-        return res.send({error:true, message:'prmname required'});
+      var id = req.query.id;
+      if( !id ) {
+        return res.send({error:true, message:'id required'});
       }
 
-      model.getExtras(prmname, function(err, data) {
+      model.getExtras(id, function(err, data) {
         if( err ) {
           res.send({error: true, message: err});
         } else {

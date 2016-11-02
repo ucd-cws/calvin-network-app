@@ -14,13 +14,13 @@ module.exports = function() {
     };
 };
 
-function create(prmname, callback) {
-  db.getNode(prmname, function(err, node){
+function create(id, callback) {
+  db.getNodeById(id, function(err, node){
       if( err || !node ) {
-        return callback(err || 'invalid prmname');
+        return callback(err || `invalid id: ${id}`);
       }
 
-      db.getExtras(prmname, function(err, resp){
+      db.getExtras(id, function(err, resp){
         if( err ) {
           return callback(err);
         }
@@ -43,7 +43,7 @@ function create(prmname, callback) {
           var name = f.file.replace(/^\.\//,'').replace(/(\.|\/)/g,'_');
 
           f.data.splice(0,0,[]);
-          f.data.splice(0,0,[f.file.replace(/^\./,prmname), f.path]);
+          f.data.splice(0,0,[f.file.replace(/^\./,id), f.path]);
 
           wb.SheetNames.push(name);
           wb.Sheets[name] = sheet_from_array_of_arrays(f.data);
