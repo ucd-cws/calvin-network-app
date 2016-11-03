@@ -4,6 +4,7 @@
       :host {
         display: block;
         padding: 7px;
+        white-space: nowrap;
       }
       :host(.active) {
         background-color: rgba(255,255,255, .7);
@@ -185,7 +186,7 @@
       },
 
       prefetch : function() {
-        var next = new Date(this.current.getFullYear(), this.current.getMonth()+1,1);
+        var next = new Date(this.current.getFullYear(), this.current.getMonth()+2,1);
         var m = next.getMonth()+1;
         if( m < 10 ) m = '0'+m;
         next = next.getFullYear()+'-'+m;
@@ -226,12 +227,14 @@
       toggle : function() {
         if( this.showing ) {
           this.$.controls.style.display = 'none';
+          this.style.right = 'initial';
           this.timeslice.hide();
           this.featureLayer.show();
           this.classList.remove('active');
           if( this.playing ) this.play();
           document.querySelector('cwn-map-menu').setMenu('main');
         } else {
+          this.style.right = '0px';
           this.$.controls.style.display = 'block';
           this.timeslice.show();
           this.featureLayer.hide();
@@ -260,8 +263,8 @@
       onClick : function(features, e) {
         if( features.length == 0 ) return;
 
-        if( features.length == 1 && features[0].geojson.properties.hobbes.id ) {
-          window.location.href = '#info/' + features[0].geojson.properties.hobbes.id;
+        if( features.length == 1 && features[0].geojson.properties.id ) {
+          window.location.href = '#info/' + features[0].geojson.properties.id;
           return;
         }
 
@@ -269,10 +272,10 @@
         var array = [];
         var nodes = {};
         for( var i = 0; i < features.length; i++ ) {
-          if( nodes[features[i].geojson.properties.hobbes.id] ) continue;
-          nodes[features[i].geojson.properties.hobbes.id] = 1;
+          if( nodes[features[i].geojson.properties.id] ) continue;
+          nodes[features[i].geojson.properties.id] = 1;
 
-          array.push(CWN.ds.lookupMap[features[i].geojson.properties.hobbes.id]);
+          array.push(CWN.collections.nodes.getById(features[i].geojson.properties.hobbes.id));
         }
 
         this.mapEle.selector.onClick(array);
@@ -285,7 +288,7 @@
 
         for( i = 0; i < features.length; i++ ) {
           f = features[i].geojson.properties;
-          label.push('<b>'+f.hobbes.id+':</b> '+f.type+' = '+f[f.type]);
+          label.push('<b>'+f.id+':</b> '+f.type+' = '+f[f.type]);
         }
 
         if( features.length > 0 ) {
@@ -329,7 +332,7 @@
           for( var i = 0; i < resp.data.length; i++ ) {
             //var geojson = JSON.parse(resp.data[i]);
             var geojson = resp.data[i];
-            geojson.properties.id = geojson.properties.hobbes.id+'-'+geojson.properties.type;
+            geojson.properties.id = geojson.properties.id+'-'+geojson.properties.type;
             resp.lookup[geojson.properties.id] = geojson;
           }
 
@@ -459,9 +462,8 @@
         for( var i = 0; i < data.length; i++ ) {
           // TODO: don't recalc if we don't need to
           //if( !data[i].properties.scaled ) {
-            var id = data[i].properties.hobbes.id+'-'+data[i].properties.type;
-            used[id] = 1;
-            this.scale(data[i].properties, previousData ? previousData.lookup[id] : null);
+            used[data[i].properties.id] = 1;
+            this.scale(data[i].properties, previousData ? previousData.lookup[data[i].properties.id] : null);
           //}
 
           this.timeslice.addCanvasFeature(new L.CanvasFeature({
@@ -470,7 +472,7 @@
           }));
         }
 
-        var disappeared = [];
+
         if( previousData ) {
           for( var key in previousData.lookup ) {
             if( previousData.lookup[key].properties.value !== 0 && !used[key] ) {
@@ -493,7 +495,6 @@
             }
           }
         }
-        //console.log(disappeared);
 
         this.timeslice.render();
 
@@ -538,12 +539,12 @@
         if( value < 1 ) {
           value = 0;
         } else {
-          if( this.filters[type] ) {
-            if( this.filters[type].log ) {
-              value = Math.log(value) / this.minMax[type].max;
-            } else {
-              value = value / this.minMax[type].max;
-            }
+          var filter = this.filters[type];
+
+          if( filter && filter.log ) {
+            value = Math.log(value) / this.minMax[type].max;
+          } else {
+            value = value / this.minMax[type].max;
           }
         }
         if( value > 1 ) {

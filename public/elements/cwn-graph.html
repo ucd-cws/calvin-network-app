@@ -192,6 +192,7 @@
 
         update : function() {
             if( this.hobbesId == '' ) return;
+            this.hobbesId = this.hobbesId.replace(/,/g, '/');
 
             this.reset();
 
@@ -279,7 +280,7 @@
             var gnode = {
                 id : node.properties.hobbes.id,
                 calvin : node.properties,
-                label : node.properties.hobbes.id,
+                label : node.properties.hobbes.id.replace(/\//g,' / '),
                 type : node.properties.type,
                 size : 8,
             };
@@ -441,7 +442,8 @@
                     settings: {
                         defaultNodeColor: '#ec5148',
                         minArrowSize : 6,
-                        minNodeSize: 10
+                        minNodeSize: 10,
+                        drawLabels : false
                     }
                 });
 
@@ -460,12 +462,12 @@
         },
 
         goToGraphLink : function() {
-          window.location.hash = 'graph/'+this.popupNode.properties.hobbes.id;
+          window.location.hash = 'graph/'+this.popupNode.properties.hobbes.id.replace(/\//g,',');
           this.hide();
         },
 
         goToInfoLink : function() {
-          window.location.hash = 'info/'+this.popupNode.properties.hobbes.id;
+          window.location.hash = 'info/'+this.popupNode.properties.hobbes.id.replace(/\//g,',');
           this.hide();
         },
 

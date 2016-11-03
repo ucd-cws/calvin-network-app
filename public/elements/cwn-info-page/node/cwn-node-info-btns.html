@@ -91,17 +91,17 @@
           this.$.githubLink.setAttribute('href', 'https://'+repo.origin+'/'+repo.repository+'/tree/'+repo.branch + 
               ((repo.networkDataPath && repo.networkDataPath !== '/') ? repo.networkDataPath + '/' : '/') + repo.path);
 
-          if( feature.properties.hobbes.repo.files && feature.properties.hobbes.repo.files.length > 0 ) {
-            this.$.excelLink.setAttribute('href', '/excel/create?id='+feature.properties.hobbes.id);
-            this.$.excelLink.style.display = 'inline-block';
-          } else {
-            this.$.excelLink.style.display = 'none';
-          }
-
         } else {
           this.$.githubLink.style.display = 'none';
+        }
+
+        if( feature.properties.hobbes.type === 'link' || feature.properties.hobbes.type === 'node' ) {
+          this.$.excelLink.setAttribute('href', '/excel/create?id='+feature.properties.hobbes.id);
+          this.$.excelLink.style.display = 'inline-block';
+        } else {
           this.$.excelLink.style.display = 'none';
         }
+
       },
 
       goTo : function() {
@@ -113,7 +113,7 @@
       },
 
       goToGraph : function() {
-        window.location.hash = 'graph/'+this.feature.properties.hobbes.id.replace(/,/g, ',');
+        window.location.hash = 'graph/'+this.feature.properties.hobbes.id.replace(/\//g, ',');
       }
     });
   </script>

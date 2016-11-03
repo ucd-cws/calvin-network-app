@@ -10,7 +10,7 @@ module.exports = function(id, callback) {
   id = id.replace(/,/g, '/');
 
   var region = db.getRegionById(id);
-  if( region ) return callback(`Invalid region id: ${id}`);
+  if( !region ) return callback(`Invalid region id: ${id}`);
 
   var results = {
     __init__ : true
@@ -45,7 +45,7 @@ module.exports = function(id, callback) {
 function calcLinkInflows(region, results, callback) {
   async.eachSeries(region.properties.hobbes.origins,
     (origin, next) => {
-      var node = db.getNodeById(id);
+      var node = db.getNodeById(origin.link);
       db.getExtras(node.properties.hobbes.id, (err, extras) => {
         processRegionLinkInflow(node, extras, results);
         next();
@@ -59,8 +59,8 @@ function calcLinkInflows(region, results, callback) {
 
 function calcLinkOutflows(region, results, callback) {
   async.eachSeries(region.properties.hobbes.terminals,
-    (origin, next) => {
-      var node = db.getNodeById(id);
+    (terminus, next) => {
+      var node = db.getNodeById(terminus.link);
       db.getExtras(node.properties.hobbes.id, (err, extras) => {
         processRegionLinkOutflow(node, extras, results);
         next();

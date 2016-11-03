@@ -12,6 +12,7 @@ module.exports = function(router) {
      */
     router.get('/create', function (req, res) {
       model.create(req.query.id, function(err, path){
+        console.log(path);
         if( err ) {
           res.send({error: true, message: err});
         } else {

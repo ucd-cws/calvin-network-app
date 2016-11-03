@@ -10,7 +10,8 @@
       "args": [
         "--dev",
         "--path",
-        "/Users/jrmerz/dev/watershed/calvin-network-data-v2/data"
+        "/Users/jrmerz/dev/watershed/calvin-network-data-v2/data",
+        "--noautostart"
       ],
       "cwd": "${workspaceRoot}",
       "preLaunchTask": null,

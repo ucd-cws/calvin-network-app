@@ -4,6 +4,7 @@ var xlsx = require('xlsx');
 var uuid = require('node-uuid');
 var os = require('os');
 var path = require('path');
+var extend = require('extend');
 
 var db = require('../lib/database');
 
@@ -15,48 +16,50 @@ module.exports = function() {
 };
 
 function create(id, callback) {
-  db.getNodeById(id, function(err, node){
-      if( err || !node ) {
-        return callback(err || `invalid id: ${id}`);
+  var node = db.getNodeById(id)
+  if( !node ) {
+    return callback(err || `invalid id: ${id}`);
+  }
+
+  node = extend(true, {}, node);
+
+  db.getExtras(id, function(err, resp){
+    if( err ) {
+      return callback(err);
+    }
+    resp = extend(true, {}, resp);
+
+    if( resp ) {
+      for( var key in resp ) {
+        node.properties[key] = resp[key];
       }
+    }
 
-      db.getExtras(id, function(err, resp){
-        if( err ) {
-          return callback(err);
-        }
+    var data = {};
+    for( var i = 0; i < node.properties.hobbes.repo.files.length; i++ ) {
+      node.properties.hobbes.repo.files[i].data = getData(node, node.properties.hobbes.repo.files[i].attribute);
+    }
 
-        if( resp ) {
-          for( var key in resp ) {
-            node.properties[key] = resp[key];
-          }
-        }
+    var wb = new Workbook();
+    for( var i = 0; i < node.properties.hobbes.repo.files.length; i++ ) {
+      var f = node.properties.hobbes.repo.files[i];
 
-        var data = {};
-        for( var i = 0; i < node.properties.repo.files.length; i++ ) {
-          node.properties.repo.files[i].data = getData(node, node.properties.repo.files[i].path);
-        }
+      var name = f.path.replace(/^\.\//,'').replace(/(\.|\/)/g,'_');
 
-        var wb = new Workbook();
-        for( var i = 0; i < node.properties.repo.files.length; i++ ) {
-          var f = node.properties.repo.files[i];
+      f.data.splice(0,0,[]);
+      f.data.splice(0,0,[f.path.replace(/^\./,id), f.attribute]);
 
-          var name = f.file.replace(/^\.\//,'').replace(/(\.|\/)/g,'_');
-
-          f.data.splice(0,0,[]);
-          f.data.splice(0,0,[f.file.replace(/^\./,id), f.path]);
-
-          wb.SheetNames.push(name);
-          wb.Sheets[name] = sheet_from_array_of_arrays(f.data);
-        }
+      wb.SheetNames.push(name);
+      wb.Sheets[name] = sheet_from_array_of_arrays(f.data);
+    }
 
 
-        var wopts = { bookType:'xlsx', bookSST:true, type:'binary' };
-        var filename = path.join(os.tmpdir(), uuid.v1()+'.xlsx');
-        xlsx.writeFile(wb, filename, wopts);
+    var wopts = { bookType:'xlsx', bookSST:true, type:'binary' };
+    var filename = path.join(os.tmpdir(), uuid.v1()+'.xlsx');
+    xlsx.writeFile(wb, filename, wopts);
 
-        callback(null, filename);
-      });
-    });
+    callback(null, filename);
+  });
 }
 
 function getData(object, path) {
@@ -71,6 +74,7 @@ function getData(object, path) {
 
     object = object[path[i]];
   }
+  return object;
 }
 
 /* function below from: https://gist.github.com/SheetJSDev/88a3ca3533adf389d13c */
