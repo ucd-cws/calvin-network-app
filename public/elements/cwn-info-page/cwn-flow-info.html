@@ -229,7 +229,7 @@
       },
 
       loadLinkAggregate : function() {
-        $.get('/regions/aggregateLinks?origin='+this.feature.properties.origin+'&terminus='+this.feature.properties.terminus, function(resp) {
+        $.get('/regions/aggregateLinks?origin='+this.feature.properties.hobbes.origin+'&terminus='+this.feature.properties.hobbes.terminus, function(resp) {
           this.loading(false);
           this.data = resp.data;
           this.$.differenceChart.style.display = 'block';
@@ -253,7 +253,7 @@
           }
 
           this.$.flowChart.options = {
-            title: 'Rendered as '+this.feature.properties.origin+' (origin) to '+this.feature.properties.terminus+' (terminus)',
+            title: 'Rendered as '+this.feature.properties.hobbes.origin+' (origin) to '+this.feature.properties.hobbes.terminus+' (terminus)',
             isStacked : true,
             height: 500,
             series: {
@@ -288,8 +288,8 @@
           this.$.differenceChart.update(diffData);
 
           this.fire('region-link-update', {
-            origin: this.feature.properties.origin,
-            terminus: this.feature.properties.terminus,
+            origin: this.feature.properties.hobbes.origin,
+            terminus: this.feature.properties.hobbes.terminus,
             info: resp
           });
 

@@ -72,6 +72,15 @@
         var dev = document.querySelector('cwn-dev');
         dev.addEventListener('timeseries-process-start', this.onProcessingStart.bind(this));
         dev.addEventListener('timeseries-process-end', this.onProcessingEnd.bind(this));
+        if( dev.dev === undefined ) {
+           dev.addEventListener('is-dev', function() {
+              if( !dev.dev ) {
+                this.onProcessingEnd();
+              }
+           }.bind(this));
+        } else {
+           this.onProcessingEnd();
+        }
 
         if( CWN.timeseriesProcessing === false ) {
           this.onProcessingEnd();
@@ -258,6 +267,7 @@
         });
         this.timeslice.animating = true;
         this.timeslice.addTo(this.map);
+        this.timeslice.hide();
       },
 
       onClick : function(features, e) {
