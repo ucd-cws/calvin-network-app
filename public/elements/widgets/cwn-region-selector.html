@@ -42,10 +42,10 @@
           }
 
           var index = parseInt(e.currentTarget.getAttribute('index'));
-          var feature = this.features[index];
+          var canvasFeature = this.features[index];
 
-          if( feature.geometry.type == 'Polygon') {
-            this.map.onRegionClick(feature.properties.id);
+          if( canvasFeature.geojson.geometry.type == 'Polygon') {
+            this.map.onRegionClick(canvasFeature.geojson.properties.hobbes.id);
             this.$.popup.hide();
           } else {
             alert("Not implemented yet :(");
@@ -62,7 +62,7 @@
       } else if ( feature.properties.type == 'Region' ) {
         link = '<cwn-app-icon type="Region" height="26" width="26"></cwn-app-icon> '+feature.properties.hobbes.id;
         regionLinks = '<div style="padding-left:15px"><a class="region btn btn-link" index="'+i+'" style="cusor:pointer"><i class="fa fa-expand"></i> Open</a> '+
-                      ' <a href="#info/'+feature.properties.id+'" class="btn btn-link"><i class="fa fa-info"></i> Info</a></div>'
+                      ' <a href="#info/'+feature.properties.hobbes.id.replace(/\//g, ',')+'" class="btn btn-link"><i class="fa fa-info"></i> Info</a></div>'
       } else {
         link = '<a href="#info/'+feature.properties.hobbes.id.replace(/\//g, ',')+'" style="font-size:18px">'+feature.properties.hobbes.id+'</a>';
         icon = '<cwn-app-icon type="'+feature.properties.type+'" height="26" width="26"></cwn-app-icon>';
