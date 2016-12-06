@@ -31,7 +31,7 @@
     "extend": "^3.0.0",
     "findit": "^2.0.0",
     "fs-extra": "^1.0.0",
-    "hobbes-network-format": "^1.0.4",
+    "hobbes-network-format": "^2.0.0",
     "kraken-js": "^1.0.6",
     "md5": "^2.1.0",
     "minimist": "^1.2.0",
